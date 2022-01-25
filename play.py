@@ -39,37 +39,50 @@ class ExampleModel:
     def output(self):
         return self._x, 0
 
-class ElfModel:
+class ElfCell:
     def __init__(self, voltage_decay, input_decay, starting_membrane_voltage, step_size, fake_input):
-        self.name = "Elf Model"
-        self.labels = ["~potential", "~input synapse current"]
+        self._fake_input = fake_input
         self._voltage_decay = voltage_decay
         self._input_decay = input_decay
         self._membrane_voltage = starting_membrane_voltage
         self._step_size = step_size
-        self._fake_input = fake_input
-        self._fired = False
-        self._input = 0 # will become array? well many cells anyway.
+        self._fired = False # not even used?
+        self._input_synapse = 0 # still a bad name
 
-    def _update_voltage(self):
+    def membrane_voltage(self):
+        return self._membrane_voltage
+    
+    def input_synapse(self):
+        return self._input_synapse
+    
+    def update_voltage(self):
         if self._membrane_voltage > 1:
             self._membrane_voltage = 0
         else:
-            self._membrane_voltage = self._membrane_voltage * (1 - self._voltage_decay)**self._step_size + self._input
+            self._membrane_voltage = self._membrane_voltage * (1 - self._voltage_decay)**self._step_size + self._input_synapse
 
-    def _update_input(self, step):
+    def update_input(self, step):
         i = self._fake_input(step)
         if i > 0:
-            self._input = i
+            self._input_synapse = i
         else:
-            self._input = self._input * (1 - self._input_decay)**self._step_size # add input
-    
+            self._input_synapse = self._input_synapse * (1 - self._input_decay)**self._step_size # need to think about step sizes
+
+
+
+class ElfModel:
+    def __init__(self, voltage_decay, input_decay, starting_membrane_voltage, step_size, fake_input):
+        self.name = "Elf Model"
+        self.labels = ["~potential", "~input synapse current"]
+        self._input = 0
+        self._cell = ElfCell(voltage_decay, input_decay, starting_membrane_voltage, step_size, fake_input)
+
     def step(self, step):
-        self._update_voltage()
-        self._update_input(step)
+        self._cell.update_voltage()
+        self._cell.update_input(step)
             
     def output(self):
-        return self._membrane_voltage, self._input
+        return self._cell.membrane_voltage(), self._cell.input_synapse()
 
 
 ##### from paper
