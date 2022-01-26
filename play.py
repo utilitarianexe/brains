@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import collections
 
 # to do
 # adjust parameters without restarting
@@ -11,78 +12,100 @@ import matplotlib.pyplot as plt
 print("Its alive")
 
 def graph_model(steps, model):
-    outs_a = []
-    outs_b = []
+    lines = collections.defaultdict(list)
     for i in range(steps):
         model.step(i)
-        out_a, out_b = model.output()
-        outs_a.append(out_a)
-        outs_b.append(out_b)
-    plt.plot(outs_a, label=model.labels[0])
-    plt.plot(outs_b, label=model.labels[1])
+        outputs = model.outputs(i)
+        for label, value in outputs.items():
+            lines[label].append(value)
+    for label, values in lines.items():
+        plt.plot(values, label=label)
     plt.title(label=model.name,
               fontsize=40,
               color="green")
     plt.legend()
-    #plt.ylabel('some numbers')
     plt.show()
 
 class ExampleModel:
     def __init__(self):
         self.name = "Example Model"
-        self.labels = ["increment", "zero"]
         self._x = 0
 
     def step(self, step):
         self._x = self._x + 1
 
-    def output(self):
-        return self._x, 0
+    def outputs(self, i):
+        #spelling?
+        return {"increment": self._x, "constant": 0}
+
+# could put this inside of the cell class maybe?
+# Source is a function that takes step and determines if the synapse fired. 
+class ElfSynapse:
+    def __init__(self, decay, step_size, starting_voltage, source):
+        self._decay = decay
+        self._step_size = step_size
+        self._source = source
+        self._voltage = starting_voltage
+
+    def voltage(self):
+        return self._voltage
+
+    def update(self, step):
+        i = self._source(step)
+        if i > 0:
+            self._voltage = i
+        else:
+            self._voltage = self._voltage * (1 - self._decay)**self._step_size # need to think about step sizes
+        
 
 class ElfCell:
-    def __init__(self, voltage_decay, input_decay, starting_membrane_voltage, step_size, fake_input):
-        self._fake_input = fake_input
+    def __init__(self, voltage_decay, input_decay, starting_membrane_voltage, step_size, input_sources):
         self._voltage_decay = voltage_decay
-        self._input_decay = input_decay
         self._membrane_voltage = starting_membrane_voltage
         self._step_size = step_size
-        self._fired = False # not even used?
-        self._input_synapse = 0 # still a bad name
+        self._input_synapses = []
+        for input_source in input_sources:
+            self._input_synapses.append(ElfSynapse(input_decay, step_size, 0, input_source))
+        self.fired = False # why not just check voltage
 
-    def membrane_voltage(self):
+    def membrane_voltage(self, step):
         return self._membrane_voltage
     
-    def input_synapse(self):
-        return self._input_synapse
+    def update(self, step):
+        # volts should just be called potential i think
+        # does order matter here
+        # synaptic delay?
+        total_input_voltage = 0
+        for input_synapse in self._input_synapses:
+            input_synapse.update(step)
+            total_input_voltage += input_synapse.voltage()
+        self._update_voltage(total_input_voltage)
     
-    def update_voltage(self):
+    def _update_voltage(self, input_voltage):
         if self._membrane_voltage > 1:
             self._membrane_voltage = 0
+            self.fired = True
         else:
-            self._membrane_voltage = self._membrane_voltage * (1 - self._voltage_decay)**self._step_size + self._input_synapse
-
-    def update_input(self, step):
-        i = self._fake_input(step)
-        if i > 0:
-            self._input_synapse = i
-        else:
-            self._input_synapse = self._input_synapse * (1 - self._input_decay)**self._step_size # need to think about step sizes
-
+            # magic input scaling needs fixed
+            self._membrane_voltage = self._membrane_voltage * (1 - self._voltage_decay)**self._step_size + input_voltage * 0.001
+            self.fired = False # maybe should be somewhere else
 
 
 class ElfModel:
     def __init__(self, voltage_decay, input_decay, starting_membrane_voltage, step_size, fake_input):
         self.name = "Elf Model"
         self.labels = ["~potential", "~input synapse current"]
-        self._input = 0
-        self._cell = ElfCell(voltage_decay, input_decay, starting_membrane_voltage, step_size, fake_input)
+        cell_a = ElfCell(voltage_decay, input_decay, starting_membrane_voltage, step_size, [fake_input])
+        cell_b = ElfCell(voltage_decay, input_decay, starting_membrane_voltage, step_size, [cell_a.membrane_voltage])
+        self._cells = [cell_a, cell_b]
+        self._fake_input = fake_input
 
     def step(self, step):
-        self._cell.update_voltage()
-        self._cell.update_input(step)
+        for cell in self._cells:
+            cell.update(step)
             
-    def output(self):
-        return self._cell.membrane_voltage(), self._cell.input_synapse()
+    def outputs(self, step):
+        return {"cell 0 ": self._cells[0].membrane_voltage(step), "cell 1": self._cells[1].membrane_voltage(step), "fake input": self._fake_input(step)}
 
 
 ##### from paper
@@ -148,8 +171,8 @@ class SpiritModel():
         self._update_voltage()
         self._update_input(step)
             
-    def output(self):
-        return self._fast_potential, self._input
+    def outputs(self, step):
+        return {"potential": self._fast_potential, "input synapse": self._input}
 
     
 example_model = ExampleModel()
@@ -162,7 +185,7 @@ input_decay = 0.001
 # it might make sense to drive a cell instead of a synapse
 def fake_input_elf(step):
     if step % 50000 == 0 and step > 9999:
-        return 0.002
+        return 2
     return 0
 elf_model = ElfModel(voltage_decay, input_decay, 0.0, 1, fake_input_elf)
 graph_model(500000, elf_model)
