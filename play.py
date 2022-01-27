@@ -48,15 +48,15 @@ def run_example():
 
 
 def run_simple():
-    voltage_decay = 0.0001
-    input_decay = 0.001
+    voltage_decay = 0.01
+    input_decay = 0.05
     #calcium_decay = 0.001
     def fake_input_simple(step):
         if step % 50000 == 200 and step > 0:
             return 2
         return 0
     simple = simple_model.SimpleModel(voltage_decay, input_decay, 0.0, 1, fake_input_simple)
-    graph_model(5000, simple)
+    graph_model(1000, simple)
 
 
 def run_spirit():

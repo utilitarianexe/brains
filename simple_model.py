@@ -58,9 +58,9 @@ class SimpleModel:
     def __init__(self, voltage_decay, input_decay, starting_membrane_voltage, step_size, fake_input):
         self.name = "Simple Model"
         self.labels = ["~potential", "~input synapse current"]
-        cell_a_synapse = SimpleSynapse(input_decay, step_size, 0, 0.001, fake_input)
+        cell_a_synapse = SimpleSynapse(input_decay, step_size, 0, 0.05, fake_input)
         cell_a = SimpleCell(voltage_decay, input_decay, starting_membrane_voltage, step_size, [cell_a_synapse])
-        cell_b_synapse = SimpleSynapse(input_decay, step_size, 0, 0.001, cell_a.fired)
+        cell_b_synapse = SimpleSynapse(input_decay, step_size, 0, 0.1, cell_a.fired)
         cell_b = SimpleCell(voltage_decay, input_decay, starting_membrane_voltage, step_size, [cell_b_synapse])
         self._cells = [cell_a, cell_b]
         self._fake_input = fake_input
