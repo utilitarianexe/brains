@@ -1,14 +1,15 @@
 # could put this inside of the cell class maybe?
 # Source is a function that takes step and determines if the synapse fired. 
 class SimpleSynapse:
-    def __init__(self, decay, step_size, starting_voltage, source):
+    def __init__(self, decay, step_size, starting_voltage, strength, source):
         self._decay = decay
         self._step_size = step_size
         self._source = source
         self._voltage = starting_voltage
+        self._strength = strength
 
     def voltage(self):
-        return self._voltage
+        return self._voltage * self._strength
 
     def update(self, step):
         i = self._source(step)
@@ -16,16 +17,13 @@ class SimpleSynapse:
             self._voltage = i
         else:
             self._voltage = self._voltage * (1 - self._decay)**self._step_size # need to think about step sizes
-        
 
 class SimpleCell:
-    def __init__(self, voltage_decay, input_decay, starting_membrane_voltage, step_size, input_sources):
+    def __init__(self, voltage_decay, input_decay, starting_membrane_voltage, step_size, input_synapses):
         self._voltage_decay = voltage_decay
         self._membrane_voltage = starting_membrane_voltage
         self._step_size = step_size
-        self._input_synapses = []
-        for input_source in input_sources:
-            self._input_synapses.append(SimpleSynapse(input_decay, step_size, 0, input_source))
+        self._input_synapses = input_synapses
         self._fired = False # why not just check voltage
 
     def membrane_voltage(self, step):
@@ -52,8 +50,7 @@ class SimpleCell:
             self._membrane_voltage = 0
             self._fired = True
         else:
-            # magic input scaling needs fixed
-            self._membrane_voltage = self._membrane_voltage * (1 - self._voltage_decay)**self._step_size + input_voltage * 0.001
+            self._membrane_voltage = self._membrane_voltage * (1 - self._voltage_decay)**self._step_size + input_voltage
             self._fired = False # maybe should be somewhere else
 
 
@@ -61,8 +58,10 @@ class SimpleModel:
     def __init__(self, voltage_decay, input_decay, starting_membrane_voltage, step_size, fake_input):
         self.name = "Simple Model"
         self.labels = ["~potential", "~input synapse current"]
-        cell_a = SimpleCell(voltage_decay, input_decay, starting_membrane_voltage, step_size, [fake_input])
-        cell_b = SimpleCell(voltage_decay, input_decay, starting_membrane_voltage, step_size, [cell_a.fired])
+        cell_a_synapse = SimpleSynapse(input_decay, step_size, 0, 0.001, fake_input)
+        cell_a = SimpleCell(voltage_decay, input_decay, starting_membrane_voltage, step_size, [cell_a_synapse])
+        cell_b_synapse = SimpleSynapse(input_decay, step_size, 0, 0.001, cell_a.fired)
+        cell_b = SimpleCell(voltage_decay, input_decay, starting_membrane_voltage, step_size, [cell_b_synapse])
         self._cells = [cell_a, cell_b]
         self._fake_input = fake_input
 
