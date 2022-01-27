@@ -26,10 +26,16 @@ class SimpleCell:
         self._input_synapses = []
         for input_source in input_sources:
             self._input_synapses.append(SimpleSynapse(input_decay, step_size, 0, input_source))
-        self.fired = False # why not just check voltage
+        self._fired = False # why not just check voltage
 
     def membrane_voltage(self, step):
         return self._membrane_voltage
+
+    def fired(self, step):
+        if self._fired:
+            return 1
+        else:
+            return 0
     
     def update(self, step):
         # volts should just be called potential i think
@@ -44,11 +50,11 @@ class SimpleCell:
     def _update_voltage(self, input_voltage):
         if self._membrane_voltage > 1:
             self._membrane_voltage = 0
-            self.fired = True
+            self._fired = True
         else:
             # magic input scaling needs fixed
             self._membrane_voltage = self._membrane_voltage * (1 - self._voltage_decay)**self._step_size + input_voltage * 0.001
-            self.fired = False # maybe should be somewhere else
+            self._fired = False # maybe should be somewhere else
 
 
 class SimpleModel:
@@ -56,7 +62,7 @@ class SimpleModel:
         self.name = "Simple Model"
         self.labels = ["~potential", "~input synapse current"]
         cell_a = SimpleCell(voltage_decay, input_decay, starting_membrane_voltage, step_size, [fake_input])
-        cell_b = SimpleCell(voltage_decay, input_decay, starting_membrane_voltage, step_size, [cell_a.membrane_voltage])
+        cell_b = SimpleCell(voltage_decay, input_decay, starting_membrane_voltage, step_size, [cell_a.fired])
         self._cells = [cell_a, cell_b]
         self._fake_input = fake_input
 
