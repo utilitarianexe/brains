@@ -1,29 +1,42 @@
 # could put this inside of the cell class maybe?
-# Source is a function that takes step and determines if the synapse fired. 
+# Source is a function that takes step and determines if the synapse fired.
+# voltage should be named potential everywhere
+# should probably derive from a "potential generating" class or something
+# synapse is a bad name.
 class SimpleSynapse:
-    def __init__(self, decay, step_size, starting_voltage, strength, source):
+    def __init__(self, decay, step_size, starting_voltage, strength,
+                 pre_cell=None,
+                 post_cell=None,
+                 artificial_source=None):
         self._decay = decay
         self._step_size = step_size
-        self._source = source
         self._voltage = starting_voltage
         self._strength = strength
+        self._pre_cell = pre_cell
+        self._post_cell = post_cell
+        self._artificial_source = artificial_source
 
     def voltage(self):
         return self._voltage * self._strength
 
     def update(self, step):
-        i = self._source(step)
+        i = 0
+        if self._artificial_source is not None:
+            i += self._artificial_source(step)
+        if self._pre_cell is not None:
+            i += self._pre_cell.fired(step)
         if i > 0:
             self._voltage = i
         else:
-            self._voltage = self._voltage * (1 - self._decay)**self._step_size # need to think about step sizes
+            # need to think about step sizes
+            self._voltage = self._voltage * (1 - self._decay)**self._step_size
 
 class SimpleCell:
-    def __init__(self, voltage_decay, input_decay, starting_membrane_voltage, step_size, input_synapses):
+    def __init__(self, voltage_decay, input_decay, starting_membrane_voltage, step_size):
         self._voltage_decay = voltage_decay
         self._membrane_voltage = starting_membrane_voltage
         self._step_size = step_size
-        self._input_synapses = input_synapses
+        self._input_synapses = []
         self._fired = False # why not just check voltage
 
     def membrane_voltage(self, step):
@@ -34,6 +47,11 @@ class SimpleCell:
             return 1
         else:
             return 0
+
+    # I don't like this
+    # should probably be a seperate membrane class
+    def add_input_synapse(self, input_synapse):
+        self._input_synapses.append(input_synapse)
     
     def update(self, step):
         # volts should just be called potential i think
@@ -58,10 +76,17 @@ class SimpleModel:
     def __init__(self, voltage_decay, input_decay, starting_membrane_voltage, step_size, fake_input):
         self.name = "Simple Model"
         self.labels = ["~potential", "~input synapse current"]
-        cell_a_synapse = SimpleSynapse(input_decay, step_size, 0, 0.05, fake_input)
-        cell_a = SimpleCell(voltage_decay, input_decay, starting_membrane_voltage, step_size, [cell_a_synapse])
-        cell_b_synapse = SimpleSynapse(input_decay, step_size, 0, 0.1, cell_a.fired)
-        cell_b = SimpleCell(voltage_decay, input_decay, starting_membrane_voltage, step_size, [cell_b_synapse])
+        cell_a = SimpleCell(voltage_decay, input_decay, starting_membrane_voltage, step_size)
+        cell_b = SimpleCell(voltage_decay, input_decay, starting_membrane_voltage, step_size)
+        cell_fake_a_synapse = SimpleSynapse(input_decay, step_size, 0, 0.05, pre_cell=None,
+                                       post_cell=cell_b,
+                                       artificial_source=fake_input)
+
+        cell_a_b_synapse = SimpleSynapse(input_decay, step_size, 0, 0.1, pre_cell=cell_a,
+                                       post_cell=None,
+                                       artificial_source=None)
+        cell_a.add_input_synapse(cell_fake_a_synapse)
+        cell_b.add_input_synapse(cell_a_b_synapse)
         self._cells = [cell_a, cell_b]
         self._fake_input = fake_input
 
@@ -70,4 +95,4 @@ class SimpleModel:
             cell.update(step)
             
     def outputs(self, step):
-        return {"cell 0 ": self._cells[0].membrane_voltage(step), "cell 1": self._cells[1].membrane_voltage(step), "fake input": self._fake_input(step)}
+        return {"cell a ": self._cells[0].membrane_voltage(step), "cell b": self._cells[1].membrane_voltage(step), "fake input": self._fake_input(step)}
