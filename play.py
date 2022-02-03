@@ -40,12 +40,9 @@ class ExampleModel:
         #spelling?
         return {"increment": self._x, "constant": 0}
 
-
-
 def run_example():
     example_model = ExampleModel()
     graph_model(100, example_model)
-
 
 def run_simple():
     voltage_decay = 0.01
