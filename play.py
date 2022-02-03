@@ -44,15 +44,32 @@ def run_example():
     example_model = ExampleModel()
     graph_model(100, example_model)
 
+# omg spell check
 def run_simple():
     voltage_decay = 0.01
     input_decay = 0.05
-    #calcium_decay = 0.001
+    step_size = 1
+    cell_parameters = simple_model.CellParameters(voltage_decay, 0)
+    synapse_parameters = simple_model.SynapseParameters(input_decay, 0, 0.1)
+    cell_definitions = ["a", "b", "c", "d", "e"]
+    # named would be better than positional
+    synapse_definitions = [("a", "b"),
+                           ("b", "c"),
+                           ("b", "d"),
+                           ("c", "e"),
+                           ("d", "e"),]
+    fake_input_location = "a"
+    network_definition = simple_model.NetworkDefinition(cell_definitions,
+                                                        synapse_definitions,
+                                                        fake_input_location)
+
+
     def fake_input_simple(step):
         if step % 50000 == 200 and step > 0:
             return 2
         return 0
-    simple = simple_model.SimpleModel(voltage_decay, input_decay, 0.0, 1, fake_input_simple)
+    simple = simple_model.SimpleModel(cell_parameters, synapse_parameters, network_definition,
+                                      step_size, fake_input_simple)
     graph_model(1000, simple)
 
 
