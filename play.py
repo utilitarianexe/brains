@@ -47,26 +47,27 @@ def run_example():
 # omg spell check
 def run_simple():
     voltage_decay = 0.01
-    input_decay = 0.05
+    input_decay = 0.1
     step_size = 1
-    cell_parameters = simple_model.CellParameters(voltage_decay, 0)
-    synapse_parameters = simple_model.SynapseParameters(input_decay, 0, 0.1)
-    cell_definitions = ["a", "b", "c", "d", "e"]
+    starting_synapse_strength = 0.15
+    cell_parameters = simple_model.CellParameters(voltage_decay, input_decay, 0)
+    synapse_parameters = simple_model.SynapseParameters(starting_synapse_strength)
+    cell_names = ["a", "b", "c", "d", "e"]
     # named would be better than positional
-    synapse_definitions = [("a", "b"),
+    synapse_names = [("a", "b"),
                            ("b", "c"),
                            ("b", "d"),
                            ("c", "e"),
                            ("d", "e"),]
     fake_input_location = "a"
-    network_definition = simple_model.NetworkDefinition(cell_definitions,
-                                                        synapse_definitions,
+    network_definition = simple_model.NetworkDefinition(cell_names,
+                                                        synapse_names,
                                                         fake_input_location)
 
 
     def fake_input_simple(step):
         if step % 50000 == 200 and step > 0:
-            return 2
+            return 0.15
         return 0
     simple = simple_model.SimpleModel(cell_parameters, synapse_parameters, network_definition,
                                       step_size, fake_input_simple)
@@ -94,5 +95,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
