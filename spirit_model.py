@@ -61,5 +61,19 @@ class SpiritModel():
         self._update_voltage()
         self._update_input(step)
             
-    def outputs(self, step):
+    def outputs(self):
         return {"potential": self._fast_potential, "input synapse": self._input}
+
+
+def default_model():
+    alpha = 1
+    mu = 0.001
+    sigma = 0
+    sigma_next = 0
+    input_decay = 0.001
+    # it might make sense to drive a cell instead of a synapse
+    def fake_input_spirit(step):
+        if step % 10000 == 0 and step > 9999:
+            return 1
+        return 0
+    return SpiritModel(input_decay, alpha, mu, sigma, sigma_next, fake_input_spirit)
