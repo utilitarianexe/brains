@@ -7,6 +7,12 @@ import simple_model
 
 
 def update_screen(screen, drawables):
+    x_spacing = 10
+    y_spacing = 2
+    border = 5
+    height = 20
+    width = 20
+
     # super inefficient to rebuild the squares but meh
     for drawable in drawables:
         square = pygame.Surface((20, 20,))
@@ -27,8 +33,11 @@ def update_screen(screen, drawables):
         except:
             print(color)
             sys.exit()
-            
-        screen.blit(square, (drawable["x"], drawable["y"],))
+
+        x_position = drawable["x"] * ( width + x_spacing) + border
+        y_position = drawable["y"] * (height + y_spacing) + border
+
+        screen.blit(square, (x_position, y_position,))
         
 
 def run_model(model, steps, sleep):
@@ -59,6 +68,7 @@ def run_model(model, steps, sleep):
         time.sleep(sleep)
         
 def run_example_model():
+    # probably broken
     model = example_model.default_model()
     run_model(model, 100, 0.1)
 

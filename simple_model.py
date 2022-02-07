@@ -1,3 +1,5 @@
+import network
+
 import collections
 from dataclasses import dataclass
 
@@ -10,23 +12,6 @@ class CellTypeParameters:
 @dataclass
 class SynapseTypeParameters:
     starting_strength: float
-
-@dataclass
-class PerCellParameters:
-    name: str
-    x_position: int
-    y_position: int
-
-@dataclass
-class PerSynapseParameters:
-    pre_cell_name: str
-    post_cell_name: str
-
-@dataclass
-class NetworkDefinition:
-    per_cell_parameters: list
-    per_synapse_parameters: list
-    cell_name_with_fake_input: str
 
 
 # voltage should be named potential everywhere
@@ -69,12 +54,12 @@ class CellBody:
             self._fired = True
 
 class Cell:
-    def __init__(self, name, x_position, y_position,
+    def __init__(self, name, x_grid_position, y_grid_position,
                  cell_body, input_synapses, output_synapses,
                  artificial_source=None):
         self.name = name
-        self.x_position = x_position
-        self.y_position = y_position
+        self.x_grid_position = x_grid_position
+        self.y_grid_position = y_grid_position
         
         # I don't like the coupling causing these to be public
         self.input_synapses = input_synapses # not acutally used yet
@@ -118,7 +103,7 @@ class SimpleModel:
         for cell in self._cells:
             # maybe make a class
             drawable = {"name": cell.name,
-                        "x": cell.x_position, "y": cell.y_position,
+                        "x": cell.x_grid_position, "y": cell.y_grid_position,
                         "strength": cell.membrane_voltage()}
             drawables.append(drawable)
         return drawables
@@ -152,13 +137,13 @@ class SimpleModel:
             # ugly should not need if, use input parameter stuff
             if name != network_definition.cell_name_with_fake_input:
                 cell = Cell(name,
-                            cell_parameters.x_position,
-                            cell_parameters.y_position,
+                            cell_parameters.x_grid_position,
+                            cell_parameters.y_grid_position,
                             cell_body, [], [])
             else:
                 cell = Cell(name,
-                            cell_parameters.x_position,
-                            cell_parameters.y_position,
+                            cell_parameters.x_grid_position,
+                            cell_parameters.y_grid_position,
                             cell_body, [], [], fake_input)
             cells_by_name[name] = cell
             cells.append(cell)
@@ -172,45 +157,6 @@ class SimpleModel:
 
         return cells
 
-# too much display stuff in here. should do position else where maybe?
-# or will position every matter to to the model and not be pure display?
-# maybe compromise and do grid position here and the rest in display
-def default_network():
-    cell_name_and_grid_position = [("a", (0, 0)),
-                                   ("b", (1, 0)),
-                                   ("c", (2, 0)), ("d", (2, 1)),
-                                   ("e", (3, 0))]
-    synapse_end_points = [("a", "b"),
-                          ("b", "c"),
-                          ("b", "d"),
-                          ("c", "e"),
-                          ("d", "e"),]
-    cell_name_with_fake_input = "a"
-
-    # dont like how we are doing plurals
-    per_cell_parameters = []
-
-    # all this should be in display class
-    x_spacing = 10
-    y_spacing = 2
-    border = 5
-    height = 20
-    width = 20
-    for (cell_name, (x_grid_pos, y_grid_pos)) in cell_name_and_grid_position:
-        x_position = x_grid_pos * ( width + x_spacing) + border
-        y_position = y_grid_pos * (height + y_spacing) + border
-        cell_parameters = PerCellParameters(cell_name, x_position, y_position)
-        per_cell_parameters.append(cell_parameters)
-
-    per_synapse_parameters = []
-    for (pre_cell_name, post_cell_name) in synapse_end_points:
-        per_synapse_parameters.append(PerSynapseParameters(pre_cell_name, post_cell_name))
-        
-    return NetworkDefinition(per_cell_parameters,
-                             per_synapse_parameters,
-                             cell_name_with_fake_input)
-
-
 def default_model():
     voltage_decay = 0.01
     input_decay = 0.1
@@ -218,7 +164,7 @@ def default_model():
     starting_synapse_strength = 0.15
     cell_type_parameters = CellTypeParameters(voltage_decay, input_decay, 0)
     synapse_type_parameters = SynapseTypeParameters(starting_synapse_strength)
-    network_definition = default_network()
+    network_definition = network.default_network()
 
 
     def fake_input_simple(step):
