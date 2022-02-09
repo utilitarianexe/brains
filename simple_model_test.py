@@ -1,7 +1,8 @@
 import simple_model
-
 import unittest
 
+
+# does not work anymore
 class TestStringMethods(unittest.TestCase):
 
     def test_synapse_decay(self):
