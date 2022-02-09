@@ -88,7 +88,7 @@ class Cell:
 class SimpleModel:
     def __init__(self,  cell_parameters, synapse_parameters, network_definition, step_size,
                  fake_input):
-        self.id = "Simple Model"
+        self.name = "Simple Model"
         self._cells = SimpleModel._build_network(cell_parameters, synapse_parameters,
                                                  network_definition,
                                                  step_size,
