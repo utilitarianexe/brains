@@ -1,0 +1,11 @@
+Neuron simulation software.
+
+Run
+
+python display.py to watch
+
+Requires pygame
+
+python play.py will display grapsh instead using pyplot
+
+Much more to come.
