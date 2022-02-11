@@ -7,8 +7,8 @@ import simple_model
 
 
 def update_screen(screen, drawables):
-    x_spacing = 10
-    y_spacing = 2
+    x_spacing = 5
+    y_spacing = 5
     border = 5
     height = 20
     width = 20

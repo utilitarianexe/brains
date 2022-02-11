@@ -1,4 +1,5 @@
 import network
+from network import Layout
 
 import collections
 from dataclasses import dataclass
@@ -118,9 +119,6 @@ class SimpleModel:
 
 
     # will need ways to verify the network
-    # need to gate submits with tests
-    # conform to style guide
-    # need tests and visulization
     # are there other places we are using self for no reason, how do we name these
     def _build_network(cell_type_parameters,
                        synapse_type_parameters,
@@ -159,12 +157,34 @@ class SimpleModel:
         return cells
 
 
+def small_default_network():
+    cell_id_and_grid_positions = [("a", (0, 0)),
+                                   ("b", (1, 0)),
+                                   ("c", (2, 0)), ("d", (2, 1)),
+                                   ("e", (3, 0))]
+    synapse_end_points = [("a", "b", 0.15),
+                          ("b", "c", 0.15),
+                          ("b", "d", 0.15),
+                          ("c", "e", 0.15),
+                          ("d", "e", 0.15),]
+    cell_id_with_fake_input = "a"
+    return network_from_edge_list(cell_id_and_grid_positions,
+                                  synapse_end_points,
+                                  cell_id_with_fake_input)
+
+
 def layer_based_default_network():
-    # going to need much weaker connections
-    layers = [("a", 10), ("b", 20), ("c", 20), ("d", 20), ("e", 10)]
+    layers = [("a", 9, Layout.SQUARE),
+              ("b", 20, Layout.LINE),
+              ("c", 20, Layout.LINE),
+              ("d", 15, Layout.SQUARE),
+              ("e", 10, Layout.LINE)]
+    
     # Something about connection probability rubs me wrong.
+    # strengths random
+    # connections might be more complex
     layer_connections = [("a", "b", 1, 0.15), ("b", "c", 0.2, 0.05),
-                         ("c", "d", 1, 0.01), ("d", "e", 1, 0.01)]
+                         ("c", "d", 1, 0.01), ("d", "e", 1, 0.15)]
     cell_id_with_fake_input = ("a", 0,)
     return network.build_layer_based_network(layers, layer_connections, cell_id_with_fake_input)
 
@@ -172,7 +192,10 @@ def default_model():
     voltage_decay = 0.01
     input_decay = 0.1
     step_size = 1
+
+    # not actually used
     starting_synapse_strength = 0.15
+    
     cell_type_parameters = CellTypeParameters(voltage_decay, input_decay, 0)
     synapse_type_parameters = SynapseTypeParameters(starting_synapse_strength)
     network_definition = layer_based_default_network()

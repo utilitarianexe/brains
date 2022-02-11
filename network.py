@@ -1,6 +1,14 @@
 from dataclasses import dataclass
 import random
 from collections import defaultdict
+from enum import Enum
+
+# kinda a lot of display stuff in this class
+# grid position is very display like
+
+class Layout(Enum):
+     SQUARE = 1
+     LINE = 2
 
 @dataclass
 class PerCellParameters:
@@ -20,10 +28,43 @@ class NetworkDefinition:
     per_synapse_parameters: list
     cell_id_with_fake_input: str
 
-@dataclass
 class Layer:
-    neme: str
-    size: int
+    def __init__(self, id, size, starting_x_position, layout=Layout.LINE):
+        self.id = id
+        self.size = size
+        self.layout = layout
+        self.starting_x_position = starting_x_position
+        self.edge_length = self._layer_edge_length()
+
+    def _newtons_square_root(n):
+        x = n
+        y = (x + 1) // 2
+        while y < x:
+            x = y
+            y = (x + n // x) // 2
+        return x
+
+    def _layer_edge_length(self):
+        if self.layout == Layout.LINE:
+            return 1
+        
+        sqrt = Layer._newtons_square_root(self.size)
+        if sqrt**2 == self.size:
+            return sqrt
+        return sqrt + 1
+
+    def cell_layer_position(self, cell_number):
+        if self.layout == Layout.LINE:
+            return (0, cell_number,)
+
+        x = cell_number % self.edge_length
+        y = cell_number // self.edge_length
+        return (x, y,)
+
+    def cell_position(self, cell_number):
+        (layer_position_x, layer_position_y, ) = self.cell_layer_position(cell_number)
+        return self.starting_x_position + layer_position_x, layer_position_y
+
 
 # other ways to do this to
 @dataclass
@@ -31,23 +72,34 @@ class LayerConnection:
     pre_layer: Layer
     post_layer: Layer
     degree: float
-
-def build_layer_based_network(layers, layer_connections, cell_id_with_fake_input):
+    
+def build_layer_based_network(layer_definitions, layer_connections, cell_id_with_fake_input):
+    layers = layers_from_definitons(layer_definitions)
     synapse_end_points, cell_id_and_grid_positions  = edge_list_from_layers(layers, layer_connections)
     return network_from_edge_list(cell_id_and_grid_positions,
                                   synapse_end_points,
                                   cell_id_with_fake_input)
 
+def layers_from_definitons(layer_definitions):
+    layers = []
+    starting_x_position = 0
+    for layer_definition in layer_definitions:
+        (id, size, layout) = layer_definition
+        layer = Layer(id, size, starting_x_position, layout)
+        layers.append(layer)
+        starting_x_position += layer.edge_length + 2
+    return layers
 
+# should not be called grid position in this file
 def edge_list_from_layers(layers, layer_connections):
     cell_id_and_grid_positions = []
     cell_ids_by_layer = defaultdict(list)
-    for layer_number, (layer_id, size,) in enumerate(layers):
-        for i in range(size):
-            cell_id = (layer_id, i,)
-            grid_position = layer_number, i
+    for layer in layers:
+        for cell_number in range(layer.size):
+            cell_id = (layer.id, cell_number,)
+            grid_position = layer.cell_position(cell_number)
             cell_id_and_grid_positions.append((cell_id, grid_position,))
-            cell_ids_by_layer[layer_id].append(cell_id)
+            cell_ids_by_layer[layer.id].append(cell_id)
 
     synapse_end_points = []
     for (pre_layer, post_layer, probability, synapse_strength) in layer_connections:
@@ -80,19 +132,3 @@ def network_from_edge_list(cell_id_and_grid_positions,
     return NetworkDefinition(per_cell_parameters,
                              per_synapse_parameters,
                              cell_id_with_fake_input)
-
-# should not really be here
-def default_network():
-    cell_id_and_grid_positions = [("a", (0, 0)),
-                                   ("b", (1, 0)),
-                                   ("c", (2, 0)), ("d", (2, 1)),
-                                   ("e", (3, 0))]
-    synapse_end_points = [("a", "b", 0.15),
-                          ("b", "c", 0.15),
-                          ("b", "d", 0.15),
-                          ("c", "e", 0.15),
-                          ("d", "e", 0.15),]
-    cell_id_with_fake_input = "a"
-    return network_from_edge_list(cell_id_and_grid_positions,
-                                  synapse_end_points,
-                                  cell_id_with_fake_input)
