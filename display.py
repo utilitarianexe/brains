@@ -14,20 +14,23 @@ def update_screen(screen, drawables):
     width = 20
 
     # super inefficient to rebuild the squares but meh
+    # should also do a spike colour
     for drawable in drawables:
         square = pygame.Surface((20, 20,))
         strength = drawable["strength"] * 255
         green = 0
         red = 0
+        blue = 0
         if strength > 0:
             red = strength
         if strength > 255:
             red = 255
+            blue = 255
         if strength < 0:
             green = -strength
         if strength < -255:
             green = 255
-        color = (red, green, 0)
+        color = (red, green, blue)
         try:
             square.fill(color)
         except:
@@ -42,7 +45,7 @@ def update_screen(screen, drawables):
 
 def run_model(model, steps, sleep):
     pygame.init()
-    size = width, height = 1000, 1000
+    size = width, height = 2000, 1000
     # need borders
     screen = pygame.display.set_mode(size)
     red = (255, 0, 0)

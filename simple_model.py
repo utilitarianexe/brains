@@ -1,5 +1,7 @@
+# these imports are all fucked up
 import network
 from network import Layout
+from input import InputType, fake_input_simple
 
 import collections
 from dataclasses import dataclass
@@ -46,6 +48,7 @@ class CellBody:
 
     def update(self):
         # need to think about step sizes
+        # should negative work the same
         self.input_current = self.input_current * (1 - self._current_decay)**self._step_size
         self._membrane_voltage = self._membrane_voltage * (1 - self._voltage_decay)**self._step_size + self.input_current * self._step_size
         self._fired = False
@@ -58,7 +61,7 @@ class CellBody:
 class Cell:
     def __init__(self, id, x_grid_position, y_grid_position,
                  cell_body, input_synapses, output_synapses,
-                 artificial_source=None):
+                 sensor=None):
         self.id = id
         self.x_grid_position = x_grid_position
         self.y_grid_position = y_grid_position
@@ -68,7 +71,7 @@ class Cell:
         self.output_synapses = output_synapses
         self.cell_body = cell_body
         
-        self._artificial_source = artificial_source
+        self._sensor = sensor
 
     def membrane_voltage(self):
         return self.cell_body.membrane_voltage()
@@ -79,21 +82,20 @@ class Cell:
             synapse.post_cell.cell_body.input_current += synapse.strength
 
     def update(self, step):
-        if self._artificial_source is not None:
-            self.cell_body.input_current += self._artificial_source(step)
+        if self._sensor is not None:
+            self.cell_body.input_current += self._sensor(step,
+                                                         self.x_grid_position, self.y_grid_position)
             
         self.cell_body.update()
         if self.cell_body.fired():
             self._apply_fire()
     
 class SimpleModel:
-    def __init__(self,  cell_parameters, synapse_parameters, network_definition, step_size,
-                 fake_input):
+    def __init__(self,  cell_parameters, synapse_parameters, network_definition, step_size):
         self.name = "Simple Model"
         self._cells = SimpleModel._build_network(cell_parameters, synapse_parameters,
                                                  network_definition,
-                                                 step_size,
-                                                 fake_input)
+                                                 step_size)
 
     def step(self, step):
         # need to do in feed forward order
@@ -123,8 +125,7 @@ class SimpleModel:
     def _build_network(cell_type_parameters,
                        synapse_type_parameters,
                        network_definition,
-                       step_size,
-                       fake_input):
+                       step_size):
         cells_by_id = {}
         cells = []
         for cell_parameters in network_definition.per_cell_parameters:
@@ -133,17 +134,10 @@ class SimpleModel:
                                  cell_type_parameters.current_decay,
                                  cell_type_parameters.starting_membrane_voltage,
                                  step_size)
-            # ugly should not need if, use input parameter stuff
-            if id != network_definition.cell_id_with_fake_input:
-                cell = Cell(id,
-                            cell_parameters.x_grid_position,
-                            cell_parameters.y_grid_position,
-                            cell_body, [], [])
-            else:
-                cell = Cell(id,
-                            cell_parameters.x_grid_position,
-                            cell_parameters.y_grid_position,
-                            cell_body, [], [], fake_input)
+            cell = Cell(id,
+                        cell_parameters.x_grid_position,
+                        cell_parameters.y_grid_position,
+                        cell_body, [], [], cell_parameters.sensor)
             cells_by_id[id] = cell
             cells.append(cell)
 
@@ -156,37 +150,32 @@ class SimpleModel:
 
         return cells
 
-
 def small_default_network():
-    cell_id_and_grid_positions = [("a", (0, 0)),
-                                   ("b", (1, 0)),
-                                   ("c", (2, 0)), ("d", (2, 1)),
-                                   ("e", (3, 0))]
-    synapse_end_points = [("a", "b", 0.15),
-                          ("b", "c", 0.15),
-                          ("b", "d", 0.15),
-                          ("c", "e", 0.15),
-                          ("d", "e", 0.15),]
-    cell_id_with_fake_input = "a"
-    return network_from_edge_list(cell_id_and_grid_positions,
-                                  synapse_end_points,
-                                  cell_id_with_fake_input)
+    per_cell_tuple = [("a", (0, 0), fake_input_simple),
+                      ("b", (1, 0), None),
+                      ("c", (2, 0), None), ("d", (2, 1), None),
+                      ("e", (3, 0), None)]
+    per_synapse_tuple = [("a", "b", 0.15),
+                         ("b", "c", 0.15),
+                         ("b", "d", 0.15),
+                         ("c", "e", 0.15),
+                         ("d", "e", 0.15),]
+    return network.classes_from_tuples(per_cell_tuple,
+                                       per_synapse_tuple)
 
-
+# I feel like the model class should not contain these network definitions
+# But also kinda wrong for the network class because of things like synapse strenght
 def layer_based_default_network():
-    layers = [("a", 9, Layout.SQUARE),
-              ("b", 20, Layout.LINE),
-              ("c", 20, Layout.LINE),
-              ("d", 15, Layout.SQUARE),
-              ("e", 10, Layout.LINE)]
+    layers = [("a", 784, Layout.SQUARE, InputType.HANDWRITING),
+              ("b", 25, Layout.SQUARE, None),
+              ("c", 25, Layout.SQUARE, None),
+              ("d", 26, Layout.LINE, None)]
     
     # Something about connection probability rubs me wrong.
-    # strengths random
     # connections might be more complex
-    layer_connections = [("a", "b", 1, 0.15), ("b", "c", 0.2, 0.05),
-                         ("c", "d", 1, 0.01), ("d", "e", 1, 0.15)]
-    cell_id_with_fake_input = ("a", 0,)
-    return network.build_layer_based_network(layers, layer_connections, cell_id_with_fake_input)
+    layer_connections = [("a", "b", 1, 0.0015), ("b", "c", 0.2, 0.03),
+                         ("c", "d", 1, 0.01)]
+    return network.build_layer_based_network(layers, layer_connections)
 
 def default_model():
     voltage_decay = 0.01
@@ -198,14 +187,11 @@ def default_model():
     
     cell_type_parameters = CellTypeParameters(voltage_decay, input_decay, 0)
     synapse_type_parameters = SynapseTypeParameters(starting_synapse_strength)
+
+    # network_definition = small_default_network()
     network_definition = layer_based_default_network()
 
-
-    def fake_input_simple(step):
-        if step % 50000 == 200 and step > 0:
-            return 0.15
-        return 0
     return SimpleModel(cell_type_parameters, synapse_type_parameters,
                        network_definition,
-                       step_size, fake_input_simple)
+                       step_size)
     

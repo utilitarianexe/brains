@@ -2,6 +2,10 @@ from dataclasses import dataclass
 import random
 from collections import defaultdict
 from enum import Enum
+from typing import Callable
+from input import InputType
+from input import fake_input_simple
+from input import handwritten_letters_func
 
 # kinda a lot of display stuff in this class
 # grid position is very display like
@@ -15,6 +19,7 @@ class PerCellParameters:
     id: str
     x_grid_position: int
     y_grid_position: int
+    sensor: Callable[int, float]
 
 @dataclass
 class PerSynapseParameters:
@@ -26,15 +31,15 @@ class PerSynapseParameters:
 class NetworkDefinition:
     per_cell_parameters: list
     per_synapse_parameters: list
-    cell_id_with_fake_input: str
 
 class Layer:
-    def __init__(self, id, size, starting_x_position, layout=Layout.LINE):
+    def __init__(self, id, size, starting_x_position, layout=Layout.LINE, input_type=None):
         self.id = id
         self.size = size
         self.layout = layout
         self.starting_x_position = starting_x_position
         self.edge_length = self._layer_edge_length()
+        self.input_type = input_type
 
     def _newtons_square_root(n):
         x = n
@@ -73,32 +78,37 @@ class LayerConnection:
     post_layer: Layer
     degree: float
     
-def build_layer_based_network(layer_definitions, layer_connections, cell_id_with_fake_input):
+def build_layer_based_network(layer_definitions, layer_connections):
     layers = layers_from_definitons(layer_definitions)
-    synapse_end_points, cell_id_and_grid_positions  = edge_list_from_layers(layers, layer_connections)
-    return network_from_edge_list(cell_id_and_grid_positions,
-                                  synapse_end_points,
-                                  cell_id_with_fake_input)
+    synapse_end_points, per_cell_information = edge_list_from_layers(layers, layer_connections)
+    return classes_from_tuples(per_cell_information,
+                               synapse_end_points)
 
 def layers_from_definitons(layer_definitions):
     layers = []
     starting_x_position = 0
     for layer_definition in layer_definitions:
-        (id, size, layout) = layer_definition
-        layer = Layer(id, size, starting_x_position, layout)
+        (id, size, layout, input_type) = layer_definition
+        layer = Layer(id, size, starting_x_position, layout, input_type)
         layers.append(layer)
         starting_x_position += layer.edge_length + 2
     return layers
 
 # should not be called grid position in this file
 def edge_list_from_layers(layers, layer_connections):
-    cell_id_and_grid_positions = []
+    per_cell_information = []
     cell_ids_by_layer = defaultdict(list)
+    handwritten_letters_input = handwritten_letters_func()
     for layer in layers:
         for cell_number in range(layer.size):
             cell_id = (layer.id, cell_number,)
             grid_position = layer.cell_position(cell_number)
-            cell_id_and_grid_positions.append((cell_id, grid_position,))
+            if layer.input_type == InputType.SIMPLE:
+                per_cell_information.append((cell_id, grid_position, fake_input_simple))
+            elif layer.input_type == InputType.HANDWRITING:
+                per_cell_information.append((cell_id, grid_position, handwritten_letters_input))
+            else:
+                per_cell_information.append((cell_id, grid_position, None))
             cell_ids_by_layer[layer.id].append(cell_id)
 
     synapse_end_points = []
@@ -108,27 +118,26 @@ def edge_list_from_layers(layers, layer_connections):
                 if probability >= random.random():
                     synapse_end_point = (cell_id_pre_layer, cell_id_post_layer, synapse_strength)
                     synapse_end_points.append(synapse_end_point)
-    return synapse_end_points, cell_id_and_grid_positions 
+    return synapse_end_points, per_cell_information
                          
+
 # needs test and to validate input
 # also not sure if our actual graph data structure is the best way to compute
-def network_from_edge_list(cell_id_and_grid_positions,
-                           synapse_end_points,
-                           cell_id_with_fake_input):
+# this is just a dumb function
+def classes_from_tuples(per_cell_tuple,
+                        per_synapse_tuple):
     '''
-    Grid position is purely for display
+    This function is just to get us to classes from tuples
     '''
 
-    # dont like how we are doing plurals
     per_cell_parameters = []
-    for (cell_id, (x_grid_pos, y_grid_pos)) in cell_id_and_grid_positions:
-        cell_parameters = PerCellParameters(cell_id, x_grid_pos, y_grid_pos)
+    for (cell_id, (x_grid_pos, y_grid_pos,), sensor, ) in per_cell_tuple:
+        cell_parameters = PerCellParameters(cell_id, x_grid_pos, y_grid_pos, sensor)
         per_cell_parameters.append(cell_parameters)
 
     per_synapse_parameters = []
-    for (pre_cell_id, post_cell_id, strength) in synapse_end_points:
+    for (pre_cell_id, post_cell_id, strength) in  per_synapse_tuple:
         per_synapse_parameters.append(PerSynapseParameters(pre_cell_id, post_cell_id, strength))
         
     return NetworkDefinition(per_cell_parameters,
-                             per_synapse_parameters,
-                             cell_id_with_fake_input)
+                             per_synapse_parameters)

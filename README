@@ -2,10 +2,12 @@ Neuron simulation software.
 
 Run
 
-python display.py to watch
+python display.py to watch network with pygame
 
 Requires pygame
 
-python play.py will display grapsh instead using pyplot
+python play.py will display graphs for each cell using pyplot insead of pygame
+
+Current input data is a small subset of https://www.kaggle.com/sachinpatel21/az-handwritten-alphabets-in-csv-format
 
 Much more to come.
