@@ -1,16 +1,8 @@
 import matplotlib.pyplot as plt
 import collections
-import simple_model
+import default_runs
 import spirit_model
 import example_model
-
-# to do
-# adjust parameters without restarting
-# multiple neurons
-# get more backround on simulation generally(really need to retake calc)
-# model class should be able to define what to output with names for several graphs
-# i don't like how stateful this all is
-# labeled arguments for constructors?
 
 print("Its alive")
 
@@ -36,7 +28,7 @@ def run_example():
 
 # omg spell check
 def run_simple():
-    simple = simple_model.default_model()
+    simple = default_runs.default_simple_model()
     graph_model(simple, 1000)
 
 

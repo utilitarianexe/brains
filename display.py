@@ -2,9 +2,7 @@
 import sys
 import time
 import pygame
-import example_model
-import simple_model
-
+import default_runs
 
 def update_screen(screen, drawables):
     x_spacing = 5
@@ -37,7 +35,7 @@ def update_screen(screen, drawables):
             print(color)
             sys.exit()
 
-        x_position = drawable["x"] * ( width + x_spacing) + border
+        x_position = drawable["x"] * (width + x_spacing) + border
         y_position = drawable["y"] * (height + y_spacing) + border
 
         screen.blit(square, (x_position, y_position,))
@@ -71,17 +69,16 @@ def run_model(model, steps, sleep):
         time.sleep(sleep)
         
 def run_example_model():
-    # probably broken
-    model = example_model.default_model()
+    model = default_runs.default_example_model()
     run_model(model, 100, 0.1)
 
 def run_simple_model():
-    model = simple_model.default_model()
+    model = default_runs.default_simple_model()
     run_model(model, 1000, 0.01)
 
 
 def main():
-    #run_example_model()
+    # run_example_model()
     run_simple_model()
 
 if __name__ == '__main__':

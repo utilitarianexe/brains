@@ -3,9 +3,6 @@ import random
 from collections import defaultdict
 from enum import Enum
 from typing import Callable
-from input import InputType
-from input import fake_input_simple
-from input import handwritten_letters_func
 
 # kinda a lot of display stuff in this class
 # grid position is very display like
@@ -19,7 +16,6 @@ class PerCellParameters:
     id: str
     x_grid_position: int
     y_grid_position: int
-    sensor: Callable[int, float]
 
 @dataclass
 class PerSynapseParameters:
@@ -33,13 +29,12 @@ class NetworkDefinition:
     per_synapse_parameters: list
 
 class Layer:
-    def __init__(self, id, size, starting_x_position, layout=Layout.LINE, input_type=None):
+    def __init__(self, id, size, starting_x_position, layout=Layout.LINE):
         self.id = id
         self.size = size
         self.layout = layout
         self.starting_x_position = starting_x_position
         self.edge_length = self._layer_edge_length()
-        self.input_type = input_type
 
     def _newtons_square_root(n):
         x = n
@@ -88,8 +83,8 @@ def layers_from_definitons(layer_definitions):
     layers = []
     starting_x_position = 0
     for layer_definition in layer_definitions:
-        (id, size, layout, input_type) = layer_definition
-        layer = Layer(id, size, starting_x_position, layout, input_type)
+        (id, size, layout) = layer_definition
+        layer = Layer(id, size, starting_x_position, layout)
         layers.append(layer)
         starting_x_position += layer.edge_length + 2
     return layers
@@ -98,17 +93,11 @@ def layers_from_definitons(layer_definitions):
 def edge_list_from_layers(layers, layer_connections):
     per_cell_information = []
     cell_ids_by_layer = defaultdict(list)
-    handwritten_letters_input = handwritten_letters_func()
     for layer in layers:
         for cell_number in range(layer.size):
             cell_id = (layer.id, cell_number,)
             grid_position = layer.cell_position(cell_number)
-            if layer.input_type == InputType.SIMPLE:
-                per_cell_information.append((cell_id, grid_position, fake_input_simple))
-            elif layer.input_type == InputType.HANDWRITING:
-                per_cell_information.append((cell_id, grid_position, handwritten_letters_input))
-            else:
-                per_cell_information.append((cell_id, grid_position, None))
+            per_cell_information.append((cell_id, grid_position,))
             cell_ids_by_layer[layer.id].append(cell_id)
 
     synapse_end_points = []
@@ -131,8 +120,8 @@ def classes_from_tuples(per_cell_tuple,
     '''
 
     per_cell_parameters = []
-    for (cell_id, (x_grid_pos, y_grid_pos,), sensor, ) in per_cell_tuple:
-        cell_parameters = PerCellParameters(cell_id, x_grid_pos, y_grid_pos, sensor)
+    for (cell_id, (x_grid_pos, y_grid_pos,),) in per_cell_tuple:
+        cell_parameters = PerCellParameters(cell_id, x_grid_pos, y_grid_pos)
         per_cell_parameters.append(cell_parameters)
 
     per_synapse_parameters = []
@@ -141,3 +130,31 @@ def classes_from_tuples(per_cell_tuple,
         
     return NetworkDefinition(per_cell_parameters,
                              per_synapse_parameters)
+
+
+# eventually these should take a strength scaler parameter from the model
+def small_default_network():
+    per_cell_tuple = [("a", (0, 0),),
+                      ("b", (1, 0),),
+                      ("c", (2, 0),), ("d", (2, 1)),
+                      ("e", (3, 0),)]
+    per_synapse_tuple = [("a", "b", 0.15),
+                         ("b", "c", 0.15),
+                         ("b", "d", 0.15),
+                         ("c", "e", 0.15),
+                         ("d", "e", 0.15),]
+    return classes_from_tuples(per_cell_tuple,
+                               per_synapse_tuple)
+
+# eventually these should take a strenght modifier parameter from the model
+def layer_based_default_network():
+    layers = [("a", 784, Layout.SQUARE,),
+              ("b", 25, Layout.SQUARE,),
+              ("c", 25, Layout.SQUARE,),
+              ("d", 26, Layout.LINE,)]
+    
+    # Something about connection probability rubs me wrong.
+    # connections might be more complex
+    layer_connections = [("a", "b", 1, 0.0015), ("b", "c", 0.2, 0.03),
+                         ("c", "d", 1, 0.01)]
+    return build_layer_based_network(layers, layer_connections)

@@ -15,6 +15,3 @@ class ExampleModel:
     def outputs(self):
         #spelling?
         return {"increment": self._x, "constant": 0}
-
-def default_model():
-    return ExampleModel()
