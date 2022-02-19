@@ -8,8 +8,8 @@ from typing import Callable
 # grid position is very display like
 
 class Layout(Enum):
-     SQUARE = 1
-     LINE = 2
+    SQUARE = 1
+    LINE = 2
 
 @dataclass
 class PerCellParameters:
@@ -148,13 +148,14 @@ def small_default_network():
 
 # eventually these should take a strenght modifier parameter from the model
 def layer_based_default_network():
-    layers = [("a", 784, Layout.SQUARE,),
+    image_size = 28*28
+    layers = [("a", image_size, Layout.SQUARE,),
               ("b", 25, Layout.SQUARE,),
               ("c", 25, Layout.SQUARE,),
-              ("d", 26, Layout.LINE,)]
+              ("d", 2, Layout.LINE,)]
     
     # Something about connection probability rubs me wrong.
     # connections might be more complex
-    layer_connections = [("a", "b", 1, 0.0015), ("b", "c", 0.2, 0.03),
-                         ("c", "d", 1, 0.01)]
+    layer_connections = [("a", "b", 1, 0.003), ("b", "c", 1, 0.012),
+                         ("c", "d", 1, 0.007)]
     return build_layer_based_network(layers, layer_connections)

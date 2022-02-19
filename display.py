@@ -43,7 +43,7 @@ def update_screen(screen, drawables):
 
 def run_model(model, steps, sleep):
     pygame.init()
-    size = width, height = 2000, 1000
+    size = width, height = 1800, 1000
     # need borders
     screen = pygame.display.set_mode(size)
     red = (255, 0, 0)

@@ -10,9 +10,9 @@ class TestBuildingNetwork(unittest.TestCase):
         # never testing y
         # never testing out of bounds x
         # never testing other letters
-        image_lines = ['0,0,51,51,0,\n',
-                       '0,0,51,51,51\n',
-                       '0,0,51,0,51']
+        image_lines = ['14,0,51,51,0,\n',
+                       '23,0,51,51,51\n',
+                       '14,0,51,0,51']
         environment = HandwritenEnvironment(image_lines)
         self.assertEqual(environment.potential_from_location(250, 0, 0), 0)
         self.assertGreater(environment.potential_from_location(250, 1, 0), 0)
