@@ -10,7 +10,8 @@ class ExampleModel:
 
     def video_output(self):
         # maybe make a class
-        return [{"name":"example name", "x": 10, "y":10, "strength": self._x}]
+        return ([{"name":"example name", "x": 10, "y":10, "strength": self._x}],
+                ["example text"],)
 
     def outputs(self):
         #spelling?

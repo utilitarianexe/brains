@@ -164,7 +164,8 @@ class SimpleModel:
                         "x": cell.x_grid_position, "y": cell.y_grid_position,
                         "strength": cell.membrane_voltage()}
             drawables.append(drawable)
-        return drawables
+        texts = ["dopamine: " + str(round(self._dopamine, 4))]
+        return (drawables, texts)
 
 
     def outputs(self):
