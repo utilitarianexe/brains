@@ -85,14 +85,19 @@ def run_example_model():
     model = default_runs.default_example_model()
     run_model(model, 100, 0.1)
 
-def run_simple_model():
-    model = default_runs.default_simple_model()
-    run_model(model, 1000, 0.01)
+def run_handwriting():
+    model = default_runs.simple_model_handwriting()
+    run_model(model, 100000, 0.01)
+
+def run_stdp():
+    model = default_runs.simple_model_stdp()
+    run_model(model, 100000, 0.01)
 
 
 def main():
     # run_example_model()
-    run_simple_model()
+    # run_stdp()
+    run_handwriting()
 
 if __name__ == '__main__':
     main()

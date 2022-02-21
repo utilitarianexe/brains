@@ -18,6 +18,27 @@ class SimpleEnvironment:
         if step % 50000 == 200 and step > 0 and x_grid_position == 0 and y_grid_position == 0:
             return 0.15
         return 0
+    
+    def reward(self, step, cell_id):
+        pass
+
+class ElfEnvironment:
+    def __init__(self):
+        pass
+
+    # need to put these magics in default run
+    def potential_from_location(self, step, x_grid_position, y_grid_position):
+        frequency = 500
+        if step % frequency == 10 and step > 0 and (x_grid_position == 1 and y_grid_position == 0) :
+            return 0.1
+        
+        if step % frequency == 0 and step > 0 and (x_grid_position == 0 and y_grid_position == 0) :
+            return 0.1
+        return 0
+
+    def reward(self, step, cell_id):
+        pass
+
 
 class HandwritenEnvironment:
     def __init__(self, image_lines=None):

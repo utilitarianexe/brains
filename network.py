@@ -146,6 +146,16 @@ def small_default_network():
     return classes_from_tuples(per_cell_tuple,
                                per_synapse_tuple)
 
+def elf_network():
+    per_cell_tuple = [("a", (0, 0),),
+                      ("b", (1, 0),),
+                      ("c", (2, 0),)]
+    per_synapse_tuple = [("a", "c", 0.05),
+                         ("b", "c", 0.05),]
+    return classes_from_tuples(per_cell_tuple,
+                               per_synapse_tuple)
+
+
 # eventually these should take a strenght modifier parameter from the model
 def layer_based_default_network():
     image_size = 28*28

@@ -1,0 +1,37 @@
+pull out parameters
+record syanpse strengths and reload network
+display synapse strengths
+dispaly dopamine
+pause button
+click on cells to see cell info
+should be a model level synapse connection strength that is then scaled per synapse
+
+run away connections(negative and positive)
+what happens if we double spike during reward
+
+refactor
+  model files should be moved to a different directory(maybe renamed)
+  we should also make a data directory
+  get rid of magic numbers
+
+need a overall model parameters class for things like dopamine
+apply the complex environment to a simple model
+add reward to the simple environment
+I feel like the model is unnecarily complex
+adjust parameters without restarting
+get more backround on simulation generally(really need to retake calc)
+detect screen size
+cli interface
+elf grid specs
+connecitons strengths should not just be random at the start but maybe also randomly change a bit?
+record runs for later use or display
+attach to unreal engine or something
+better tests
+UI to build network
+better plugin system for other types of neurons
+real documentation
+pip
+auto run tests and such
+run neurons in compliled language
+follow python style guide
+go through to dos in code

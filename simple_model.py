@@ -37,8 +37,15 @@ class Synapse:
     def train(self, dopamine):
         # oh god magic
         self.strength += self.s_tag * dopamine * 0.1
-
+        if self.strength >= 0.4:
+            self.strength = 0.4
+        if self.strength < 0:
+            self.strength = 0
+            
     def stdp(self):
+        # fix step size
+        self.s_tag = decay(self.s_tag, 0.003, 1)
+        
         if self.pre_cell.fired():
             self.s_tag -= self.stdp_scalar * self.post_cell.cell_membrane.calcium
         if self.post_cell.fired():
@@ -76,18 +83,22 @@ class CellMembrane:
 
            Calcium spikes after firing as a sort of history of recent firing.
         '''
-        self._voltage = decay(self._voltage, self._current_decay, self._step_size)
-        self._voltage += self.input_current * self._step_size
-        self.input_current = decay(self.input_current, self._current_decay, self._step_size)
-        self.calcium = decay(self.calcium, self._calcium_decay, self._step_size)
         self._fired = False
-
         # magic numbers
         if self._voltage > 1:
             # do we need to reset to -1
             self._voltage = -1
             self._fired = True
             self.calcium += 1
+            # make optional
+            self.input_current = 0
+
+        self._voltage = decay(self._voltage, self._current_decay, self._step_size)
+        self._voltage += self.input_current * self._step_size
+        self.input_current = decay(self.input_current, self._current_decay, self._step_size)
+        self.calcium = decay(self.calcium, self._calcium_decay, self._step_size)
+
+
 
 class Cell:
     def __init__(self, id, x_grid_position, y_grid_position,
@@ -156,6 +167,11 @@ class SimpleModel:
         for synapse in self._synapses:
             synapse.update(self._dopamine)
 
+    def synapse_output(self):
+
+        out_line += "\n"
+        return out_line
+
     def video_output(self):
         drawables = []
         for cell in self._cells:
@@ -172,6 +188,13 @@ class SimpleModel:
         output = {}
         for cell in self._cells:
             output[cell.id] = cell.membrane_voltage()
+            if cell.id == 'c':
+                output['input'] = cell.cell_membrane.input_current
+        for synapse in self._synapses:
+            if synapse.pre_cell.id == "a" and synapse.post_cell.id == "c":
+                output["a c synapse"] = synapse.strength
+            if synapse.pre_cell.id == "b" and synapse.post_cell.id == "c":
+                output["b c synapse"] = synapse.strength
         return output
 
     # will need ways to verify the network

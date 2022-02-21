@@ -4,8 +4,6 @@ import default_runs
 import spirit_model
 import example_model
 
-print("Its alive")
-
 def graph_model(model, steps):
     lines = collections.defaultdict(list)
     for i in range(steps):
@@ -28,9 +26,8 @@ def run_example():
 
 # omg spell check
 def run_simple():
-    simple = default_runs.default_simple_model()
-    graph_model(simple, 1000)
-
+    simple = default_runs.simple_model_stdp()
+    graph_model(simple, 30000)
 
 def run_spirit():
     spirit = spirit_model.default_model()
