@@ -1,3 +1,4 @@
+import utils
 from dataclasses import dataclass
 import random
 from collections import defaultdict
@@ -36,19 +37,11 @@ class Layer:
         self.starting_x_position = starting_x_position
         self.edge_length = self._layer_edge_length()
 
-    def _newtons_square_root(n):
-        x = n
-        y = (x + 1) // 2
-        while y < x:
-            x = y
-            y = (x + n // x) // 2
-        return x
-
     def _layer_edge_length(self):
         if self.layout == Layout.LINE:
             return 1
         
-        sqrt = Layer._newtons_square_root(self.size)
+        sqrt = utils.newtons_square_root(self.size)
         if sqrt**2 == self.size:
             return sqrt
         return sqrt + 1
@@ -146,7 +139,7 @@ def small_default_network():
     return classes_from_tuples(per_cell_tuple,
                                per_synapse_tuple)
 
-def elf_network():
+def stdp_test_network():
     per_cell_tuple = [("a", (0, 0),),
                       ("b", (1, 0),),
                       ("c", (2, 0),)]

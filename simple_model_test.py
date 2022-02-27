@@ -1,26 +1,21 @@
 import simple_model
 import unittest
 
-
-# does not work anymore
 class TestStringMethods(unittest.TestCase):
 
-    def test_synapse_decay(self):
+    def test_voltage_decay(self):
         '''
         Ensure potential falls with time.
         '''
-        voltage = 1
-        decay = 0.1
+        cell_type_parameters = simple_model.CellTypeParameters(voltage_decay = 0.1,
+                                                               current_decay = 0,
+                                                               calcium_decay = 0,
+                                                               starting_membrane_voltage = 0.5)
         step_size = 1
-        strength = 1
-        artificial_source = lambda x: 0
-        synapse = simple_model.SimpleSynapse(decay, step_size, voltage, strength,
-                                             None, None, artificial_source)
-        for i in range(1):
-            synapse.update(i)
-        print(synapse.voltage(), voltage)
-        self.assertTrue(synapse.voltage() < voltage)
-
+        membrane = simple_model.CellMembrane(cell_type_parameters, step_size)        
+        for _ in range(2):
+            membrane.update()
+        self.assertTrue(membrane.voltage() < 0.5)
 
 if __name__ == '__main__':
     unittest.main()

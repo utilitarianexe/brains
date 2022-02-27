@@ -1,17 +1,13 @@
+import utils
 import string
 import random
 from collections import defaultdict
-from enum import Enum
 
-#also named bad
-# maybe not used
-class EnvironmentType(Enum):
-    SIMPLE = 1
-    HANDWRITING = 2
-
-# no variables needed but still use self for consistancy
 class SimpleEnvironment:
     def __init__(self):
+        '''
+        no variables needed but still use self for consistancy
+        '''
         pass
 
     def potential_from_location(self, step, x_grid_position, y_grid_position):
@@ -22,7 +18,7 @@ class SimpleEnvironment:
     def reward(self, step, cell_id):
         pass
 
-class ElfEnvironment:
+class STDPTestEnvironment:
     def __init__(self):
         pass
 
@@ -41,10 +37,10 @@ class ElfEnvironment:
 
 
 class HandwritenEnvironment:
-    def __init__(self, image_lines=None):
-        self._delay = 50
-        self._frequency = 150
-        self._image_width = 28
+    def __init__(self, delay=None, frequency=None, image_lines=None, shuffle=False):
+        self._delay = delay
+        self._frequency = frequency
+        self._image_width = None
         
         if image_lines is None:
             image_lines = self._get_image_lines_from_file()
@@ -52,13 +48,14 @@ class HandwritenEnvironment:
         x_images = images_by_letter['x']
         o_images = images_by_letter['o']
         self._images = []
-        for image in x_images:
-            self._images.append(('x', image,))
         for image in o_images:
             self._images.append(('o', image,))
+        for image in x_images:
+            self._images.append(('x', image,))
 
         # not sure this is best place to do this
-        random.shuffle(self._images)
+        if shuffle:
+            random.shuffle(self._images)
         self._letter_id_by_letter = {'o': 0, 'x': 1}
 
     # check this
@@ -81,7 +78,8 @@ class HandwritenEnvironment:
         is_correct_time = real_step % self._frequency == 0 and step > real_step
         is_input_cell = x_grid_position < self._image_width
         if  is_correct_time and is_input_cell:
-            (_, image) = self._images[(real_step//self._frequency) - 1]
+            image_index = (real_step//self._frequency) - 1
+            (_, image) = self._images[image_index]
             pixel_position = y_grid_position * self._image_width + x_grid_position
             pixel = image[pixel_position]
             if pixel > 50:
@@ -104,6 +102,12 @@ class HandwritenEnvironment:
                 cells[-1] = cells[-1][:-1]
             cells = [int(cell) for cell in cells if cell ]
             image = cells[1:]
+            if self._image_width is None:
+                self._image_width = utils.newtons_square_root(len(image))
+            if self._image_width**2 != len(image):
+                # need to look up how exceptions work
+                raise Exception("bad image size", len(image))
+                
             letter = alphabet[cells[0]]
             images_by_letter[letter].append(image)
         return images_by_letter
