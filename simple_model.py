@@ -1,3 +1,5 @@
+from utils import decay
+
 import collections
 from dataclasses import dataclass
 
@@ -22,11 +24,6 @@ class SynapseTypeParameters:
     min_strength: float
     s_tag_decay_rate: float
     
-
-def decay(initial_value, decay_rate, step_size):
-    return initial_value * (1 - decay_rate)**step_size
-
-
 # voltage and current should be named potential everywhere
 # should probably derive from a "potential generating" class or something
 class Synapse:
@@ -64,9 +61,9 @@ class Synapse:
         self.s_tag = decay(self.s_tag, self.s_tag_decay_rate, self.step_size)
         
         if self.pre_cell.fired():
-            self.s_tag -= self.stdp_scalar * self.post_cell.cell_membrane.calcium
+            self.s_tag -= self.stdp_scalar * self.post_cell.calcium()
         if self.post_cell.fired():
-            self.s_tag += self.stdp_scalar * self.pre_cell.cell_membrane.calcium
+            self.s_tag += self.stdp_scalar * self.pre_cell.calcium()
 
 class CellMembrane:
     def __init__(self, cell_type_parameters, step_size):
@@ -75,15 +72,17 @@ class CellMembrane:
         self._calcium_decay = cell_type_parameters.calcium_decay
         self._voltage = cell_type_parameters.starting_membrane_voltage
         
-        # Don't really like that this is public
-        self.input_current = 0
-        self.calcium = 0
+        self._input_current = 0
+        self._calcium = 0
         self._step_size = step_size
         self._fired = False # why not just check voltage
         self._max_voltage = 1
         self._voltage_reset = -1
         self._calcium_increment = 1
         self._input_current_reset = 0
+
+    def calcium(self):
+        return self._calcium
         
     def voltage(self):
         return self._voltage
@@ -91,7 +90,12 @@ class CellMembrane:
     def fired(self):
         return self._fired
 
-    # need to think about step sizes
+    def input_current(self):
+        return self._input_current
+
+    def receive_input(self, strength):
+        self._input_current += strength
+
     def update(self):
         '''
            Voltage and input tend to 0 from both the negative and positive side.
@@ -100,20 +104,20 @@ class CellMembrane:
            If voltage gets above one the cell fires and is set to -1
            Input never resets. It just gets added to or decays.
 
-           Calcium spikes after firing as a sort of history of recent firing.
+           Calcium increases after firing as a sort of history of recent firing.
         '''
         self._fired = False
         if self._voltage > self._max_voltage:
             self._voltage = self._voltage_reset
             self._fired = True
-            self.calcium += self._calcium_increment
+            self._calcium += self._calcium_increment
             # make optional
-            self.input_current =self._input_current_reset
+            self._input_current =self._input_current_reset
 
         self._voltage = decay(self._voltage, self._voltage_decay, self._step_size)
-        self._voltage += self.input_current * self._step_size
-        self.input_current = decay(self.input_current, self._current_decay, self._step_size)
-        self.calcium = decay(self.calcium, self._calcium_decay, self._step_size)
+        self._voltage += self._input_current * self._step_size
+        self._input_current = decay(self._input_current, self._current_decay, self._step_size)
+        self._calcium = decay(self._calcium, self._calcium_decay, self._step_size)
 
 class Cell:
     def __init__(self, id, x_grid_position, y_grid_position,
@@ -127,26 +131,37 @@ class Cell:
         # I don't like the coupling causing these to be public
         self.input_synapses = input_synapses # not acutally used yet
         self.output_synapses = output_synapses
-        self.cell_membrane = cell_membrane
-        
+        self._cell_membrane = cell_membrane
+
+    # these should be named as getters and maybe use the auto thing
+    # or maybe one cell class
+    # or maybe make a cell membrane getter function
     def membrane_voltage(self):
-        return self.cell_membrane.voltage()
+        return self._cell_membrane.voltage()
+
+    def calcium(self):
+        return self._cell_membrane.calcium()
+    
+    def input_current(self):
+        return self._cell_membrane.input_current()
 
     def fired(self):
-        return self.cell_membrane.fired()
+        return self._cell_membrane.fired()
+
+    def receive_fire(self, strength):
+        self._cell_membrane.receive_input(strength)
 
     def apply_fire(self):
-        if self.cell_membrane.fired():
+        if self._cell_membrane.fired():
             for synapse in self.output_synapses:
-                # ugly
-                synapse.post_cell.cell_membrane.input_current += synapse.strength
+                synapse.post_cell.receive_fire(synapse.strength)
 
     def update(self, step):
         outside_current = self._environment.potential_from_location(step,
                                                                     self.x_grid_position,
                                                                     self.y_grid_position)
-        self.cell_membrane.input_current += outside_current
-        self.cell_membrane.update()
+        self._cell_membrane.receive_input(outside_current)
+        self._cell_membrane.update()
     
 class SimpleModel:
     def __init__(self,  cell_parameters, synapse_parameters,
@@ -203,7 +218,7 @@ class SimpleModel:
         for cell in self._cells:
             output[cell.id] = cell.membrane_voltage()
             if cell.id == 'c':
-                output['c input'] = cell.cell_membrane.input_current
+                output['c input'] = cell.input_current()
 
         # magic output this should be defined in the default file?
         for synapse in self._synapses:

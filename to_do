@@ -16,9 +16,8 @@ management
   .md file for README
 
 new funcitonality
-  create a one variable cell type example
-  mimic our stdp experiments in a unit test
   record syanpse strengths and reload network
+  mimic our stdp experiments in a unit test
   display synapse strengths
   pause button
   click on cells to see cell info
@@ -28,11 +27,17 @@ new funcitonality
   adjust parameters without restarting
   detect screen size
   cli interface
+     have parameters for choosing model,network,environment,display
+     
   elf grid specs
   record runs for later use or display
   attach to unreal engine or something
   UI to build network
   run neurons in compliled language
+  create a one variable cell type example
+    no input current variable
+    cell just needs enough input spikes in short enough window to spike
+    only one timestep delay betwenn precell spike and post cell spike
 
 think about
   run away connections(negative and positive)
@@ -40,3 +45,4 @@ think about
   feel like the model is unnecarily complex
   get more backround on simulation generally(really need to retake calc)
   connecitons strengths should not just be random at the start but maybe also randomly change a bit?
+  step sizes
