@@ -185,10 +185,10 @@ class SimpleModel:
         self._dopamine = model_parameters.starting_dopamine
         self._dopamine_decay = model_parameters.dopamine_decay
         self._step_size = model_parameters.step_size
-        self._cells, self._synapses = self._build_network(model_parameters.cell_type_parameters,
-                                                          model_parameters.synapse_type_parameters,
-                                                          network_definition,
-                                                          self._step_size)
+        self._cells, self.synapses = self._build_network(model_parameters.cell_type_parameters,
+                                                        model_parameters.synapse_type_parameters,
+                                                        network_definition,
+                                                        self._step_size)
 
     def update_dopamine(self, step):
         self._dopamine = decay(self._dopamine, self._dopamine_decay, self._step_size)
@@ -207,7 +207,7 @@ class SimpleModel:
 
         self.update_dopamine(step)
 
-        for synapse in self._synapses:
+        for synapse in self.synapses:
             synapse.update(self._dopamine)
 
     def video_output(self):
@@ -229,7 +229,7 @@ class SimpleModel:
                 output['c input'] = cell.input_current()
 
         # magic output this should be defined in the default file?
-        for synapse in self._synapses:
+        for synapse in self.synapses:
             if synapse.pre_cell.label == "a" and synapse.post_cell.label == "c":
                 output["a c synapse"] = synapse.strength
             if synapse.pre_cell.label == "b" and synapse.post_cell.label == "c":

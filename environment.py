@@ -4,13 +4,13 @@ import random
 from collections import defaultdict
 
 class TestEnvironment:
-    def __init__(self):
-        pass
+    def __init__(self, input_points):
+        self.input_dict = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
+        for (step, x, y, strength) in input_points:
+            self.input_dict[step][x][y] = strength
 
     def potential_from_location(self, step, x_grid_position, y_grid_position):
-        if step == 1 and x_grid_position == 0 and y_grid_position == 0:
-            return 0.15
-        return 0
+        return self.input_dict[step][x_grid_position][y_grid_position]
     
     def reward(self, step, layer_id, cell_number):
         return False

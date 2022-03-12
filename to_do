@@ -1,4 +1,5 @@
 refactoring
+  clean up environment to allow for better tests without putting the test env in its own class
   pull out parameters especially environment and display
   remove to do type comments
   document
@@ -18,8 +19,8 @@ management
   .md file for README
 
 new funcitonality
+  export and import models/networks
   red should be positive green negative
-  record syanpse strengths and reload network
   mimic our stdp experiments in a unit test
   display synapse strengths
   pause button
