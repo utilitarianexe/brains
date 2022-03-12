@@ -1,13 +1,15 @@
 refactoring
-  pull out parameters
+  pull out parameters especially environment and display
   remove to do type comments
   document
-  rename elf environment
   model files should be moved to a different directory(maybe renamed)
   we should also make a data directory
   get rid of magic numbers(most at least moved to class definitions)
-  better tests
+  better tests(environment especailly, but also stdp(synapse and model level))
   follow python style guide
+  reorder parameters
+  defaults on dataclasses for obvious variables, maybe freeze
+  should environment be part of model or model part of environment
 
 management
   pip
@@ -16,6 +18,7 @@ management
   .md file for README
 
 new funcitonality
+  red should be positive green negative
   record syanpse strengths and reload network
   mimic our stdp experiments in a unit test
   display synapse strengths
@@ -46,3 +49,4 @@ think about
   get more backround on simulation generally(really need to retake calc)
   connecitons strengths should not just be random at the start but maybe also randomly change a bit?
   step sizes
+  resettting input connections

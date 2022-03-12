@@ -3,11 +3,20 @@ import string
 import random
 from collections import defaultdict
 
+class TestEnvironment:
+    def __init__(self):
+        pass
+
+    def potential_from_location(self, step, x_grid_position, y_grid_position):
+        if step == 1 and x_grid_position == 0 and y_grid_position == 0:
+            return 0.15
+        return 0
+    
+    def reward(self, step, layer_id, cell_number):
+        return False
+
 class SimpleEnvironment:
     def __init__(self):
-        '''
-        no variables needed but still use self for consistancy
-        '''
         pass
 
     def potential_from_location(self, step, x_grid_position, y_grid_position):
@@ -15,8 +24,8 @@ class SimpleEnvironment:
             return 0.15
         return 0
     
-    def reward(self, step, cell_id):
-        pass
+    def reward(self, step, layer_id, cell_number):
+        return False
 
 class STDPTestEnvironment:
     def __init__(self):
@@ -32,8 +41,8 @@ class STDPTestEnvironment:
             return 0.1
         return 0
 
-    def reward(self, step, cell_id):
-        pass
+    def reward(self, step, layer_id, cell_number):
+        return False
 
 
 class HandwritenEnvironment:
@@ -59,10 +68,9 @@ class HandwritenEnvironment:
         self._letter_id_by_letter = {'o': 0, 'x': 1}
 
     # check this
-    def reward(self, step, cell_id):
-        (layer, cell_number) = cell_id
+    def reward(self, step, layer, cell_number):
         # oh god bad magic
-        if layer == 'd':
+        if layer != 'd':
             return False
         real_step = step - self._delay
         (letter, _) = self._images[(real_step//self._frequency) - 1]

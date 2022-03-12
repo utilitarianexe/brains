@@ -21,7 +21,7 @@ def graph_model(model, steps):
 
 
 def run_example():
-    model = example_model.default_model()
+    model = default_runs.default_example_model()
     graph_model(model, 100)
 
 # omg spell check
@@ -33,11 +33,10 @@ def run_spirit():
     spirit = spirit_model.default_model()
     graph_model(spirit, 100000)
 
-# if we were cool we could plot and pygame
 def main():
     # run_example()
-    run_simple()
     # run_spirit()
+    run_simple()
 
 if __name__ == '__main__':
     main()

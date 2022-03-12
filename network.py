@@ -3,31 +3,60 @@ from dataclasses import dataclass
 import random
 from collections import defaultdict
 from enum import Enum
-from typing import Callable
-
-# kinda a lot of display stuff in this class
-# grid position is very display like
+import uuid
 
 class Layout(Enum):
     SQUARE = 1
     LINE = 2
 
 @dataclass
-class PerCellParameters:
-    id: str
+class CellDefinition:
+    '''
+    uuid : unique identifier
+    label: what is displayed on pyplots
+    Grid position: refer to grid of all cells in the model and
+        corresponds to locations in the environment. This is different from
+        both display position and position within the layer.
+    cell_number: which cell in the layer it is.
+    layer_id: which layer the cell is in
+    '''
+    uuid: str
+    label: str
     x_grid_position: int
     y_grid_position: int
+    cell_number: int # bad name
+    layer_id: str
+
+    def export_network_information(self):
+        return (self.label, self.x_grid_position, self.y_grid_position)
 
 @dataclass
-class PerSynapseParameters:
+class SynapseDefinition:
     pre_cell_id: str
     post_cell_id: str
     starting_strength: float
 
 @dataclass
 class NetworkDefinition:
-    per_cell_parameters: list
-    per_synapse_parameters: list
+    cell_definitions: list
+    synapse_definitions: list
+
+    def export_as_tuples(self):
+        cells_by_uuid = {}
+        cell_infos = []
+        for cell in self.cell_definitions:
+            cells_by_uuid[cell.uuid] = cell
+            cell_infos.append(cell.export_network_information())
+        synapse_infos = []
+        for synapse in self.synapse_definitions:
+            pre_cell = cells_by_uuid[synapse.pre_cell_id]
+            post_cell = cells_by_uuid[synapse.post_cell_id]
+            synapse_info = (pre_cell.label,
+                            post_cell.label,
+                            synapse.starting_strength)
+            synapse_infos.append(synapse_info)
+        return cell_infos, synapse_infos
+
 
 class Layer:
     def __init__(self, id, size, starting_x_position, layout=Layout.LINE):
@@ -54,12 +83,11 @@ class Layer:
         y = cell_number // self.edge_length
         return (x, y,)
 
-    def cell_position(self, cell_number):
+    def cell_grid_position(self, cell_number):
         (layer_position_x, layer_position_y, ) = self.cell_layer_position(cell_number)
         return self.starting_x_position + layer_position_x, layer_position_y
 
 
-# other ways to do this to
 @dataclass
 class LayerConnection:
     pre_layer: Layer
@@ -68,9 +96,7 @@ class LayerConnection:
     
 def build_layer_based_network(layer_definitions, layer_connections):
     layers = layers_from_definitons(layer_definitions)
-    synapse_end_points, per_cell_information = edge_list_from_layers(layers, layer_connections)
-    return classes_from_tuples(per_cell_information,
-                               synapse_end_points)
+    return network_from_layers(layers, layer_connections)
 
 def layers_from_definitons(layer_definitions):
     layers = []
@@ -82,71 +108,83 @@ def layers_from_definitons(layer_definitions):
         starting_x_position += layer.edge_length + 2
     return layers
 
-# should not be called grid position in this file
-def edge_list_from_layers(layers, layer_connections):
-    per_cell_information = []
-    cell_ids_by_layer = defaultdict(list)
+def network_from_layers(layers, layer_connections):
+    cell_definitions = []
+    cell_definitions_by_layer = defaultdict(list)
     for layer in layers:
         for cell_number in range(layer.size):
-            cell_id = (layer.id, cell_number,)
-            grid_position = layer.cell_position(cell_number)
-            per_cell_information.append((cell_id, grid_position,))
-            cell_ids_by_layer[layer.id].append(cell_id)
+            (x_grid_position, y_grid_position,) = layer.cell_grid_position(cell_number)
+            # shit way to make string
+            label = layer.id + "_" +  str(cell_number)
+            cell_definition = CellDefinition(str(uuid.uuid4()), label,
+                                          x_grid_position, y_grid_position,
+                                          cell_number, layer.id)
+            cell_definitions.append(cell_definition)
+            cell_definitions_by_layer[layer.id].append(cell_definition)
 
-    synapse_end_points = []
+    synapse_definitions = []
     for (pre_layer, post_layer, probability, synapse_strength) in layer_connections:
-        for cell_id_pre_layer in cell_ids_by_layer[pre_layer]:
-            for cell_id_post_layer in cell_ids_by_layer[post_layer]:
+        for cell_definition_pre_layer in cell_definitions_by_layer[pre_layer]:
+            for cell_definition_post_layer in cell_definitions_by_layer[post_layer]:
                 if probability >= random.random():
-                    synapse_end_point = (cell_id_pre_layer, cell_id_post_layer, synapse_strength)
-                    synapse_end_points.append(synapse_end_point)
-    return synapse_end_points, per_cell_information
-                         
+                    synapse_definition = SynapseDefinition(cell_definition_pre_layer.uuid,
+                                                           cell_definition_post_layer.uuid,
+                                                           synapse_strength)
+                    synapse_definitions.append(synapse_definition)
+    return NetworkDefinition(cell_definitions,
+                             synapse_definitions)
 
 # needs test and to validate input
 # also not sure if our actual graph data structure is the best way to compute
 # this is just a dumb function
-def classes_from_tuples(per_cell_tuple,
-                        per_synapse_tuple):
+# horrible name
+def network_from_tuples(cells,
+                        synapses):
     '''
     This function is just to get us to classes from tuples
     '''
 
-    per_cell_parameters = []
-    for (cell_id, (x_grid_pos, y_grid_pos,),) in per_cell_tuple:
-        cell_parameters = PerCellParameters(cell_id, x_grid_pos, y_grid_pos)
-        per_cell_parameters.append(cell_parameters)
+    cell_definitions = []
+    cells_by_label = {}
+    for (label, (x_grid_pos, y_grid_pos,),) in cells:
+        cell_definition = CellDefinition(str(uuid.uuid4()), label,
+                                            x_grid_pos, y_grid_pos, None, None)
+        cell_definitions.append(cell_definition)
+        cells_by_label[label] = cell_definition
 
-    per_synapse_parameters = []
-    for (pre_cell_id, post_cell_id, strength) in  per_synapse_tuple:
-        per_synapse_parameters.append(PerSynapseParameters(pre_cell_id, post_cell_id, strength))
+    synapse_definitions = []
+    for (pre_cell_label, post_cell_label, strength) in  synapses:
+        pre_cell = cells_by_label[pre_cell_label]
+        post_cell = cells_by_label[post_cell_label]
+        synapse_definition = SynapseDefinition(pre_cell.uuid, post_cell.uuid, strength)
+        synapse_definitions.append(synapse_definition)
         
-    return NetworkDefinition(per_cell_parameters,
-                             per_synapse_parameters)
+    return NetworkDefinition(cell_definitions,
+                             synapse_definitions)
 
 
 # eventually these should take a strength scaler parameter from the model
 def small_default_network():
-    per_cell_tuple = [("a", (0, 0),),
-                      ("b", (1, 0),),
-                      ("c", (2, 0),), ("d", (2, 1)),
-                      ("e", (3, 0),)]
-    per_synapse_tuple = [("a", "b", 0.15),
-                         ("b", "c", 0.15),
-                         ("b", "d", 0.15),
-                         ("c", "e", 0.15),
-                         ("d", "e", 0.15),]
-    return classes_from_tuples(per_cell_tuple,
-                               per_synapse_tuple)
+    cells = [("a", (0, 0),),
+             ("b", (1, 0),),
+             ("c", (2, 0),), ("d", (2, 1)),
+             ("e", (3, 0),)]
+    synapses = [("a", "b", 0.15),
+                ("b", "c", 0.15),
+                ("b", "d", 0.15),
+                ("c", "e", 0.15),
+                ("d", "e", 0.15),]
+    return network_from_tuples(cells,
+                               synapses)
 
 def stdp_test_network():
-    per_cell_tuple = [("a", (0, 0),),
-                      ("b", (1, 0),),
-                      ("c", (2, 0),)]
-    per_synapse_tuple = [("a", "c", 0.05),
-                         ("b", "c", 0.05),]
-    return classes_from_tuples(per_cell_tuple,
-                               per_synapse_tuple)
+    cells = [("a", (0, 0),),
+             ("b", (1, 0),),
+             ("c", (2, 0),)]
+    synapses = [("a", "c", 0.05),
+                ("b", "c", 0.05),]
+    return network_from_tuples(cells,
+                               synapses)
 
 
 # eventually these should take a strenght modifier parameter from the model
