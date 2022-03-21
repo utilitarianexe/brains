@@ -71,8 +71,10 @@ def simple_model_handwriting():
 
     # need like some kind of average starting connection strength thing
     network_definition = network.layer_based_default_network()
-    model_environment = environment.HandwritenEnvironment(delay=50, frequency=150,
-                                                          image_lines=None, shuffle=True)
+    model_environment = environment.HandwritenEnvironment(
+        delay=50, frequency=150,
+        image_lines=None, shuffle=True,
+        last_layer_x_grid_position=network_definition.last_layer_x_grid_position)
 
     return simple_model.SimpleModel(network_definition, model_environment,
                                     model_parameters)

@@ -69,7 +69,6 @@ class Synapse:
             
     def stdp(self):
         self.s_tag = decay(self.s_tag, self.s_tag_decay_rate, self.step_size)
-        
         if self.pre_cell.fired():
             self.s_tag -= self.stdp_scalar * self.post_cell.calcium()
         if self.post_cell.fired():
@@ -194,9 +193,8 @@ class SimpleModel:
         self._dopamine = decay(self._dopamine, self._dopamine_decay, self._step_size)
         for cell in self._cells:
             if cell.fired():
-                if self._environment.reward(step, cell._layer_id, cell._cell_number):
-                    # magic
-                    self._dopamine += 1
+                if self._environment.reward(step, cell.x_grid_position, cell.y_grid_position):
+                    self._dopamine = 1
 
     def step(self, step):
         for cell in self._cells:

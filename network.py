@@ -40,6 +40,7 @@ class SynapseDefinition:
 class NetworkDefinition:
     cell_definitions: list
     synapse_definitions: list
+    last_layer_x_grid_position: int
 
     def export_as_tuples(self):
         cells_by_uuid = {}
@@ -132,7 +133,8 @@ def network_from_layers(layers, layer_connections):
                                                            synapse_strength)
                     synapse_definitions.append(synapse_definition)
     return NetworkDefinition(cell_definitions,
-                             synapse_definitions)
+                             synapse_definitions,
+                             layers[-1].starting_x_position)
 
 # needs test and to validate input
 # also not sure if our actual graph data structure is the best way to compute
@@ -158,9 +160,12 @@ def network_from_tuples(cells,
         post_cell = cells_by_label[post_cell_label]
         synapse_definition = SynapseDefinition(pre_cell.uuid, post_cell.uuid, strength)
         synapse_definitions.append(synapse_definition)
-        
+
+    # Would be for reward but we are not using layers when building networks of single cells.
+    last_layer_x_grid_position = None
     return NetworkDefinition(cell_definitions,
-                             synapse_definitions)
+                             synapse_definitions,
+                             last_layer_x_grid_position)
 
 
 # eventually these should take a strength scaler parameter from the model

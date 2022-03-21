@@ -1,16 +1,20 @@
+rewarded stdp tests
+
 refactoring
   clean up environment to allow for better tests without putting the test env in its own class
+  also better tests for environment
   pull out parameters especially environment and display
   remove to do type comments
   document
   model files should be moved to a different directory(maybe renamed)
   we should also make a data directory
   get rid of magic numbers(most at least moved to class definitions)
-  better tests(environment especailly, but also stdp(synapse and model level))
+  tests for environment.py
   follow python style guide
   reorder parameters
   defaults on dataclasses for obvious variables, maybe freeze
   should environment be part of model or model part of environment
+  simple_model output is a mess
 
 management
   pip
@@ -44,6 +48,7 @@ new funcitonality
     only one timestep delay betwenn precell spike and post cell spike
 
 think about
+  do we need reward for post pre stdp
   run away connections(negative and positive)
   what happens if we double spike during reward
   feel like the model is unnecarily complex

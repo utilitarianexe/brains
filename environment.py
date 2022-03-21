@@ -4,27 +4,22 @@ import random
 from collections import defaultdict
 
 class TestEnvironment:
-    def __init__(self, input_points):
+    def __init__(self, input_points, reward_ranges):
         self.input_dict = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
         for (step, x, y, strength) in input_points:
             self.input_dict[step][x][y] = strength
+        self.reward_dict = defaultdict(lambda: defaultdict(list))
+        for (x, y, step_range) in reward_ranges:
+            self.reward_dict[x][y].append(step_range)
 
     def potential_from_location(self, step, x_grid_position, y_grid_position):
         return self.input_dict[step][x_grid_position][y_grid_position]
     
-    def reward(self, step, layer_id, cell_number):
-        return False
-
-class SimpleEnvironment:
-    def __init__(self):
-        pass
-
-    def potential_from_location(self, step, x_grid_position, y_grid_position):
-        if step % 50000 == 200 and step > 0 and x_grid_position == 0 and y_grid_position == 0:
-            return 0.15
-        return 0
-    
-    def reward(self, step, layer_id, cell_number):
+    def reward(self, step, x_grid, y_grid):
+        reward_ranges = self.reward_dict[x_grid][y_grid]
+        for (start, end,) in reward_ranges:
+            if step > start and step < end:
+                return True
         return False
 
 class STDPTestEnvironment:
@@ -41,15 +36,17 @@ class STDPTestEnvironment:
             return 0.1
         return 0
 
-    def reward(self, step, layer_id, cell_number):
+    def reward(self, step, x_grid, y_grid):
         return False
 
 
 class HandwritenEnvironment:
-    def __init__(self, delay=None, frequency=None, image_lines=None, shuffle=False):
+    def __init__(self, delay=None, frequency=None, image_lines=None, shuffle=False,
+                 last_layer_x_grid_position=None):
         self._delay = delay
         self._frequency = frequency
         self._image_width = None
+        self._last_layer_x_grid_position = last_layer_x_grid_position
         
         if image_lines is None:
             image_lines = self._get_image_lines_from_file()
@@ -68,14 +65,13 @@ class HandwritenEnvironment:
         self._letter_id_by_letter = {'o': 0, 'x': 1}
 
     # check this
-    def reward(self, step, layer, cell_number):
-        # oh god bad magic
-        if layer != 'd':
+    def reward(self, step, x_grid, y_grid):
+        if x_grid != self._last_layer_x_grid_position:
             return False
         real_step = step - self._delay
         (letter, _) = self._images[(real_step//self._frequency) - 1]
         if step > real_step:
-            return cell_number == self._letter_id_by_letter[letter]
+            return y_grid == self._letter_id_by_letter[letter]
         return False
         
     # so many magic numbers
