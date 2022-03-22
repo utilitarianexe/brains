@@ -37,7 +37,8 @@ new funcitonality
     attach to unreal engine or something
     UI to build network
     cli interface
-      have parameters for choosing model,network,environment,display    
+      parameters for choosing model,network,environment,display
+      don't have the display modules run the model the main should
 
   management
     export and import models/networks
