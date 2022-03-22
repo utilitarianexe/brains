@@ -32,11 +32,3 @@ def run_simple():
 def run_spirit():
     spirit = spirit_model.default_model()
     graph_model(spirit, 100000)
-
-def main():
-    # run_example()
-    # run_spirit()
-    run_simple()
-
-if __name__ == '__main__':
-    main()

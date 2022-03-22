@@ -112,6 +112,7 @@ class TestModel(unittest.TestCase):
     def test_rewarded_stdp(self):
         '''
         Pre fire before post should cause the connection to get stronger.
+        But only in the presence of reward.
         '''
         fire_points = [(0, 0, 0, 0.15),
                        (10, 1, 0, 0.15),

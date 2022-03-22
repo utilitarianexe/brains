@@ -9,12 +9,12 @@ refactoring
   model files should be moved to a different directory(maybe renamed)
   we should also make a data directory
   get rid of magic numbers(most at least moved to class definitions)
-  tests for environment.py
   follow python style guide
   reorder parameters
   defaults on dataclasses for obvious variables, maybe freeze
   should environment be part of model or model part of environment
   simple_model output is a mess
+  display and play should not run things there should be a runner that steps the displays and model
 
 management
   pip
@@ -23,25 +23,30 @@ management
   .md file for README
 
 new funcitonality
-  export and import models/networks
-  red should be positive green negative
-  mimic our stdp experiments in a unit test
-  display synapse strengths
-  pause button
-  click on cells to see cell info
-  should be a model level synapse connection strength that is then scaled per synapse
-  apply the complex environment to a simple model
-  add reward to the simple environment
-  adjust parameters without restarting
-  detect screen size
-  cli interface
-     have parameters for choosing model,network,environment,display
-     
-  elf grid specs
-  record runs for later use or display
-  attach to unreal engine or something
-  UI to build network
-  run neurons in compliled language
+  cells
+    randomized synaptic release
+    homeostatic plasticity
+
+  display
+    red should be positive green negative
+    display synapse strengths
+    pause button
+    click on cells to see cell info
+    adjust parameters without restarting
+    detect screen size
+    attach to unreal engine or something
+    UI to build network
+    cli interface
+      have parameters for choosing model,network,environment,display    
+
+  management
+    export and import models/networks
+    should be a model level synapse connection strength that is then scaled per synapse
+    apply the complex environment to a simple model
+    add reward to the simple environment
+    elf grid specs
+    run neurons in compliled language
+
   create a one variable cell type example
     no input current variable
     cell just needs enough input spikes in short enough window to spike
