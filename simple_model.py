@@ -56,6 +56,9 @@ class Synapse:
         self.min_strength = synapse_type_parameters.min_strength
         self.s_tag_decay_rate = synapse_type_parameters.s_tag_decay_rate
 
+    def export_state(self):
+        return {"current_strength": self.strength}
+
     def update(self, dopamine):
         self.stdp()
         self.train(dopamine)
@@ -178,8 +181,10 @@ class Cell:
     
 class SimpleModel:
     def __init__(self, network_definition, environment,
-                 model_parameters):
+                 model_parameters, synapse_state=None):
         self.name = "Simple Model"
+        self._network_definition = network_definition
+        self._model_parameters = model_parameters
         self._environment = environment
         self._dopamine = model_parameters.starting_dopamine
         self._dopamine_decay = model_parameters.dopamine_decay
@@ -207,6 +212,15 @@ class SimpleModel:
 
         for synapse in self.synapses:
             synapse.update(self._dopamine)
+
+    def export(self):
+        synapse_state = [synapse.export_state() for synapse in self._synapses]
+        blob = {"model_parameters": dataclasses.asdict(self._model_parameters),
+                "synapse_state": synapse_state,
+                "network_definition", dataclasses.asdict(self._network_definition)
+                "version": "1"
+                }
+        return blob
 
     def video_output(self):
         drawables = []
@@ -262,3 +276,8 @@ class SimpleModel:
             post_cell.input_synapses.append(synapse)
 
         return cells, synapses
+
+def model_from_export(blob, environment):
+    return SimpleModel(blob["network_definition"], environment,
+                blob["model_parameters"],
+                synapse_state=blob["synapse_state"])
