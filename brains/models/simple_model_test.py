@@ -1,7 +1,6 @@
-import default_runs
-import environment
-import network
 import simple_model
+import brains.environment as environment
+import brains.network as network
 
 import unittest
 
@@ -11,7 +10,7 @@ class TestCellMembrane(unittest.TestCase):
         '''
         Ensure potential falls with time.
         '''
-        cell_type_parameters = default_runs.simple_model_stdp_cell_type_parameters()
+        cell_type_parameters = simple_model.stdp_cell_type_parameters()
         cell_type_parameters.starting_membrane_voltage = 0.5
         step_size = 1
         membrane = simple_model.CellMembrane(cell_type_parameters, step_size)
@@ -24,7 +23,7 @@ class TestCellMembrane(unittest.TestCase):
         Cell should not fire until after voltage builds up from input. It should fire once
         and then not fire again as input decays or is reset.
         '''
-        cell_type_parameters = default_runs.simple_model_stdp_cell_type_parameters()
+        cell_type_parameters = simple_model.stdp_cell_type_parameters()
         step_size = 1
         membrane = simple_model.CellMembrane(cell_type_parameters, step_size)        
 
@@ -49,24 +48,21 @@ class TestModel(unittest.TestCase):
         return network.network_from_tuples(cells,
                                            synapses)
 
-    def two_cell_model(self, fire_points, reward_ranges, starting_synapse_strength):
-        cell_type_parameters = default_runs.simple_model_stdp_cell_type_parameters()
-        synapse_type_parameters = default_runs.simple_model_stdp_synapse_type_parameters()
-        model_parameters = default_runs.simple_model_stdp_model_parameters(cell_type_parameters,
-                                                                           synapse_type_parameters)
-        model_environment = environment.TestEnvironment(fire_points, reward_ranges)
+    def two_cell_model(self, starting_synapse_strength):
+        model_parameters = simple_model.stdp_model_parameters()
         return simple_model.SimpleModel(self.two_cell_network(starting_synapse_strength),
-                                        model_environment,
                                         model_parameters)
         
     def test_spike_propogation(self):
         '''
         Causing one cell to spike should cause the next to spike
         '''
-        model = self.two_cell_model([(1, 0, 0, 0.15)], [], 0.1)
+        model = self.two_cell_model(0.1)
+        test_environment = environment.TestEnvironment([(1, 0, 0, 0.15)], [])
+
         fire_history = []
         for i in range(100):
-            model.step(i)
+            model.step(i, test_environment)
             outputs = model.outputs()
             # clearly we need a nicer output system
             if outputs["a"] > 1:
@@ -86,11 +82,12 @@ class TestModel(unittest.TestCase):
                        (100, 0, 0, 0.15),
                        (110, 1, 0, 0.15),
                        ]
+        test_environment = environment.TestEnvironment(fire_points, [])
         starting_synapse_strength = 0.0
-        model = self.two_cell_model(fire_points, [], starting_synapse_strength)
+        model = self.two_cell_model(starting_synapse_strength)
         fire_history = []
         for i in range(200):
-            model.step(i)
+            model.step(i, test_environment)
         self.assertGreater(model.synapses[0].strength, starting_synapse_strength)
 
     def test_stdp_post_pre(self):
@@ -102,11 +99,12 @@ class TestModel(unittest.TestCase):
                        (110, 0, 0, 0.15),
                        (100, 1, 0, 0.15),
                        ]
+        test_environment = environment.TestEnvironment(fire_points, [])
         starting_synapse_strength = 0.01
-        model = self.two_cell_model(fire_points, [], starting_synapse_strength)
+        model = self.two_cell_model(starting_synapse_strength)
         fire_history = []
         for i in range(200):
-            model.step(i)
+            model.step(i, test_environment)
         self.assertLess(model.synapses[0].strength, starting_synapse_strength)
 
     def test_rewarded_stdp(self):
@@ -126,21 +124,12 @@ class TestModel(unittest.TestCase):
                        (400, 1, 0, 0.15),
                        ]
         reward_ranges =  [(1, 0, [205, 230])]
-        model_environment = environment.TestEnvironment(fire_points, reward_ranges)
-                
+        test_environment = environment.TestEnvironment(fire_points, reward_ranges)
+        model_parameters = simple_model.handwriting_model_parameters()
         starting_synapse_strength = 0.0
-        cell_type_parameters = default_runs.simple_model_stdp_cell_type_parameters()
-        synapse_type_parameters = default_runs.simple_model_stdp_synapse_type_parameters()
-        step_size = 1
-        starting_dopamine = 0.0
-        dopamine_decay = 0.1
-        model_parameters = simple_model.ModelParameters(step_size,
-                                                        starting_dopamine, dopamine_decay,
-                                                        cell_type_parameters, synapse_type_parameters)
-        model = simple_model.SimpleModel(self.two_cell_network(starting_synapse_strength),
-                                         model_environment,
+        network_definition = self.two_cell_network(starting_synapse_strength)
+        model = simple_model.SimpleModel(network_definition,
                                          model_parameters)
-
 
         fire_history = []
         for i in range(500):
@@ -148,7 +137,7 @@ class TestModel(unittest.TestCase):
                 self.assertEqual(model.synapses[0].strength, starting_synapse_strength)
             if i == 250:
                 self.assertGreater(model.synapses[0].strength, starting_synapse_strength)
-            model.step(i)
+            model.step(i, test_environment)
 
     def test_stdp_auto_input_selection(self):
         '''
@@ -160,13 +149,10 @@ class TestModel(unittest.TestCase):
         point the synapse of the first input will continue to get stonger while the second will get
         weaker because it fires after the output cell.
         '''
-        cell_type_parameters = default_runs.simple_model_stdp_cell_type_parameters()
-        synapse_type_parameters = default_runs.simple_model_stdp_synapse_type_parameters()
-        model_parameters = default_runs.simple_model_stdp_model_parameters(cell_type_parameters,
-                                                              synapse_type_parameters)
+        model_parameters = simple_model.stdp_model_parameters()
         network_definition = network.stdp_test_network()
-        model_environment = environment.STDPTestEnvironment()
-        model =  simple_model.SimpleModel(network_definition, model_environment,
+        test_environment = environment.STDPTestEnvironment()
+        model =  simple_model.SimpleModel(network_definition,
                                           model_parameters)
         synapses_by_pre_cell = {}
         for synapse in model.synapses:
@@ -176,7 +162,7 @@ class TestModel(unittest.TestCase):
         starting_strength = synapse_early_input.strength 
             
         for i in range(15000):
-            model.step(i)
+            model.step(i, test_environment)
             if i == 5000:
                 self.assertTrue(synapse_early_input.strength > starting_strength)
                 self.assertTrue(synapse_late_input.strength > synapse_early_input.strength)

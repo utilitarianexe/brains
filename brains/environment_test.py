@@ -1,7 +1,6 @@
 from environment import HandwritenEnvironment
 import unittest
 
-
 class TestBuildingNetwork(unittest.TestCase):
     def test_read_handwritting(self):
         '''

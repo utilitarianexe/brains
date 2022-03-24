@@ -3,7 +3,7 @@ class ExampleModel:
         self.name = "Example Model"
         self._x = 0
 
-    def step(self, step):
+    def step(self, step, environment):
         self._x += 0.1
         if self._x > 1:
             self._x = -1

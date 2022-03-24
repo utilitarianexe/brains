@@ -1,9 +1,6 @@
-# should make a model folder and a UI folder
 import sys
 import time
 import pygame
-import default_runs
-
 
 # should be called potential not strength
 def color_from_strength(strength):
@@ -55,41 +52,30 @@ def update_screen(screen, drawables, texts):
         label = myfont.render(text, 1, black)
         screen.blit(label, (x_text_pos, 900))
         x_text_pos + 50
-        
 
-def run_model(model, steps, sleep):
-    pygame.init()
-    size = width, height = 1800, 1000
-    screen = pygame.display.set_mode(size)
+class GameDisplay():
+    def __init__(self, model):
+        self._model = model
+        pygame.init()
+        size = width, height = 1800, 1000
+        self._screen = pygame.display.set_mode(size)
 
-    # do we want max steps if we have an exit?
-    for i in range(steps):
+    def process_step(self):
+        # We don't need a display step every model step other options possible
+        # and really we have 3 types of steps
+        # one each for pygame, video_output, and model
+        # could also record the model then play it?
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
 
-        # Our i should not be 1 to 1 with pygames i
-        # and really we have 3 types of steps
-        # one each for pygame, video_output, and model
-        # cold also record the model then play it?
-        # is that space efficient?
-        model.step(i)
-        drawables, texts = model.video_output()
-        update_screen(screen, drawables, texts)
+        drawables, texts = self._model.video_output()
+        update_screen(self._screen, drawables, texts)
         pygame.display.flip()
         
         # really should not need
-        time.sleep(sleep)
-        
-def run_example_model():
-    model = default_runs.default_example_model()
-    run_model(model, 100, 0.1)
+        time.sleep(0.01)
 
-def run_handwriting():
-    model = default_runs.simple_model_handwriting()
-    run_model(model, 100000, 0.01)
-
-def run_stdp():
-    model = default_runs.simple_model_stdp()
-    run_model(model, 100000, 0.01)
-
+    def final_output(self):
+        pass
