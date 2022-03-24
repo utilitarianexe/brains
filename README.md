@@ -2,7 +2,13 @@
 
 Neuron simulation software.
 
-# Instructions
+# Install
+
+After cloning navigate into the repository and run.
+
+`pip install -e .`
+
+# Run
 
 Runs in two modes
 
@@ -11,7 +17,7 @@ Runs in two modes
 Watch network run in real time.
 Requires pygame
 
-`python main.py pygame`
+`python brains/main.py --display pygame --world handwriting`
 
 Current input data for this mode is a small subset of https://www.kaggle.com/sachinpatel21/az-handwritten-alphabets-in-csv-format
 
@@ -23,12 +29,11 @@ to make pygame work on Ubuntu
 
 Display potential graphs for each cell using pyplot
 
-`python main.py pyplot`
+`python brains/main.py --display pyplot --world stdp`
 
 
 ## Future
 
 The code is much more flexible than these options suggest.
-To create your own networks and parameter spaces see default_runs.py
 
 Much more to come :-)

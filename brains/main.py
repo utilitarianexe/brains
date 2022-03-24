@@ -1,6 +1,6 @@
-import spirit_model
-import example_model
-import simple_model
+import brains.models.spirit_model as spirit_model
+import brains.models.example_model as example_model
+import brains.models.simple_model as simple_model
 import network
 import environment
 
@@ -34,10 +34,12 @@ def create_args():
     my_parser.add_argument('--display',
                            type=str,
                            choices=["pygame", "pyplot"],
+                           required=True,
                            help='How to display the model.')
     my_parser.add_argument('--world',
                            type=str,
                            choices=["spirit", "stdp", "example", "handwriting"],
+                           required=True,
                            help='A world is a combination of a model and an environment. '\
                                 'A model is built from ModelParameters and a NetworkDefinition.')
     my_parser.add_argument('--steps',
@@ -51,10 +53,10 @@ def create_args():
 def create_display(args, model):
     display_type = args.display
     if display_type == "pygame":
-        import game
+        import display.game as game
         display = game.GameDisplay(model)
     elif display_type == "pyplot":
-        import plot
+        import display.plot as plot
         display = plot.PlotDisplay(model)
     return display
 

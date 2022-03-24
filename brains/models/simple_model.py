@@ -1,4 +1,4 @@
-from utils import decay
+from brains.utils import decay
 
 import collections
 from dataclasses import dataclass

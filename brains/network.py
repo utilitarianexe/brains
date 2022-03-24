@@ -1,4 +1,5 @@
-import utils
+import brains.utils as utils
+
 from dataclasses import dataclass
 import random
 from collections import defaultdict

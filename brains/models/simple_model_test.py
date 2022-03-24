@@ -1,6 +1,6 @@
-import environment
-import network
 import simple_model
+import brains.environment as environment
+import brains.network as network
 
 import unittest
 

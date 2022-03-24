@@ -1,7 +1,9 @@
-import utils
+import brains.utils as utils
+
 import string
 import random
 from collections import defaultdict
+from pathlib import Path
 
 class TestEnvironment:
     def __init__(self, input_points, reward_ranges):
@@ -94,7 +96,9 @@ class HandwritenEnvironment:
         # magic file name
         # not checking exceptions
         # wrong place for this function
-        return open("o_x_hand_written_short.csv")
+        base_path = Path(__file__).parent
+        file_path = (base_path / "./data/o_x_hand_written_short.csv").resolve()
+        return open(file_path)
         
 
     def _load_handwriting(self, lines):
