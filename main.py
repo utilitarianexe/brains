@@ -1,46 +1,54 @@
-import default_runs
 import spirit_model
 import example_model
 import simple_model
-import plot
+import network
+import environment
 
+from collections import namedtuple
 import argparse
 
-def run_model(model, steps, display):
-    for i in range(steps):
-        model.step(i)
-        display.process_step()
-    display.final_output()
+World = namedtuple('World', 'model environment')
 
-def create_world():
+def stdp_world():
+    model_parameters = simple_model.stdp_model_parameters()
+    network_definition = network.stdp_test_network()
+    model = simple_model.SimpleModel(network_definition, model_parameters)
+    return model, environment.STDPTestEnvironment()
+
+def handwriting_world():
+    model_parameters = simple_model.handwriting_model_parameters()
+
+    # need like some kind of average starting connection strength thing
+    network_definition = network.layer_based_default_network()
+    handwriten_environment = environment.HandwritenEnvironment(
+        delay=50, frequency=150,
+        image_lines=None, shuffle=True,
+        last_layer_x_grid_position=network_definition.last_layer_x_grid_position)
+
+    model = simple_model.SimpleModel(network_definition, model_parameters)
+    return model, handwriten_environment
+
+
+def create_args():
     my_parser = argparse.ArgumentParser(description='Run brains')
     my_parser.add_argument('--display',
                            type=str,
                            choices=["pygame", "pyplot"],
                            help='How to display the model.')
-    my_parser.add_argument('--model',
+    my_parser.add_argument('--world',
                            type=str,
-                           choices=["spirit", "simple", "example", "handwritting"],
-                           help='What model to use(well really the type of "run")')
+                           choices=["spirit", "stdp", "example", "handwriting"],
+                           help='A world is a combination of a model and an environment. '\
+                                'A model is built from ModelParameters and a NetworkDefinition.')
     my_parser.add_argument('--steps',
                            type=int,
                            default=30000,
                            required=False,
                            help='Number of steps to run the model.')
 
-    args = my_parser.parse_args()
+    return my_parser.parse_args()
 
-    model_type = args.model
-    model = None
-    if model_type == "simple":
-        model = default_runs.simple_model_stdp()
-    elif model_type == "spirit":
-        model = spirit_model.default_model()
-    elif model_type == "example":
-        model = default_runs.default_example_model()
-    elif model_type == "handwritting":
-        model = default_runs.simple_model_handwriting()
-
+def create_display(args, model):
     display_type = args.display
     if display_type == "pygame":
         import game
@@ -48,10 +56,27 @@ def create_world():
     elif display_type == "pyplot":
         import plot
         display = plot.PlotDisplay(model)
+    return display
 
-    steps = args.steps
-    return model, steps, display
+def create_world(args):
+    world_type = args.world
+    if world_type == "stdp":
+        return stdp_world()
+    elif world_type == "spirit":
+        return World(spirit_model.default_model(), None)
+    elif world_type == "example":
+        return World(example_model.ExampleModel(), None)
+    elif world_type == "handwriting":
+        return handwriting_world()
 
 if __name__ == "__main__" :
-    model, steps, display = create_world()
-    run_model(model, steps, display)
+    args = create_args()
+    brain, environment = create_world(args)
+    display = create_display(args, brain)
+    steps = args.steps
+    for i in range(steps):
+        brain.step(i, environment)
+        if display is not None:
+            display.process_step()
+    if display is not None:
+        display.final_output()

@@ -57,7 +57,7 @@ class SpiritModel():
         else:
             self._input = self._input * (1 - self._input_decay)**self._step_size + i
     
-    def step(self, step):
+    def step(self, step, unused_environment):
         self._update_voltage()
         self._update_input(step)
             

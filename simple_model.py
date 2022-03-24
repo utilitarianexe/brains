@@ -17,6 +17,19 @@ class CellTypeParameters:
     starting_input_current: float
     reset_input_current: bool
 
+def stdp_cell_type_parameters():
+    return CellTypeParameters(voltage_decay=0.01,
+                              current_decay=0.03,
+                              calcium_decay=0.1,
+                              starting_membrane_voltage=0.0,
+                              max_voltage=1.0,
+                              voltage_reset=-1.0,
+                              calcium_increment=1.0,
+                              input_current_reset=0.0,
+                              starting_input_current=0.0,
+                              starting_calcium=0.0,
+                              reset_input_current=True)
+
 @dataclass
 class SynapseTypeParameters:
     stdp_scalar: float
@@ -26,6 +39,14 @@ class SynapseTypeParameters:
     s_tag_decay_rate: float
     starting_s_tag: float
 
+def stdp_synapse_type_parameters():
+    return SynapseTypeParameters(stdp_scalar=0.001,
+                                 reward_scalar=0.1,
+                                 max_strength=0.4,
+                                 min_strength=0.0,
+                                 s_tag_decay_rate=0.002,
+                                 starting_s_tag=0.0)
+
 @dataclass
 class ModelParameters:
     step_size: int
@@ -33,7 +54,21 @@ class ModelParameters:
     dopamine_decay: float
     cell_type_parameters: CellTypeParameters
     synapse_type_parameters: SynapseTypeParameters
-    
+
+def stdp_model_parameters():
+    return ModelParameters(step_size=1,
+                           starting_dopamine=1.0,
+                           dopamine_decay=0.0,
+                           cell_type_parameters=stdp_cell_type_parameters(),
+                           synapse_type_parameters=stdp_synapse_type_parameters())
+
+def handwriting_model_parameters():
+    return ModelParameters(step_size=1,
+                           starting_dopamine=0.0,
+                           dopamine_decay=0.1,
+                           cell_type_parameters=stdp_cell_type_parameters(),
+                           synapse_type_parameters=stdp_synapse_type_parameters())
+
     
 # voltage and current should be named potential everywhere
 # should probably derive from a "potential generating" class or something
@@ -131,15 +166,13 @@ class CellMembrane:
 
 class Cell:
     def __init__(self, cell_definition, cell_membrane,
-                 input_synapses, output_synapses,
-                 environment):
+                 input_synapses, output_synapses):
         self.uuid = cell_definition.uuid
         self.label = cell_definition.label
         self._layer_id = cell_definition.layer_id
         self._cell_number = cell_definition.cell_number
         self.x_grid_position = cell_definition.x_grid_position
         self.y_grid_position = cell_definition.y_grid_position
-        self._environment = environment
         
         # I don't like the coupling causing these to be public
         self.input_synapses = input_synapses # not acutally used yet
@@ -169,18 +202,17 @@ class Cell:
             for synapse in self.output_synapses:
                 synapse.post_cell.receive_fire(synapse.strength)
 
-    def update(self, step):
-        outside_current = self._environment.potential_from_location(step,
-                                                                    self.x_grid_position,
-                                                                    self.y_grid_position)
-        self._cell_membrane.receive_input(outside_current)
+    def update(self, step, environment=None):
+        if environment is not None:
+            outside_current = environment.potential_from_location(step,
+                                                                  self.x_grid_position,
+                                                                  self.y_grid_position)
+            self._cell_membrane.receive_input(outside_current)
         self._cell_membrane.update()
     
 class SimpleModel:
-    def __init__(self, network_definition, environment,
-                 model_parameters):
+    def __init__(self, network_definition, model_parameters):
         self.name = "Simple Model"
-        self._environment = environment
         self._dopamine = model_parameters.starting_dopamine
         self._dopamine_decay = model_parameters.dopamine_decay
         self._step_size = model_parameters.step_size
@@ -189,21 +221,21 @@ class SimpleModel:
                                                         network_definition,
                                                         self._step_size)
 
-    def update_dopamine(self, step):
+    def update_dopamine(self, step, environment=None):
         self._dopamine = decay(self._dopamine, self._dopamine_decay, self._step_size)
         for cell in self._cells:
-            if cell.fired():
-                if self._environment.reward(step, cell.x_grid_position, cell.y_grid_position):
+            if cell.fired() and environment is not None:
+                if environment.reward(step, cell.x_grid_position, cell.y_grid_position):
                     self._dopamine = 1
 
-    def step(self, step):
+    def step(self, step, environment=None):
         for cell in self._cells:
-            cell.update(step)
+            cell.update(step, environment)
 
         for cell in self._cells:
             cell.apply_fire()
 
-        self.update_dopamine(step)
+        self.update_dopamine(step, environment)
 
         for synapse in self.synapses:
             synapse.update(self._dopamine)
@@ -244,8 +276,7 @@ class SimpleModel:
         cells = []
         for cell_definition in network_definition.cell_definitions:
             cell_membrane = CellMembrane(cell_type_parameters, step_size)
-            cell = Cell(cell_definition, cell_membrane,
-                        [], [], self._environment)
+            cell = Cell(cell_definition, cell_membrane, [], [])
             cells_by_id[cell.uuid] = cell
             cells.append(cell)
 

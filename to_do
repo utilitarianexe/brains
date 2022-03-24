@@ -1,12 +1,10 @@
-refactoring
-  confusion points
-    display.py and play.py should not call step
-    number of steps to run model should not be hard coded
-    rename simple to model
-    default runs should be default parameters(maybe in the class) and return just parameters not models
-    folders(ui,models)
 
+
+refactoring
+  folders
+  test parameters confusion
   export and import tests
+  simple is a bad name
   clean up environment to allow for better tests without putting the test env in its own class
   also better tests for environment
   pull out parameters especially environment and display
