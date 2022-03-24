@@ -1,6 +1,12 @@
-rewarded stdp tests
-
 refactoring
+  confusion points
+    display.py and play.py should not call step
+    number of steps to run model should not be hard coded
+    rename simple to model
+    default runs should be default parameters(maybe in the class) and return just parameters not models
+    folders(ui,models)
+
+  export and import tests
   clean up environment to allow for better tests without putting the test env in its own class
   also better tests for environment
   pull out parameters especially environment and display
@@ -20,7 +26,6 @@ management
   pip
   fix pygame installation issue
   auto run tests on submit
-  .md file for README
 
 new funcitonality
   cells

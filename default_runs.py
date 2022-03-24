@@ -56,7 +56,6 @@ def simple_model_stdp():
     return simple_model.SimpleModel(network_definition, model_environment,
                                     model_parameters)
 
-# repeating too much here. Should have a default parameter set modified by each specific model
 def simple_model_handwriting():
     cell_type_parameters = simple_model_stdp_cell_type_parameters()
     synapse_type_parameters = simple_model_stdp_synapse_type_parameters()
