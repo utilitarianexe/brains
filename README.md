@@ -31,6 +31,12 @@ Display potential graphs for each cell using pyplot
 
 `python brains/main.py --display pyplot --world stdp`
 
+## Options
+
+You can export models to preserve changes to the network during a run using the export option.
+You can then import the model using the model_path option. You will also need the environment option
+as this is not stored as part of the model. world in a combination of environment and model.
+
 
 ## Future
 

@@ -168,6 +168,15 @@ class TestModel(unittest.TestCase):
                 self.assertTrue(synapse_late_input.strength > synapse_early_input.strength)
         self.assertTrue(synapse_early_input.strength > synapse_late_input.strength)
 
+    def test_unchanged_export_import(self):
+        '''
+        Export a model and reimport it. Spot check some synapses to make sure they are the same.
+        '''
+        old_model = self.two_cell_model(0.1)
+        blob = old_model.export()
+        new_model = simple_model.import_model(blob)
+        self.assertEqual(old_model.synapses[0].pre_cell.uuid,
+                         new_model.synapses[0].pre_cell.uuid)
 
 if __name__ == '__main__':
     unittest.main()
