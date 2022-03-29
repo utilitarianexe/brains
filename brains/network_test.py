@@ -1,4 +1,4 @@
-from network import network_from_layers, network_from_tuples, Layer
+from brains.network import network_from_layers, network_from_tuples, Layer
 import unittest
 
 

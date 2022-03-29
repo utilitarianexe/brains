@@ -1,4 +1,4 @@
-import simple_model
+import brains.models.simple_model as simple_model
 import brains.environment as environment
 import brains.network as network
 

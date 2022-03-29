@@ -46,3 +46,9 @@ as this is not stored as part of the model. world in a combination of environmen
 The code is much more flexible than these options suggest.
 
 Much more to come :-)
+
+## Development
+
+Run tests from root directory with
+
+`pytest`
