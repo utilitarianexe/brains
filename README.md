@@ -6,11 +6,14 @@ Neuron simulation software.
 
 After cloning navigate into the repository and run.
 
-`pip install -e .`
+`pip install -r requirements.txt`
+
+Note python 3 package.
+If installing matplotlib or pygame is an issue it can be run without these depending on mode.
 
 # Run
 
-Runs in two modes
+Runs in two display modes
 
 ## pygame
 

@@ -14,7 +14,6 @@ refactoring
   defaults on dataclasses for obvious variables, maybe freeze
   simple_model output is a mess
   get example and spirit working with video, export, import, and pyplot
-  import/export environment
   arguably export should be a type of display
 
 advertising
@@ -22,8 +21,6 @@ advertising
   who would want this
 
 installation/updates
-  pip
-  fix pygame installation issue
   auto run tests on submit
 
 new funcitonality
