@@ -1,4 +1,4 @@
-from environment import HandwritenEnvironment
+from brains.environment import HandwritenEnvironment
 import unittest
 
 class TestBuildingNetwork(unittest.TestCase):

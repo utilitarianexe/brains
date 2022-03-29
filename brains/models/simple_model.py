@@ -1,7 +1,8 @@
 from brains.utils import decay
+from brains.network import SynapseDefinition, NetworkDefinition
 
 import collections
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 
 @dataclass
 class CellTypeParameters:
@@ -55,6 +56,15 @@ class ModelParameters:
     dopamine_decay: float
     cell_type_parameters: CellTypeParameters
     synapse_type_parameters: SynapseTypeParameters
+    
+    def __post_init__(self):
+        '''
+        Used to easily construct object from an exported dict.
+        '''
+        if isinstance(self.cell_type_parameters, dict):
+            self.cell_type_parameters = CellTypeParameters(**self.cell_type_parameters)
+        if isinstance(self.synapse_type_parameters, dict):
+            self.synapse_type_parameters = SynapseTypeParameters(**self.synapse_type_parameters)
 
 def stdp_model_parameters():
     return ModelParameters(step_size=1,
@@ -219,6 +229,8 @@ class Cell:
 class SimpleModel:
     def __init__(self, network_definition, model_parameters):
         self.name = "Simple Model"
+        self.network_definition = network_definition
+        self.model_parameters = model_parameters
         self._dopamine = model_parameters.starting_dopamine
         self._dopamine_decay = model_parameters.dopamine_decay
         self._step_size = model_parameters.step_size
@@ -247,6 +259,25 @@ class SimpleModel:
 
         for synapse in self.synapses:
             synapse.update(self._dopamine)
+
+    def export(self):
+        updated_synapse_definitions = []
+        for synapse in self.synapses:
+            definition = SynapseDefinition(synapse.pre_cell.uuid,
+                                                   synapse.post_cell.uuid,
+                                                   synapse.strength)
+            updated_synapse_definitions.append(definition)
+        
+        updated_network_definition = NetworkDefinition(
+            self.network_definition.cell_definitions,
+            updated_synapse_definitions,
+            self.network_definition.last_layer_x_grid_position)
+                                                               
+        blob = {"model_parameters": asdict(self.model_parameters),
+                "network_definition": asdict(updated_network_definition),
+                "version": "1"
+                }
+        return blob
 
     def video_output(self):
         drawables = []
@@ -302,3 +333,8 @@ class SimpleModel:
         for cell in cells:
             cell.input_sum=cell.input_sum_calc()
         return cells, synapses
+
+def import_model(blob):
+    network_definition = NetworkDefinition(**blob["network_definition"])
+    model_parameters = ModelParameters(**blob["model_parameters"])
+    return SimpleModel(network_definition, model_parameters)

@@ -43,6 +43,26 @@ class NetworkDefinition:
     synapse_definitions: list
     last_layer_x_grid_position: int
 
+    def __post_init__(self):
+        '''
+        Used to easily construct object from an exported dict.
+        '''
+        new_cell_definitions = []
+        for cell_definition in self.cell_definitions:
+            if isinstance(cell_definition, dict):
+                new_cell_definitions.append(CellDefinition(**cell_definition))
+            else:
+                new_cell_definitions.append(cell_definition)
+        self.cell_definitions = new_cell_definitions
+        
+        new_synapse_definitions = []
+        for synapse_definition in self.synapse_definitions:
+            if isinstance(synapse_definition, dict):
+                new_synapse_definitions.append(SynapseDefinition(**synapse_definition))
+            else:
+                new_synapse_definitions.append(synapse_definition)
+        self.synapse_definitions = new_synapse_definitions
+
     def export_as_tuples(self):
         cells_by_uuid = {}
         cell_infos = []
