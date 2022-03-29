@@ -1,4 +1,6 @@
 refactoring
+  decide between "brain" and "model"
+  use dacite package instead of __post__init__ bs
   test parameters confusion
   simple is a bad name
   clean up environment to allow for better tests without putting the test env in its own class
@@ -11,8 +13,15 @@ refactoring
   reorder parameters
   defaults on dataclasses for obvious variables, maybe freeze
   simple_model output is a mess
+  get example and spirit working with video, export, import, and pyplot
+  import/export environment
+  arguably export should be a type of display
 
-management
+advertising
+  what else is out there
+  who would want this
+
+installation/updates
   pip
   fix pygame installation issue
   auto run tests on submit
@@ -36,7 +45,6 @@ new funcitonality
       don't have the display modules run the model the main should
 
   management
-    export and import models/networks
     should be a model level synapse connection strength that is then scaled per synapse
     apply the complex environment to a simple model
     add reward to the simple environment
