@@ -1,12 +1,6 @@
-fix tests
-try with handwriting
-put input balancing in a better place
-fix synapses being added to cells after creation
-calculations for input balancing should be inside the cell
-
 
 refactoring
-  decide between "brain" and "model"
+  switch from "model" to "brain"
   use dacite package instead of __post__init__ bs
   test parameters confusion
   simple is a bad name
@@ -22,6 +16,7 @@ refactoring
   simple_model output is a mess
   get example and spirit working with video, export, import, and pyplot
   arguably export should be a type of display
+  I don't like how we attach cells to synapses in the simple model
 
 advertising
   what else is out there

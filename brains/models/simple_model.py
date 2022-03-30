@@ -1,7 +1,7 @@
 from brains.utils import decay
 from brains.network import SynapseDefinition, NetworkDefinition
 
-import collections
+from collections import defaultdict
 from dataclasses import dataclass, asdict
 
 @dataclass
@@ -177,8 +177,7 @@ class CellMembrane:
         self._calcium = decay(self._calcium, self._calcium_decay, self._step_size)
 
 class Cell:
-    def __init__(self, cell_definition, cell_membrane,
-                 input_synapses, output_synapses, input_balance):
+    def __init__(self, cell_definition, cell_membrane, input_balance):
         self.uuid = cell_definition.uuid
         self.label = cell_definition.label
         self._layer_id = cell_definition.layer_id
@@ -186,11 +185,39 @@ class Cell:
         self.x_grid_position = cell_definition.x_grid_position
         self.y_grid_position = cell_definition.y_grid_position
         self._input_balance = input_balance
-        self.input_sum=0
-        # I don't like the coupling causing these to be public
-        self.input_synapses = input_synapses # not acutally used yet
-        self.output_synapses = output_synapses
         self._cell_membrane = cell_membrane
+
+        # I don't like the coupling causing these to be public
+        # I don't like how we initialize these outside constructor
+        self.input_synapses = []
+        self.output_synapses = []
+        
+        self._initial_total_input_strength = 0.0
+
+    def attach_synapses(self, synapses):
+        for synapse in synapses:
+            if synapse.pre_cell.uuid == self.uuid:
+                self.output_synapses.append(synapse)
+            elif synapse.post_cell.uuid == self.uuid:
+                self.input_synapses.append(synapse)
+            else:
+                raise Exception("Attempted to attach synapse to cell but neither of the synapses "\
+                                "endpoints attach to the cell.")
+        self._initial_total_input_strength = self._current_total_input_strength()
+
+    def _apply_input_balance(self):
+        if self._input_balance:
+            current_total_input_strength = self._current_total_input_strength()
+            if current_total_input_strength > 0.0:
+                scale_factor = self._initial_total_input_strength / current_total_input_strength
+                for synapse in self.input_synapses:
+                    synapse.strength = synapse.strength * scale_factor
+                
+    def _current_total_input_strength(self):
+        total = 0.0
+        for synapse in self.input_synapses:
+            total += synapse.strength
+        return total
 
     # these should be named as getters and maybe use the auto thing
     # or maybe one cell class
@@ -210,7 +237,7 @@ class Cell:
     def receive_fire(self, strength):
         self._cell_membrane.receive_input(strength)
 
-    def apply_fire(self):
+    def _apply_fire(self):
         if self._cell_membrane.fired():
             for synapse in self.output_synapses:
                 synapse.post_cell.receive_fire(synapse.strength)
@@ -222,13 +249,8 @@ class Cell:
                                                                   self.y_grid_position)
             self._cell_membrane.receive_input(outside_current)
         self._cell_membrane.update()
-
-    def input_sum_calc(self):
-        in_sum=0    
-        for synapse in self.input_synapses:
-            in_sum+=synapse.strength
-        return(in_sum)
-
+        self._apply_fire()
+        self._apply_input_balance()
 
 class SimpleModel:
     def __init__(self, network_definition, model_parameters):
@@ -253,15 +275,7 @@ class SimpleModel:
     def step(self, step, environment=None):
         for cell in self._cells:
             cell.update(step, environment)
-        for cell in self._cells:
-            cell.apply_fire()
-            
-        for cell in self._cells:
-            if cell._input_balance:
-                in_str_total = cell.input_sum_calc()
-                for synapse in cell.input_synapses:
-                    synapse.strength=synapse.strength*(cell.input_sum/in_str_total)
-        
+
         self.update_dopamine(step, environment)
 
         for synapse in self.synapses:
@@ -322,11 +336,12 @@ class SimpleModel:
         cells = []
         for cell_definition in network_definition.cell_definitions:
             cell_membrane = CellMembrane(cell_type_parameters, step_size)
-            cell = Cell(cell_definition, cell_membrane, [], [], cell_type_parameters.input_balance)
+            cell = Cell(cell_definition, cell_membrane, cell_type_parameters.input_balance)
             cells_by_id[cell.uuid] = cell
             cells.append(cell)
 
         synapses = []
+        synapses_by_cell_id = defaultdict(list)
         for synapse_definition in network_definition.synapse_definitions:
             pre_cell = cells_by_id[synapse_definition.pre_cell_id]
             post_cell = cells_by_id[synapse_definition.post_cell_id]
@@ -335,12 +350,13 @@ class SimpleModel:
                               step_size,
                               synapse_type_parameters)
             synapses.append(synapse)
-            pre_cell.output_synapses.append(synapse)
-            post_cell.input_synapses.append(synapse)
+            synapses_by_cell_id[synapse_definition.pre_cell_id].append(synapse)
+            synapses_by_cell_id[synapse_definition.post_cell_id].append(synapse)
 
-        for cell in cells:
-            cell.input_sum = cell.input_sum_calc()
-            
+        for cell_id, cell_synapses in synapses_by_cell_id.items():
+            cell = cells_by_id[cell_id]
+            cell.attach_synapses(cell_synapses)
+
         return cells, synapses
 
 def import_model(blob):
