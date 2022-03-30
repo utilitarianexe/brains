@@ -17,6 +17,7 @@ class CellTypeParameters:
     starting_calcium: float
     starting_input_current: float
     reset_input_current: bool
+    input_balance: bool
 
 def stdp_cell_type_parameters():
     return CellTypeParameters(voltage_decay=0.01,
@@ -28,9 +29,9 @@ def stdp_cell_type_parameters():
                               calcium_increment=1.0,
                               input_current_reset=0.0,
                               starting_input_current=0.0,
-                              starting_calcium=0.0,
-                              
-                              reset_input_current=True)
+                              starting_calcium=0.0,                              
+                              reset_input_current=True,
+                              input_balance=False)
 
 @dataclass
 class SynapseTypeParameters:
@@ -177,13 +178,14 @@ class CellMembrane:
 
 class Cell:
     def __init__(self, cell_definition, cell_membrane,
-                 input_synapses, output_synapses):
+                 input_synapses, output_synapses, input_balance):
         self.uuid = cell_definition.uuid
         self.label = cell_definition.label
         self._layer_id = cell_definition.layer_id
         self._cell_number = cell_definition.cell_number
         self.x_grid_position = cell_definition.x_grid_position
         self.y_grid_position = cell_definition.y_grid_position
+        self._input_balance = input_balance
         self.input_sum=[]
         # I don't like the coupling causing these to be public
         self.input_synapses = input_synapses # not acutally used yet
@@ -220,12 +222,14 @@ class Cell:
                                                                   self.y_grid_position)
             self._cell_membrane.receive_input(outside_current)
         self._cell_membrane.update()
+
     def input_sum_calc(self):
-        in_sum=0
-        
+        in_sum=0    
         for synapse in self.input_synapses:
             in_sum+=synapse.strength
         return(in_sum)
+
+
 class SimpleModel:
     def __init__(self, network_definition, model_parameters):
         self.name = "Simple Model"
@@ -251,10 +255,13 @@ class SimpleModel:
             cell.update(step, environment)
         for cell in self._cells:
             cell.apply_fire()
+            
         for cell in self._cells:
-            in_str_total=cell.input_sum_calc()
-            for synapse in cell.input_synapses:
-                synapse.strength=synapse.strength*(cell.input_sum/in_str_total)
+            if cell._input_balance:
+                in_str_total = cell.input_sum_calc()
+                for synapse in cell.input_synapses:
+                    synapse.strength=synapse.strength*(cell.input_sum/in_str_total)
+        
         self.update_dopamine(step, environment)
 
         for synapse in self.synapses:
@@ -315,7 +322,7 @@ class SimpleModel:
         cells = []
         for cell_definition in network_definition.cell_definitions:
             cell_membrane = CellMembrane(cell_type_parameters, step_size)
-            cell = Cell(cell_definition, cell_membrane, [], [])
+            cell = Cell(cell_definition, cell_membrane, [], [], cell_type_parameters.input_balance)
             cells_by_id[cell.uuid] = cell
             cells.append(cell)
 
@@ -330,8 +337,10 @@ class SimpleModel:
             synapses.append(synapse)
             pre_cell.output_synapses.append(synapse)
             post_cell.input_synapses.append(synapse)
+
         for cell in cells:
-            cell.input_sum=cell.input_sum_calc()
+            cell.initial_input_sum = cell.input_sum_calc()
+            
         return cells, synapses
 
 def import_model(blob):
