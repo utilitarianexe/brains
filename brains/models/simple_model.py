@@ -205,7 +205,7 @@ class Cell:
                                 "endpoints attach to the cell.")
         self._initial_total_input_strength = self._current_total_input_strength()
 
-    def _apply_input_balance(self):
+    def apply_input_balance(self):
         if self._input_balance:
             current_total_input_strength = self._current_total_input_strength()
             if current_total_input_strength > 0.0:
@@ -237,7 +237,7 @@ class Cell:
     def receive_fire(self, strength):
         self._cell_membrane.receive_input(strength)
 
-    def _apply_fire(self):
+    def apply_fire(self):
         if self._cell_membrane.fired():
             for synapse in self.output_synapses:
                 synapse.post_cell.receive_fire(synapse.strength)
@@ -249,8 +249,6 @@ class Cell:
                                                                   self.y_grid_position)
             self._cell_membrane.receive_input(outside_current)
         self._cell_membrane.update()
-        self._apply_fire()
-        self._apply_input_balance()
 
 class SimpleModel:
     def __init__(self, network_definition, model_parameters):
@@ -280,6 +278,10 @@ class SimpleModel:
 
         for synapse in self.synapses:
             synapse.update(self._dopamine)
+
+        for cell in self._cells:
+            cell.apply_input_balance()
+            cell.apply_fire()
 
     def export(self):
         updated_synapse_definitions = []

@@ -1,4 +1,3 @@
-
 refactoring
   switch from "model" to "brain"
   use dacite package instead of __post__init__ bs
@@ -28,7 +27,7 @@ installation/updates
 new funcitonality
   cells
     randomized synaptic release
-    homeostatic plasticity
+    output balancing
 
   display
     red should be positive green negative
