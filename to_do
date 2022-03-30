@@ -1,8 +1,9 @@
 fix tests
-make input balancing optional
+try with handwriting
 put input balancing in a better place
 fix synapses being added to cells after creation
 calculations for input balancing should be inside the cell
+
 
 refactoring
   decide between "brain" and "model"

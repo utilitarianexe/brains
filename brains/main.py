@@ -10,8 +10,8 @@ import json
 
 World = namedtuple('World', 'model environment')
 
-def stdp_world():
-    model_parameters = simple_model.stdp_model_parameters()
+def stdp_world(input_balance):
+    model_parameters = simple_model.stdp_model_parameters(input_balance)
     network_definition = network.stdp_test_network()
     model = simple_model.SimpleModel(network_definition, model_parameters)
     return model, environment.STDPTestEnvironment()
@@ -51,7 +51,7 @@ def create_args():
                            help='How to display the model.')
     my_parser.add_argument('--world',
                            type=str,
-                           choices=["spirit", "stdp", "example", "handwriting"],
+                           choices=["spirit", "stdp", "example", "handwriting", "input_balance"],
                            required=False,
                            help='A world is a combination of a model and an environment. '\
                                 'A model is built from ModelParameters and a NetworkDefinition.')
@@ -93,13 +93,15 @@ def create_world(args):
     world_type = args.world
     if world_type:
         if world_type == "stdp":
-            return stdp_world()
+            return stdp_world(False)
         elif world_type == "spirit":
             return World(spirit_model.default_model(), None)
         elif world_type == "example":
             return World(example_model.ExampleModel(), None)
         elif world_type == "handwriting":
             return handwriting_world()
+        elif world_type == "input_balance":
+            return stdp_world(True)
         
     model_path = args.model_path
     environment_type = args.environment

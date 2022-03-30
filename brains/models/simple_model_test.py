@@ -10,7 +10,7 @@ class TestCellMembrane(unittest.TestCase):
         '''
         Ensure potential falls with time.
         '''
-        cell_type_parameters = simple_model.stdp_cell_type_parameters()
+        cell_type_parameters = simple_model.stdp_cell_type_parameters(False)
         cell_type_parameters.starting_membrane_voltage = 0.5
         step_size = 1
         membrane = simple_model.CellMembrane(cell_type_parameters, step_size)
@@ -23,7 +23,7 @@ class TestCellMembrane(unittest.TestCase):
         Cell should not fire until after voltage builds up from input. It should fire once
         and then not fire again as input decays or is reset.
         '''
-        cell_type_parameters = simple_model.stdp_cell_type_parameters()
+        cell_type_parameters = simple_model.stdp_cell_type_parameters(False)
         step_size = 1
         membrane = simple_model.CellMembrane(cell_type_parameters, step_size)        
 
@@ -49,7 +49,7 @@ class TestModel(unittest.TestCase):
                                            synapses)
 
     def two_cell_model(self, starting_synapse_strength):
-        model_parameters = simple_model.stdp_model_parameters()
+        model_parameters = simple_model.stdp_model_parameters(False)
         return simple_model.SimpleModel(self.two_cell_network(starting_synapse_strength),
                                         model_parameters)
         
@@ -141,15 +141,15 @@ class TestModel(unittest.TestCase):
 
     def test_stdp_auto_input_selection(self):
         '''
-        Intializes a network of two input cells connected to an ouput cell. The input cells fire in
+        Initializes a network of two input cells connected to an output cell. The input cells fire in
         close sequence. And both are required to trigger the output cell.
 
         Both synapses should get stronger at first. But eventually the first cell to fire should be
         strong enough to trigger the output cell on its before the second input cell fires. After this
-        point the synapse of the first input will continue to get stonger while the second will get
+        point the synapse of the first input will continue to get stronger while the second will get
         weaker because it fires after the output cell.
         '''
-        model_parameters = simple_model.stdp_model_parameters()
+        model_parameters = simple_model.stdp_model_parameters(False)
         network_definition = network.stdp_test_network()
         test_environment = environment.STDPTestEnvironment()
         model =  simple_model.SimpleModel(network_definition,
@@ -167,6 +167,32 @@ class TestModel(unittest.TestCase):
                 self.assertTrue(synapse_early_input.strength > starting_strength)
                 self.assertTrue(synapse_late_input.strength > synapse_early_input.strength)
         self.assertTrue(synapse_early_input.strength > synapse_late_input.strength)
+
+    def test_input_balancing(self):
+        '''
+        Initializes a network of two input cells connected to an output cell. The input cells fire in
+        close sequence. And both are required to trigger the output cell.
+
+        Overtime time the connection with the input cell that fires later should increase compared
+        to the connection that fires earlier. Both have positive stdp but one has closer timing so it
+        will increase faster and because of input balancing it will drive the other down comparatively.
+        '''
+        model_parameters = simple_model.stdp_model_parameters(True)
+        network_definition = network.stdp_test_network()
+        test_environment = environment.STDPTestEnvironment()
+        model =  simple_model.SimpleModel(network_definition,
+                                          model_parameters)
+        synapses_by_pre_cell = {}
+        for synapse in model.synapses:
+            synapses_by_pre_cell[synapse.pre_cell.label] = synapse
+        synapse_early_input = synapses_by_pre_cell["a"]
+        synapse_late_input = synapses_by_pre_cell["b"]
+        starting_strength = synapse_early_input.strength 
+            
+        for i in range(15000):
+            model.step(i, test_environment)
+
+        self.assertTrue(synapse_late_input.strength > synapse_early_input.strength)
 
     def test_unchanged_export_import(self):
         '''

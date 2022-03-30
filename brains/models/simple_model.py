@@ -19,7 +19,7 @@ class CellTypeParameters:
     reset_input_current: bool
     input_balance: bool
 
-def stdp_cell_type_parameters():
+def stdp_cell_type_parameters(input_balance):
     return CellTypeParameters(voltage_decay=0.01,
                               current_decay=0.03,
                               calcium_decay=0.1,
@@ -31,7 +31,7 @@ def stdp_cell_type_parameters():
                               starting_input_current=0.0,
                               starting_calcium=0.0,                              
                               reset_input_current=True,
-                              input_balance=False)
+                              input_balance=input_balance)
 
 @dataclass
 class SynapseTypeParameters:
@@ -67,18 +67,18 @@ class ModelParameters:
         if isinstance(self.synapse_type_parameters, dict):
             self.synapse_type_parameters = SynapseTypeParameters(**self.synapse_type_parameters)
 
-def stdp_model_parameters():
+def stdp_model_parameters(input_balance):
     return ModelParameters(step_size=1,
                            starting_dopamine=1.0,
                            dopamine_decay=0.0,
-                           cell_type_parameters=stdp_cell_type_parameters(),
+                           cell_type_parameters=stdp_cell_type_parameters(input_balance),
                            synapse_type_parameters=stdp_synapse_type_parameters())
 
 def handwriting_model_parameters():
     return ModelParameters(step_size=1,
                            starting_dopamine=0.0,
                            dopamine_decay=0.1,
-                           cell_type_parameters=stdp_cell_type_parameters(),
+                           cell_type_parameters=stdp_cell_type_parameters(False),
                            synapse_type_parameters=stdp_synapse_type_parameters())
 
     
@@ -186,7 +186,7 @@ class Cell:
         self.x_grid_position = cell_definition.x_grid_position
         self.y_grid_position = cell_definition.y_grid_position
         self._input_balance = input_balance
-        self.input_sum=[]
+        self.input_sum=0
         # I don't like the coupling causing these to be public
         self.input_synapses = input_synapses # not acutally used yet
         self.output_synapses = output_synapses
@@ -339,7 +339,7 @@ class SimpleModel:
             post_cell.input_synapses.append(synapse)
 
         for cell in cells:
-            cell.initial_input_sum = cell.input_sum_calc()
+            cell.input_sum = cell.input_sum_calc()
             
         return cells, synapses
 
