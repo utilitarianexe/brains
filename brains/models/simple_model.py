@@ -3,6 +3,7 @@ from brains.network import SynapseDefinition, NetworkDefinition
 
 from collections import defaultdict
 from dataclasses import dataclass, asdict
+import random
 
 @dataclass
 class CellTypeParameters:
@@ -41,6 +42,7 @@ class SynapseTypeParameters:
     min_strength: float
     s_tag_decay_rate: float
     starting_s_tag: float
+    noise_factor: float
 
 def stdp_synapse_type_parameters():
     return SynapseTypeParameters(stdp_scalar=0.001,
@@ -48,7 +50,8 @@ def stdp_synapse_type_parameters():
                                  max_strength=0.4,
                                  min_strength=0.0,
                                  s_tag_decay_rate=0.002,
-                                 starting_s_tag=0.0)
+                                 starting_s_tag=0.0,
+                                 noise_factor=0.0)
 
 @dataclass
 class ModelParameters:
@@ -74,12 +77,14 @@ def stdp_model_parameters(input_balance):
                            cell_type_parameters=stdp_cell_type_parameters(input_balance),
                            synapse_type_parameters=stdp_synapse_type_parameters())
 
-def handwriting_model_parameters():
+def handwriting_model_parameters(input_balance):
+    synapse_type_paramenters = stdp_synapse_type_parameters()
+    synapse_type_paramenters.noise_factor = 0.5
     return ModelParameters(step_size=1,
                            starting_dopamine=0.0,
                            dopamine_decay=0.1,
-                           cell_type_parameters=stdp_cell_type_parameters(False),
-                           synapse_type_parameters=stdp_synapse_type_parameters())
+                           cell_type_parameters=stdp_cell_type_parameters(input_balance),
+                           synapse_type_parameters=synapse_type_paramenters)
 
     
 # voltage and current should be named potential everywhere
@@ -90,36 +95,44 @@ class Synapse:
                  synapse_type_parameters):
         self.pre_cell = pre_cell
         self.post_cell = post_cell
-
-        # much of this could be private
         self.strength = synapse_definition.starting_strength
-        self.step_size = step_size
+
+        self._step_size = step_size
 
         # can be though of as recording the firing pattern correlation
-        self.s_tag = synapse_type_parameters.starting_s_tag
-        self.stdp_scalar = synapse_type_parameters.stdp_scalar
-        self.reward_scalar = synapse_type_parameters.reward_scalar
-        self.max_strength = synapse_type_parameters.max_strength
-        self.min_strength = synapse_type_parameters.min_strength
-        self.s_tag_decay_rate = synapse_type_parameters.s_tag_decay_rate
+        self._s_tag = synapse_type_parameters.starting_s_tag
+        
+        self._stdp_scalar = synapse_type_parameters.stdp_scalar
+        self._reward_scalar = synapse_type_parameters.reward_scalar
+        self._max_strength = synapse_type_parameters.max_strength
+        self._min_strength = synapse_type_parameters.min_strength
+        self._s_tag_decay_rate = synapse_type_parameters.s_tag_decay_rate
+        self._noise_factor = synapse_type_parameters.noise_factor
 
     def update(self, dopamine):
         self.stdp()
         self.train(dopamine)
 
     def train(self, dopamine):
-        self.strength += self.s_tag * dopamine * self.reward_scalar
-        if self.strength >= self.max_strength:
-            self.strength = self.max_strength
-        if self.strength < self.min_strength:
-            self.strength = self.min_strength
+        self.strength += self._s_tag * dopamine * self._reward_scalar
+        if self.strength >= self._max_strength:
+            self.strength = self._max_strength
+        if self.strength < self._min_strength:
+            self.strength = self._min_strength
             
     def stdp(self):
-        self.s_tag = decay(self.s_tag, self.s_tag_decay_rate, self.step_size)
+        self._s_tag = decay(self._s_tag, self._s_tag_decay_rate, self._step_size)
         if self.pre_cell.fired():
-            self.s_tag -= self.stdp_scalar * self.post_cell.calcium()
+            self._s_tag -= self._stdp_scalar * self.post_cell.calcium()
         if self.post_cell.fired():
-            self.s_tag += self.stdp_scalar * self.pre_cell.calcium()
+            self._s_tag += self._stdp_scalar * self.pre_cell.calcium()
+
+    def fire(self):
+        if self._noise_factor > 0:
+            noise = self._noise_factor * random.uniform(-1, 1) * self.strength
+            self.post_cell.receive_fire(self.strength + noise)
+        else:
+            self.post_cell.receive_fire(self.strength)
 
 class CellMembrane:
     def __init__(self, cell_type_parameters, step_size):
@@ -176,6 +189,7 @@ class CellMembrane:
         self._input_current = decay(self._input_current, self._current_decay, self._step_size)
         self._calcium = decay(self._calcium, self._calcium_decay, self._step_size)
 
+
 class Cell:
     def __init__(self, cell_definition, cell_membrane, input_balance):
         self.uuid = cell_definition.uuid
@@ -219,6 +233,22 @@ class Cell:
             total += synapse.strength
         return total
 
+    def receive_fire(self, strength):
+        self._cell_membrane.receive_input(strength)
+
+    def apply_fire(self):
+        if self._cell_membrane.fired():
+            for synapse in self.output_synapses:
+                synapse.fire()
+
+    def update(self, step, environment=None):
+        if environment is not None:
+            outside_current = environment.potential_from_location(step,
+                                                                  self.x_grid_position,
+                                                                  self.y_grid_position)
+            self._cell_membrane.receive_input(outside_current)
+        self._cell_membrane.update()
+        
     # these should be named as getters and maybe use the auto thing
     # or maybe one cell class
     # or maybe make a cell membrane getter function
@@ -234,21 +264,6 @@ class Cell:
     def fired(self):
         return self._cell_membrane.fired()
 
-    def receive_fire(self, strength):
-        self._cell_membrane.receive_input(strength)
-
-    def apply_fire(self):
-        if self._cell_membrane.fired():
-            for synapse in self.output_synapses:
-                synapse.post_cell.receive_fire(synapse.strength)
-
-    def update(self, step, environment=None):
-        if environment is not None:
-            outside_current = environment.potential_from_location(step,
-                                                                  self.x_grid_position,
-                                                                  self.y_grid_position)
-            self._cell_membrane.receive_input(outside_current)
-        self._cell_membrane.update()
 
 class SimpleModel:
     def __init__(self, network_definition, model_parameters):
@@ -262,14 +277,6 @@ class SimpleModel:
                                                         model_parameters.synapse_type_parameters,
                                                         network_definition,
                                                         self._step_size)
-
-    def update_dopamine(self, step, environment=None):
-        self._dopamine = decay(self._dopamine, self._dopamine_decay, self._step_size)
-        for cell in self._cells:
-            if cell.fired() and environment is not None:
-                if environment.reward(step, cell.x_grid_position, cell.y_grid_position):
-                    self._dopamine = 1
-
     def step(self, step, environment=None):
         for cell in self._cells:
             cell.update(step, environment)
@@ -282,6 +289,13 @@ class SimpleModel:
         for cell in self._cells:
             cell.apply_input_balance()
             cell.apply_fire()
+
+    def update_dopamine(self, step, environment=None):
+        self._dopamine = decay(self._dopamine, self._dopamine_decay, self._step_size)
+        for cell in self._cells:
+            if cell.fired() and environment is not None:
+                if environment.reward(step, cell.x_grid_position, cell.y_grid_position):
+                    self._dopamine = 1
 
     def export(self):
         updated_synapse_definitions = []

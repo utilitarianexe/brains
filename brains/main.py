@@ -17,7 +17,7 @@ def stdp_world(input_balance):
     return model, environment.STDPTestEnvironment()
 
 def handwriting_world():
-    model_parameters = simple_model.handwriting_model_parameters()
+    model_parameters = simple_model.handwriting_model_parameters(True)
 
     # need like some kind of average starting connection strength thing
     network_definition = network.layer_based_default_network()

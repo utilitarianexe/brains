@@ -125,7 +125,9 @@ class TestModel(unittest.TestCase):
                        ]
         reward_ranges =  [(1, 0, [205, 230])]
         test_environment = environment.TestEnvironment(fire_points, reward_ranges)
-        model_parameters = simple_model.handwriting_model_parameters()
+        model_parameters = simple_model.handwriting_model_parameters(False)
+        
+        # Strength is set very low to prevent spike propagation. Spikes are created artificially.
         starting_synapse_strength = 0.0
         network_definition = self.two_cell_network(starting_synapse_strength)
         model = simple_model.SimpleModel(network_definition,

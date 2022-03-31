@@ -223,6 +223,6 @@ def layer_based_default_network():
     
     # Something about connection probability rubs me wrong.
     # connections might be more complex
-    layer_connections = [("a", "b", 1, 0.003), ("b", "c", 1, 0.012),
-                         ("c", "d", 1, 0.007)]
+    layer_connections = [("a", "b", 1, 0.001), ("b", "c", 1, 0.005),
+                         ("c", "d", 1, 0.0025)]
     return build_layer_based_network(layers, layer_connections)

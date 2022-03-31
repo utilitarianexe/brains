@@ -16,6 +16,8 @@ refactoring
   get example and spirit working with video, export, import, and pyplot
   arguably export should be a type of display
   I don't like how we attach cells to synapses in the simple model
+  use private consistantly the _ thing
+  simple_model class could be split in 3
 
 advertising
   what else is out there
@@ -26,7 +28,6 @@ installation/updates
 
 new funcitonality
   cells
-    randomized synaptic release
     output balancing
 
   display
@@ -55,8 +56,7 @@ new funcitonality
     only one timestep delay betwenn precell spike and post cell spike
 
 think about
-  do we need reward for post pre stdp
-  run away connections(negative and positive)
+  what distribution should we use for noise
   what happens if we double spike during reward
   feel like the model is unnecarily complex
   get more backround on simulation generally(really need to retake calc)
