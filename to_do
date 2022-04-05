@@ -1,8 +1,10 @@
 refactoring
+  me need a world to step
   switch from "model" to "brain"
   use dacite package instead of __post__init__ bs
   test parameters confusion
   simple is a bad name
+  move parameters out of model file and networks out of network file
   clean up environment to allow for better tests without putting the test env in its own class
   also better tests for environment
   pull out parameters especially environment and display
@@ -31,6 +33,7 @@ new funcitonality
     output balancing
 
   display
+    accuracy graph
     red should be positive green negative
     display synapse strengths
     pause button
@@ -56,6 +59,7 @@ new funcitonality
     only one timestep delay betwenn precell spike and post cell spike
 
 think about
+  when we reward should we stick at 1 or hit it once
   what distribution should we use for noise
   what happens if we double spike during reward
   feel like the model is unnecarily complex

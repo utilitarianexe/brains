@@ -58,11 +58,12 @@ class TestModel(unittest.TestCase):
         Causing one cell to spike should cause the next to spike
         '''
         model = self.two_cell_model(0.1)
-        test_environment = environment.TestEnvironment([(1, 0, 0, 0.15)], [])
+        test_environment = environment.TestEnvironment([(1, 0, 0, 0.15)], [None], 1000)
 
         fire_history = []
         for i in range(100):
             model.step(i, test_environment)
+            test_environment.step(i)
             outputs = model.outputs()
             # clearly we need a nicer output system
             if outputs["a"] > 1:
@@ -82,12 +83,13 @@ class TestModel(unittest.TestCase):
                        (100, 0, 0, 0.15),
                        (110, 1, 0, 0.15),
                        ]
-        test_environment = environment.TestEnvironment(fire_points, [])
+        test_environment = environment.TestEnvironment(fire_points, [None], 1000)
         starting_synapse_strength = 0.0
         model = self.two_cell_model(starting_synapse_strength)
         fire_history = []
         for i in range(200):
             model.step(i, test_environment)
+            test_environment.step(i)
         self.assertGreater(model.synapses[0].strength, starting_synapse_strength)
 
     def test_stdp_post_pre(self):
@@ -99,12 +101,13 @@ class TestModel(unittest.TestCase):
                        (110, 0, 0, 0.15),
                        (100, 1, 0, 0.15),
                        ]
-        test_environment = environment.TestEnvironment(fire_points, [])
+        test_environment = environment.TestEnvironment(fire_points, [None], 1000)
         starting_synapse_strength = 0.01
         model = self.two_cell_model(starting_synapse_strength)
         fire_history = []
         for i in range(200):
             model.step(i, test_environment)
+            test_environment.step(i)
         self.assertLess(model.synapses[0].strength, starting_synapse_strength)
 
     def test_rewarded_stdp(self):
@@ -123,8 +126,8 @@ class TestModel(unittest.TestCase):
                        (410, 0, 0, 0.15),
                        (400, 1, 0, 0.15),
                        ]
-        reward_ranges =  [(1, 0, [205, 230])]
-        test_environment = environment.TestEnvironment(fire_points, reward_ranges)
+        reward_points =  [None, None, (1, 0,), None, None, None]
+        test_environment = environment.TestEnvironment(fire_points, reward_points, 100)
         model_parameters = simple_model.handwriting_model_parameters(False)
         
         # Strength is set very low to prevent spike propagation. Spikes are created artificially.
@@ -140,6 +143,7 @@ class TestModel(unittest.TestCase):
             if i == 250:
                 self.assertGreater(model.synapses[0].strength, starting_synapse_strength)
             model.step(i, test_environment)
+            test_environment.step(i)
 
     def test_stdp_auto_input_selection(self):
         '''
@@ -165,6 +169,7 @@ class TestModel(unittest.TestCase):
             
         for i in range(15000):
             model.step(i, test_environment)
+            test_environment.step(i)
             if i == 5000:
                 self.assertTrue(synapse_early_input.strength > starting_strength)
                 self.assertTrue(synapse_late_input.strength > synapse_early_input.strength)
@@ -193,6 +198,7 @@ class TestModel(unittest.TestCase):
             
         for i in range(15000):
             model.step(i, test_environment)
+            test_environment.step(i)
 
         self.assertTrue(synapse_late_input.strength > synapse_early_input.strength)
 

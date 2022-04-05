@@ -6,23 +6,35 @@ from collections import defaultdict
 from pathlib import Path
 
 class TestEnvironment:
-    def __init__(self, input_points, reward_ranges):
+    def __init__(self, input_points, reward_points, reward_frequency):
+        self._reward_frequency = reward_frequency
+        
         self.input_dict = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
         for (step, x, y, strength) in input_points:
             self.input_dict[step][x][y] = strength
-        self.reward_dict = defaultdict(lambda: defaultdict(list))
-        for (x, y, step_range) in reward_ranges:
-            self.reward_dict[x][y].append(step_range)
+
+        # List of corrdinates or Nones specifying a reward for a given epoch
+        self._reward_points = reward_points
+        self._reward = False
+        self._reward_point = self._reward_points[0]
 
     def potential_from_location(self, step, x_grid_position, y_grid_position):
         return self.input_dict[step][x_grid_position][y_grid_position]
+
+    def step(self, step):
+        if step % self._reward_frequency == 0:
+            self._reward = False
+            self._reward_point = self._reward_points[step//self._reward_frequency]
+
+    def accept_fire(self, step, x_grid_position, y_grid_position):
+        if self._reward_point is None:
+            return
+
+        if x_grid_position == self._reward_point[0] and y_grid_position == self._reward_point[1]:
+            self._reward = True
     
-    def reward(self, step, x_grid, y_grid):
-        reward_ranges = self.reward_dict[x_grid][y_grid]
-        for (start, end,) in reward_ranges:
-            if step > start and step < end:
-                return True
-        return False
+    def has_reward(self):
+        return self._reward
 
 class STDPTestEnvironment:
     def __init__(self):
@@ -38,20 +50,40 @@ class STDPTestEnvironment:
             return 0.1
         return 0
 
-    def reward(self, step, x_grid, y_grid):
+    def has_reward(self):
         return False
+
+    def step(self, step):
+        pass
+
+    def accept_fire(self, step, x_grid_position, y_grid_position):
+        pass
 
 
 class HandwritenEnvironment:
     def __init__(self, delay=None, frequency=None, image_lines=None, shuffle=False,
-                 last_layer_x_grid_position=None):
+                 last_layer_x_grid_position=None, file_name=None):
         self._delay = delay
         self._frequency = frequency
         self._image_width = None
         self._last_layer_x_grid_position = last_layer_x_grid_position
         
+        self._win = 0
+        self._loss = 0
+        self._none_fired = 0
+        self._all_fired = 0
+        self._indeterminate = 0
+        self._epochs = 0
+
+        self._reward = False
+        self._correct_cell_fired = False
+        self._incorrect_cell_fired = False
+
+        if (image_lines is None and file_name is None) or (image_lines and file_name):
+            raise Exception("HandwrittenEnvironment contructor requires either a file_name or image_lines but not both")
+        
         if image_lines is None:
-            image_lines = self._get_image_lines_from_file()
+            image_lines = self._get_image_lines_from_file(file_name)
         images_by_letter = self._load_handwriting(image_lines)
         x_images = images_by_letter['x']
         o_images = images_by_letter['o']
@@ -66,15 +98,47 @@ class HandwritenEnvironment:
             random.shuffle(self._images)
         self._letter_id_by_letter = {'o': 0, 'x': 1}
 
-    # check this
-    def reward(self, step, x_grid, y_grid):
-        if x_grid != self._last_layer_x_grid_position:
-            return False
+    def step(self, step):
+        real_step = step - self._delay
+        if real_step % self._frequency == 0:
+            self._epochs += 1
+            print("resetting env state")
+            print("epochs", self._epochs, "loss", self._loss, "win", self._win, "none_fired", self._none_fired, "all_fired", self._all_fired, "indeterminate", self._indeterminate)
+            self._correct_cell_fired = False
+            self._incorrect_cell_fired = False
+        elif real_step % (self._frequency//2) == 0:
+            print("env in output state")
+            if self._correct_cell_fired and not self._incorrect_cell_fired:
+                self._win += 1
+                self._reward = True
+            elif not self._correct_cell_fired and not self._incorrect_cell_fired:
+                self._none_fired += 1
+                self._indeterminate += 1
+                self._reward = False
+            elif self._correct_cell_fired and self._incorrect_cell_fired:
+                self._all_fired += 1
+                self._indeterminate += 1
+                self._reward = False
+            elif not self._correct_cell_fired and self._incorrect_cell_fired:
+                self._loss += 1
+                self._reward = False
+
+    def has_reward(self):
+        return self._reward
+
+    def accept_fire(self, step, x_grid_position, y_grid_position):
         real_step = step - self._delay
         (letter, _) = self._images[(real_step//self._frequency) - 1]
-        if step > real_step:
-            return y_grid == self._letter_id_by_letter[letter]
-        return False
+        if step <= real_step:
+            return False
+
+        if x_grid_position != self._last_layer_x_grid_position:
+            return False
+
+        if y_grid_position == self._letter_id_by_letter[letter]:
+            self._correct_cell_fired = True
+        else:
+            self._incorrect_cell_fired = True
         
     # so many magic numbers
     # also so many errors possilbe
@@ -84,20 +148,24 @@ class HandwritenEnvironment:
         is_correct_time = real_step % self._frequency == 0 and step > real_step
         is_input_cell = x_grid_position < self._image_width
         if  is_correct_time and is_input_cell:
-            image_index = (real_step//self._frequency) - 1
+            image_index = real_step//self._frequency - 1
+            if image_index >= len(self._images):
+                print("ran out of images to show network will continue running with no inputs")
+                return 0.0
+
             (_, image) = self._images[image_index]
             pixel_position = y_grid_position * self._image_width + x_grid_position
             pixel = image[pixel_position]
             if pixel > 50:
                 return 0.3
-        return 0
+        return 0.0
 
-    def _get_image_lines_from_file(self):
+    def _get_image_lines_from_file(self, file_path):
         # magic file name
         # not checking exceptions
         # wrong place for this function
-        base_path = Path(__file__).parent
-        file_path = (base_path / "./data/o_x_hand_written_short.csv").resolve()
+        base_path = Path(__file__).parent / "data"
+        file_path = (base_path / file_path).resolve()
         return open(file_path)
         
 
@@ -121,9 +189,9 @@ class HandwritenEnvironment:
         return images_by_letter
 
 def shorten_file():
-    input_file = open("A_Z Handwritten Data.csv")
-    output_file = open("o_x_hand_written_short.csv", 'w')
-    wanted_images_per_letter = 10
+    input_file = open("./data/A_Z Handwritten Data.csv")
+    output_file = open("./data/o_x_hand_written_long.csv", 'w')
+    wanted_images_per_letter = 1000
     wanted_letters = ['o', 'x']
     current_letter_index = 0
     current_letter_count = 0

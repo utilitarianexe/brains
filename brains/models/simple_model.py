@@ -79,7 +79,7 @@ def stdp_model_parameters(input_balance):
 
 def handwriting_model_parameters(input_balance):
     synapse_type_paramenters = stdp_synapse_type_parameters()
-    synapse_type_paramenters.noise_factor = 0.5
+    synapse_type_paramenters.noise_factor = 0.7
     return ModelParameters(step_size=1,
                            starting_dopamine=0.0,
                            dopamine_decay=0.1,
@@ -236,10 +236,12 @@ class Cell:
     def receive_fire(self, strength):
         self._cell_membrane.receive_input(strength)
 
-    def apply_fire(self):
+    def apply_fire(self, step, environment=None):
         if self._cell_membrane.fired():
             for synapse in self.output_synapses:
                 synapse.fire()
+            if environment is not None:
+                environment.accept_fire(step, self.x_grid_position, self.y_grid_position)
 
     def update(self, step, environment=None):
         if environment is not None:
@@ -288,14 +290,13 @@ class SimpleModel:
 
         for cell in self._cells:
             cell.apply_input_balance()
-            cell.apply_fire()
+            cell.apply_fire(step, environment)
 
     def update_dopamine(self, step, environment=None):
         self._dopamine = decay(self._dopamine, self._dopamine_decay, self._step_size)
-        for cell in self._cells:
-            if cell.fired() and environment is not None:
-                if environment.reward(step, cell.x_grid_position, cell.y_grid_position):
-                    self._dopamine = 1
+        if environment is not None:
+            if environment.has_reward() and self._dopamine < 0.1:
+                self._dopamine = 1
 
     def export(self):
         updated_synapse_definitions = []
