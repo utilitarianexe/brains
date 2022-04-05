@@ -4,6 +4,7 @@ from brains.network import SynapseDefinition, NetworkDefinition
 from collections import defaultdict
 from dataclasses import dataclass, asdict
 import random
+import numpy as np
 
 @dataclass
 class CellTypeParameters:
@@ -79,7 +80,7 @@ def stdp_model_parameters(input_balance):
 
 def handwriting_model_parameters(input_balance):
     synapse_type_paramenters = stdp_synapse_type_parameters()
-    synapse_type_paramenters.noise_factor = 0.7
+    synapse_type_paramenters.noise_factor = 4.0
     return ModelParameters(step_size=1,
                            starting_dopamine=0.0,
                            dopamine_decay=0.1,
@@ -96,7 +97,6 @@ class Synapse:
         self.pre_cell = pre_cell
         self.post_cell = post_cell
         self.strength = synapse_definition.starting_strength
-
         self._step_size = step_size
 
         # can be though of as recording the firing pattern correlation
@@ -108,26 +108,38 @@ class Synapse:
         self._min_strength = synapse_type_parameters.min_strength
         self._s_tag_decay_rate = synapse_type_parameters.s_tag_decay_rate
         self._noise_factor = synapse_type_parameters.noise_factor
+        self._pre_cell_fired = False
+        self._post_cell_fired = False
 
     def update(self, dopamine):
-        self.stdp()
-        self.train(dopamine)
+        # stdp
+        if self._pre_cell_fired:
+            self._s_tag -= self._stdp_scalar * self.post_cell.calcium()
+        if self._post_cell_fired:
+            self._s_tag += self._stdp_scalar * self.pre_cell.calcium()
 
-    def train(self, dopamine):
+        if self._s_tag < 0.00001 and self._s_tag > -0.00001:
+            self._pre_cell_fired = False
+            self._post_cell_fired = False
+            return
+            
+        self._s_tag = self._s_tag * (1 - self._s_tag_decay_rate)**self._step_size
+
+        # train
         self.strength += self._s_tag * dopamine * self._reward_scalar
         if self.strength >= self._max_strength:
             self.strength = self._max_strength
         if self.strength < self._min_strength:
             self.strength = self._min_strength
-            
-    def stdp(self):
-        self._s_tag = decay(self._s_tag, self._s_tag_decay_rate, self._step_size)
-        if self.pre_cell.fired():
-            self._s_tag -= self._stdp_scalar * self.post_cell.calcium()
-        if self.post_cell.fired():
-            self._s_tag += self._stdp_scalar * self.pre_cell.calcium()
 
-    def fire(self):
+        self._pre_cell_fired = False
+        self._post_cell_fired = False
+
+    def post_fire(self):
+        self._post_cell_fired = True
+
+    def pre_fire(self):
+        self._pre_cell_fired = True
         if self._noise_factor > 0:
             noise = self._noise_factor * random.uniform(-1, 1) * self.strength
             self.post_cell.receive_fire(self.strength + noise)
@@ -177,6 +189,7 @@ class CellMembrane:
            Calcium increases after firing as a sort of history of recent firing.
         '''
         self._fired = False
+
         if self._voltage > self._max_voltage:
             self._voltage = self._voltage_reset
             self._fired = True
@@ -239,7 +252,9 @@ class Cell:
     def apply_fire(self, step, environment=None):
         if self._cell_membrane.fired():
             for synapse in self.output_synapses:
-                synapse.fire()
+                synapse.pre_fire()
+            for synapse in self.input_synapses:
+                synapse.post_fire()
             if environment is not None:
                 environment.accept_fire(step, self.x_grid_position, self.y_grid_position)
 
@@ -251,9 +266,6 @@ class Cell:
             self._cell_membrane.receive_input(outside_current)
         self._cell_membrane.update()
         
-    # these should be named as getters and maybe use the auto thing
-    # or maybe one cell class
-    # or maybe make a cell membrane getter function
     def membrane_voltage(self):
         return self._cell_membrane.voltage()
 
@@ -295,7 +307,7 @@ class SimpleModel:
     def update_dopamine(self, step, environment=None):
         self._dopamine = decay(self._dopamine, self._dopamine_decay, self._step_size)
         if environment is not None:
-            if environment.has_reward() and self._dopamine < 0.1:
+            if environment.has_reward():
                 self._dopamine = 1
 
     def export(self):
@@ -343,8 +355,6 @@ class SimpleModel:
                 output["b c synapse"] = synapse.strength
         return output
 
-    # will need ways to verify the network
-    # should this be in the network module
     def _build_network(self, cell_type_parameters,
                        synapse_type_parameters,
                        network_definition,

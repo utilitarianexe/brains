@@ -43,7 +43,7 @@ class TestBuildingNetwork(unittest.TestCase):
             if i == first_image_step + 260:
                 self.assertTrue(environment.has_reward())
             if i == first_image_step + 300:
-                self.assertTrue(environment.has_reward())
+                self.assertFalse(environment.has_reward())
             if i == third_image_step:
                 self.assertFalse(environment.has_reward())
 

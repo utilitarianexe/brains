@@ -78,6 +78,7 @@ class HandwritenEnvironment:
         self._reward = False
         self._correct_cell_fired = False
         self._incorrect_cell_fired = False
+        self._rewarded = False
 
         if (image_lines is None and file_name is None) or (image_lines and file_name):
             raise Exception("HandwrittenEnvironment contructor requires either a file_name or image_lines but not both")
@@ -106,6 +107,8 @@ class HandwritenEnvironment:
             print("epochs", self._epochs, "loss", self._loss, "win", self._win, "none_fired", self._none_fired, "all_fired", self._all_fired, "indeterminate", self._indeterminate)
             self._correct_cell_fired = False
             self._incorrect_cell_fired = False
+            self._rewarded = False
+            self._reward = False
         elif real_step % (self._frequency//2) == 0:
             print("env in output state")
             if self._correct_cell_fired and not self._incorrect_cell_fired:
@@ -124,7 +127,10 @@ class HandwritenEnvironment:
                 self._reward = False
 
     def has_reward(self):
-        return self._reward
+        if self._reward and not self._rewarded:
+            self._rewarded = True
+            return True
+        return False
 
     def accept_fire(self, step, x_grid_position, y_grid_position):
         real_step = step - self._delay

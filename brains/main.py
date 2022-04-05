@@ -39,7 +39,7 @@ def user_specified_world(import_name, environment_type, handwritten_file_name):
     model = simple_model.import_model(blob)
     if environment_type == 'handwriting':
         model_environment = environment.HandwritenEnvironment(
-            delay=50, frequency=150,
+            delay=50, frequency=300,
             image_lines=None, shuffle=True,
             last_layer_x_grid_position=model.network_definition.last_layer_x_grid_position,
             file_name=handwritten_file_name)
@@ -79,16 +79,20 @@ def create_args():
                            choices=["stdp", "handwriting"],
                            type=str,
                            required=False,
-                           help='Location to import model from.')
+                           help='Type of environment to run.')
     my_parser.add_argument('--handwritten_file_name',
                            default="o_x_hand_written_short.csv",
                            type=str,
                            required=False,
-                           help='Location to import model from.')
+                           help='Images to use for handwriting environment.')
+    my_parser.add_argument('--profile',
+                           default=False,
+                           type=bool,
+                           required=False,
+                           help='Profile code all other options are ignored if selected.')
     return my_parser.parse_args()
 
-def create_display(args, model):
-    display_type = args.display
+def create_display(display_type, model):
     if display_type == "pygame":
         import display.game as game
         display = game.GameDisplay(model)
@@ -99,11 +103,7 @@ def create_display(args, model):
         display = None
     return display
 
-def create_world(args):
-    world_type = args.world
-    import_name = args.import_name
-    environment_type = args.environment
-    handwritten_file_name = args.handwritten_file_name
+def create_world(world_type, import_name, environment_type, handwritten_file_name):
     if world_type and import_name:
         raise Exception("User should provide either (import_name and environment) or world_type")
     
@@ -115,7 +115,7 @@ def create_world(args):
         elif world_type == "example":
             return World(example_model.ExampleModel(), None)
         elif world_type == "handwriting":
-            return handwriting_world(args.handwritten_file_name)
+            return handwriting_world(handwritten_file_name)
         elif world_type == "input_balance":
             return stdp_world(True)
         
@@ -132,11 +132,15 @@ def export(brain, export_name):
     output_file = open(file_path, 'w')
     json.dump(blob, output_file, sort_keys=True, indent=4)
 
-if __name__ == "__main__" :
-    args = create_args()
-    brain, environment = create_world(args)
-    display = create_display(args, brain)
-    steps = args.steps
+def main(steps,
+         world_type="", import_name="",
+         environment_type="", handwritten_file_name="",
+         display_type="", export_name="",
+         ):
+
+    brain, environment = create_world(world_type, import_name,
+                                      environment_type, handwritten_file_name)
+    display = create_display(display_type, brain)
     for i in range(steps):
         brain.step(i, environment)
         environment.step(i)
@@ -145,5 +149,24 @@ if __name__ == "__main__" :
     if display is not None:
         display.final_output()
 
-    if args.export_name:
-        export(brain, args.export_name)
+    if export_name:
+        export(brain, export_name)
+
+
+if __name__ == "__main__" :
+    args = create_args()
+    steps = args.steps
+    world_type = args.world
+    import_name = args.import_name
+    environment_type = args.environment
+    handwritten_file_name = args.handwritten_file_name
+    display_type = args.display
+    export_name = args.export_name
+    profile = args.profile
+
+    if profile:
+        import cProfile
+        cProfile.run('main(1000, "handwriting",  handwritten_file_name="o_x_hand_written_short.csv")')
+    else:
+        main(steps, world_type, import_name, environment_type, handwritten_file_name, display_type,
+         export_name)
