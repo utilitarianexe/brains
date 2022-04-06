@@ -5,6 +5,9 @@ import random
 from collections import defaultdict
 from enum import Enum
 import uuid
+from collections import namedtuple
+
+LayerDefinition = namedtuple('LayerDefinition', 'lable size layout is_inhibitory')
 
 class Layout(Enum):
     SQUARE = 1
