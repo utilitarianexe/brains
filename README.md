@@ -1,6 +1,16 @@
 # Intro
 
-Neuron simulation software.
+Neural network simulation software.
+
+Biased towards being more like a squishy brain and less like a traditional AI.
+
+## General concept
+
+Running the program runs a "world". A world consists of a brain/model and an environment.
+
+A brain consists of a network, a set of parameters, and choice of a model of a neuron to simulate.
+
+An environment provides inputs to the brain and receives outputs.
 
 # Install
 
@@ -8,17 +18,26 @@ After cloning navigate into the repository and run.
 
 `pip install -r requirements.txt`
 
-Note python 3 package.
+Note this is a python 3 app.
 If installing matplotlib or pygame is an issue it can be run without these depending on mode.
 
 # Run
 
-Runs in two display modes
+Runs in two display modes or with no display
+
+## Basic learning using STDP
+
+`python brains/main.py --steps=2000000    --world=easy --export_name=easy_2000000`
+
+Runs a simple brain for 2000000 steps with 5 neurons. Input from three neurons. One that fires randomly and a pair where at least one fires but which one is random. There are two output cells. If the same output cell fires as the input cell in the same row the network is rewarded and a win is recorded. The network starts out unbiased but will learn to fire the right output for the input.
 
 ## pygame
 
-Watch network run in real time.
-Requires pygame
+Watch network run in real time by importing the brain you just trained.
+
+`python brains/main.py --steps=2000000 --environment=easy --import_name=easy_2000000 --display=pygame`
+
+Or watch a more complex network and environment(training for this one still does not work).
 
 `python brains/main.py --display pygame --world handwriting`
 

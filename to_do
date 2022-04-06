@@ -1,4 +1,7 @@
 refactoring
+  environmnet majic numbers and copy paste code(should make base class)
+  main file is too long and needs tests
+  paramterize delay or generally env variables
   need a better way to believe rewards are hitting at the right times
   me need a world to step
   switch from "model" to "brain"
@@ -33,7 +36,12 @@ new funcitonality
   cells
     output balancing
 
+  easy environment
+    inhibition
+    multiple layers
+
   display
+    in pygame display labels for input and wins
     accuracy graph
     red should be positive green negative
     display synapse strengths
@@ -48,14 +56,14 @@ new funcitonality
       don't have the display modules run the model the main should
 
   management
-    create a much simpler problem to solve
+    add a ./run_tests file that runs a bunch of complete runs
+    add an adder environment as a mid level task
     should be able to quit and still get output file
     maybe all runs should make output files?
     make a plotting tool with our basic equations in it
       like how much does s_tag decay in an epoch
     should be a model level synapse connection strength that is then scaled per synapse
     apply the complex environment to a simple model
-    add reward to the simple environment
     elf grid specs
     run neurons in compliled language
 

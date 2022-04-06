@@ -11,19 +11,20 @@ import json
 
 World = namedtuple('World', 'model environment')
 
-def stdp_world(input_balance):
+def stdp_world(input_balance, epoch_length):
     model_parameters = simple_model.stdp_model_parameters(input_balance)
     network_definition = network.stdp_test_network()
     model = simple_model.SimpleModel(network_definition, model_parameters)
-    return model, environment.STDPTestEnvironment()
+    return model, environment.STDPTestEnvironment(epoch_length)
 
-def handwriting_world(file_name):
-    model_parameters = simple_model.handwriting_model_parameters(True)
+def handwriting_world(file_name, epoch_length, input_delay=50):
+    model_parameters = simple_model.handwriting_model_parameters(True,
+                                                                 noise_factor=3.0)
 
     # need like some kind of average starting connection strength thing
     network_definition = network.layer_based_default_network()
     handwriten_environment = environment.HandwritenEnvironment(
-        delay=50, frequency=300,
+        input_delay=input_delay, epoch_length=epoch_length,
         image_lines=None, shuffle=True,
         last_layer_x_grid_position=network_definition.last_layer_x_grid_position,
         file_name=file_name)
@@ -31,7 +32,22 @@ def handwriting_world(file_name):
     model = simple_model.SimpleModel(network_definition, model_parameters)
     return model, handwriten_environment
 
-def user_specified_world(import_name, environment_type, handwritten_file_name):
+def easy_world(epoch_length, input_delay=50):
+    model_parameters = simple_model.handwriting_model_parameters(True,
+                                                                 noise_factor=0.5)
+
+    # need like some kind of average starting connection strength thing
+    network_definition = network.easy_layer_network()
+    easy_environment = environment.EasyEnvironment(epoch_length, input_delay)
+    model = simple_model.SimpleModel(network_definition, model_parameters)
+    return model, easy_environment
+
+
+def user_specified_world(import_name, environment_type, handwritten_file_name,
+                         epoch_length, input_delay=50):
+    print(handwritten_file_name)
+
+
     base_path = Path(__file__).parent / "data"
     file_path = (base_path / import_name).resolve()
     model_file = open(file_path)
@@ -39,10 +55,12 @@ def user_specified_world(import_name, environment_type, handwritten_file_name):
     model = simple_model.import_model(blob)
     if environment_type == 'handwriting':
         model_environment = environment.HandwritenEnvironment(
-            delay=50, frequency=300,
+            input_delay=input_delay, epoch_length=epoch_length,
             image_lines=None, shuffle=True,
             last_layer_x_grid_position=model.network_definition.last_layer_x_grid_position,
             file_name=handwritten_file_name)
+    elif environment_type == 'easy':
+        model_environment = environment.EasyEnvironment(epoch_length, input_delay)
     elif environment_type == 'stdp':
         model_environment = environment.STDPTestEnvironment()
     return model, model_environment
@@ -54,17 +72,23 @@ def create_args():
                            choices=["pygame", "pyplot"],
                            required=False,
                            help='How to display the model.')
-    my_parser.add_argument('--world',
-                           type=str,
-                           choices=["spirit", "stdp", "example", "handwriting", "input_balance"],
-                           required=False,
-                           help='A world is a combination of a model and an environment. '\
-                                'A model is built from ModelParameters and a NetworkDefinition.')
+    my_parser.add_argument(
+        '--world',
+        type=str,
+        choices=["spirit", "stdp", "example", "handwriting", "input_balance", "easy"],
+        required=False,
+        help='A world is a combination of a model and an environment. '\
+        'A model is built from ModelParameters and a NetworkDefinition.')
     my_parser.add_argument('--steps',
                            type=int,
                            default=30000,
                            required=False,
                            help='Number of steps to run the model.')
+    my_parser.add_argument('--epoch_length',
+                           type=int,
+                           default=300,
+                           required=False,
+                           help='Number of steps between presentations of input to a brain.')
     my_parser.add_argument('--export_name',
                            type=str,
                            required=False,
@@ -76,7 +100,7 @@ def create_args():
                            required=False,
                            help='Import model. Should be the name of a file in the data directory.')
     my_parser.add_argument('--environment',
-                           choices=["stdp", "handwriting"],
+                           choices=["stdp", "handwriting", "easy"],
                            type=str,
                            required=False,
                            help='Type of environment to run.')
@@ -103,24 +127,28 @@ def create_display(display_type, model):
         display = None
     return display
 
-def create_world(world_type, import_name, environment_type, handwritten_file_name):
+def create_world(world_type, epoch_length, import_name,
+                 environment_type, handwritten_file_name):
     if world_type and import_name:
-        raise Exception("User should provide either (import_name and environment) or world_type")
+        raise Exception("User should either create world with(import_name and environment) or " \
+                        "provide\ world_type")
     
     if world_type:
         if world_type == "stdp":
-            return stdp_world(False)
+            return stdp_world(False, epoch_length)
+        elif world_type == "easy":
+            return easy_world(epoch_length)
         elif world_type == "spirit":
             return World(spirit_model.default_model(), None)
         elif world_type == "example":
             return World(example_model.ExampleModel(), None)
         elif world_type == "handwriting":
-            return handwriting_world(handwritten_file_name)
+            return handwriting_world(handwritten_file_name, epoch_length)
         elif world_type == "input_balance":
-            return stdp_world(True)
-        
+            return stdp_world(True, epoch_length)
+
     if import_name and environment_type:
-        return user_specified_world(import_name, environment_type, handwritten_file_name)
+        return user_specified_world(import_name, environment_type, handwritten_file_name, epoch_length)
 
     print("Not enough information provided. Either supply a world argument or both a import_name and an environment to run it in")
     quit()
@@ -132,18 +160,18 @@ def export(brain, export_name):
     output_file = open(file_path, 'w')
     json.dump(blob, output_file, sort_keys=True, indent=4)
 
-def main(steps,
+def main(steps, epoch_length,
          world_type="", import_name="",
          environment_type="", handwritten_file_name="",
-         display_type="", export_name="",
-         ):
+         display_type="", export_name=""):
 
-    brain, environment = create_world(world_type, import_name,
-                                      environment_type, handwritten_file_name)
+    brain, environment = create_world(world_type, epoch_length,
+                                      import_name, environment_type,
+                                      handwritten_file_name)
     display = create_display(display_type, brain)
     for i in range(steps):
-        brain.step(i, environment)
         environment.step(i)
+        brain.step(i, environment)
         if display is not None:
             display.process_step()
     if display is not None:
@@ -163,10 +191,12 @@ if __name__ == "__main__" :
     display_type = args.display
     export_name = args.export_name
     profile = args.profile
+    epoch_length = args.epoch_length
 
     if profile:
         import cProfile
-        cProfile.run('main(1000, "handwriting",  handwritten_file_name="o_x_hand_written_short.csv")')
+        cProfile.run('main(1000, 300, "handwriting",  handwritten_file_name="o_x_hand_written_short.csv")')
     else:
-        main(steps, world_type, import_name, environment_type, handwritten_file_name, display_type,
-         export_name)
+        main(steps, epoch_length,
+             world_type, import_name, environment_type, handwritten_file_name,
+             display_type, export_name)

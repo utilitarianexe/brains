@@ -5,6 +5,95 @@ import random
 from collections import defaultdict
 from pathlib import Path
 
+class EasyEnvironment:
+    '''
+    Designed for easy leaning
+    '''
+    def __init__(self, epoch_length, input_delay):
+        self._epoch_length = epoch_length
+
+        self._reward = False
+        self._rewarded = False
+        self._correct_cell_fired = False
+        self._incorrect_cell_fired = False
+        self._input_delay = input_delay
+        self._zero_stage = True
+        self._one_stage = False
+
+        self._win = 0
+        self._loss = 0
+        self._none_fired = 0
+        self._all_fired = 0
+        self._indeterminate = 0
+        self._epochs = 0
+
+    def potential_from_location(self, step, x_grid_position, y_grid_position):
+        real_step = step - self._input_delay
+        is_correct_time = real_step % self._epoch_length == 0 and step > real_step
+        is_input_cell = x_grid_position == 0
+        if  is_correct_time and is_input_cell:
+            if y_grid_position == 0 and self._zero_stage:
+                return 0.3
+            if y_grid_position == 1 and self._one_stage:
+                return 0.3
+            if y_grid_position == 2 and random.random() > 0.5:
+                return 0.3
+        return 0.0
+
+    def step(self, step):
+        real_step = step - self._input_delay
+        if real_step % self._epoch_length == 0:
+            self._epochs += 1
+            print("resetting env state")
+            print("epochs", self._epochs, "loss", self._loss, "win", self._win, "none_fired", self._none_fired, "all_fired", self._all_fired, "indeterminate", self._indeterminate)
+            self._correct_cell_fired = False
+            self._incorrect_cell_fired = False
+            self._rewarded = False
+            self._reward = False
+            if random.random() > 0.5:
+                self._one_stage = False
+                self._zero_stage = True
+                return
+            if self._zero_stage:
+                self._zero_stage = False
+                self._one_stage = True
+                return
+                
+        elif real_step % (self._epoch_length//2) == 0:
+            if self._correct_cell_fired and not self._incorrect_cell_fired:
+                self._win += 1
+                self._reward = True
+            elif not self._correct_cell_fired and not self._incorrect_cell_fired:
+                self._none_fired += 1
+                self._indeterminate += 1
+                self._reward = False
+            elif self._correct_cell_fired and self._incorrect_cell_fired:
+                self._all_fired += 1
+                self._indeterminate += 1
+                self._reward = False
+            elif not self._correct_cell_fired and self._incorrect_cell_fired:
+                self._loss += 1
+                self._reward = False
+
+    def accept_fire(self, step, x_grid_position, y_grid_position):
+        real_step = step - self._input_delay
+        if step <= real_step:
+            return
+
+        if x_grid_position != 3:
+            return
+
+        if y_grid_position == 0 and self._zero_stage or y_grid_position == 1 and self._one_stage:
+            self._correct_cell_fired = True
+        else:
+            self._incorrect_cell_fired = True
+    
+    def has_reward(self):
+        if self._reward and not self._rewarded:
+            self._rewarded = True
+            return True
+        return False
+
 class TestEnvironment:
     def __init__(self, input_points, reward_points, reward_frequency):
         self._reward_frequency = reward_frequency
@@ -37,16 +126,16 @@ class TestEnvironment:
         return self._reward
 
 class STDPTestEnvironment:
-    def __init__(self):
-        pass
+    def __init__(self, epoch_length=300):
+        self._epoch_length = epoch_length
 
-    # need to put these magics in default run
+    # fix magic numbers
     def potential_from_location(self, step, x_grid_position, y_grid_position):
-        frequency = 500
-        if step % frequency == 10 and step > 0 and (x_grid_position == 1 and y_grid_position == 0) :
+        is_first_cell = x_grid_position == 0 and y_grid_position == 0
+        is_second_cell = x_grid_position == 1 and y_grid_position == 0
+        if step % self._epoch_length == 0 and step > 0 and is_first_cell :
             return 0.1
-        
-        if step % frequency == 0 and step > 0 and (x_grid_position == 0 and y_grid_position == 0) :
+        if step % self._epoch_length == 10 and step > 0 and is_second_cell :
             return 0.1
         return 0
 
@@ -61,10 +150,12 @@ class STDPTestEnvironment:
 
 
 class HandwritenEnvironment:
-    def __init__(self, delay=None, frequency=None, image_lines=None, shuffle=False,
+    def __init__(self, input_delay=None, epoch_length=None, image_lines=None, shuffle=False,
                  last_layer_x_grid_position=None, file_name=None):
-        self._delay = delay
-        self._frequency = frequency
+        print(file_name)
+
+        self._input_delay = input_delay
+        self._epoch_length = epoch_length
         self._image_width = None
         self._last_layer_x_grid_position = last_layer_x_grid_position
         
@@ -100,8 +191,8 @@ class HandwritenEnvironment:
         self._letter_id_by_letter = {'o': 0, 'x': 1}
 
     def step(self, step):
-        real_step = step - self._delay
-        if real_step % self._frequency == 0:
+        real_step = step - self._input_delay
+        if real_step % self._epoch_length == 0:
             self._epochs += 1
             print("resetting env state")
             print("epochs", self._epochs, "loss", self._loss, "win", self._win, "none_fired", self._none_fired, "all_fired", self._all_fired, "indeterminate", self._indeterminate)
@@ -109,7 +200,7 @@ class HandwritenEnvironment:
             self._incorrect_cell_fired = False
             self._rewarded = False
             self._reward = False
-        elif real_step % (self._frequency//2) == 0:
+        elif real_step % (self._epoch_length//2) == 0:
             print("env in output state")
             if self._correct_cell_fired and not self._incorrect_cell_fired:
                 self._win += 1
@@ -133,13 +224,13 @@ class HandwritenEnvironment:
         return False
 
     def accept_fire(self, step, x_grid_position, y_grid_position):
-        real_step = step - self._delay
-        (letter, _) = self._images[(real_step//self._frequency) - 1]
+        real_step = step - self._input_delay
+        (letter, _) = self._images[(real_step//self._epoch_length) - 1]
         if step <= real_step:
-            return False
+            return
 
         if x_grid_position != self._last_layer_x_grid_position:
-            return False
+            return
 
         if y_grid_position == self._letter_id_by_letter[letter]:
             self._correct_cell_fired = True
@@ -150,11 +241,11 @@ class HandwritenEnvironment:
     # also so many errors possilbe
     def potential_from_location(self, step, x_grid_position, y_grid_position):
         # bad names
-        real_step = step - self._delay
-        is_correct_time = real_step % self._frequency == 0 and step > real_step
+        real_step = step - self._input_delay
+        is_correct_time = real_step % self._epoch_length == 0 and step > real_step
         is_input_cell = x_grid_position < self._image_width
         if  is_correct_time and is_input_cell:
-            image_index = real_step//self._frequency - 1
+            image_index = real_step//self._epoch_length - 1
             if image_index >= len(self._images):
                 print("ran out of images to show network will continue running with no inputs")
                 return 0.0

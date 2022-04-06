@@ -78,12 +78,14 @@ def stdp_model_parameters(input_balance):
                            cell_type_parameters=stdp_cell_type_parameters(input_balance),
                            synapse_type_parameters=stdp_synapse_type_parameters())
 
-def handwriting_model_parameters(input_balance):
+def handwriting_model_parameters(input_balance,
+                                 noise_factor=0.5,
+                                 dopamine_decay=0.1):
     synapse_type_paramenters = stdp_synapse_type_parameters()
-    synapse_type_paramenters.noise_factor = 4.0
+    synapse_type_paramenters.noise_factor = noise_factor
     return ModelParameters(step_size=1,
                            starting_dopamine=0.0,
-                           dopamine_decay=0.1,
+                           dopamine_decay=dopamine_decay,
                            cell_type_parameters=stdp_cell_type_parameters(input_balance),
                            synapse_type_parameters=synapse_type_paramenters)
 
