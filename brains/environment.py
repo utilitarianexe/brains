@@ -75,12 +75,13 @@ class EasyEnvironment:
                 self._loss += 1
                 self._reward = False
 
+    # should just take layer id
     def accept_fire(self, step, x_grid_position, y_grid_position):
         real_step = step - self._input_delay
         if step <= real_step:
             return
 
-        if x_grid_position != 3:
+        if x_grid_position != 6:
             return
 
         if y_grid_position == 0 and self._zero_stage or y_grid_position == 1 and self._one_stage:

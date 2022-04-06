@@ -227,9 +227,18 @@ def layer_based_default_network():
                          ("c", "d", 1, 0.0055)]
     return build_layer_based_network(layers, layer_connections)
 
+# def easy_layer_network():
+#     layers = [("a", 3, Layout.LINE,),
+#               ("b", 2, Layout.LINE,)]
+    
+#     layer_connections = [("a", "b", 1, 0.035)]
+#     return build_layer_based_network(layers, layer_connections)
+
 def easy_layer_network():
     layers = [("a", 3, Layout.LINE,),
-              ("b", 2, Layout.LINE,)]
+              ("b", 3, Layout.LINE,),
+              ("c", 2, Layout.LINE,)]
     
-    layer_connections = [("a", "b", 1, 0.035)]
+    layer_connections = [("a", "b", 1, 0.035), ("b", "c", 1, 0.035)]
     return build_layer_based_network(layers, layer_connections)
+

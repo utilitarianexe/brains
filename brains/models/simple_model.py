@@ -83,10 +83,12 @@ def handwriting_model_parameters(input_balance,
                                  dopamine_decay=0.1):
     synapse_type_paramenters = stdp_synapse_type_parameters()
     synapse_type_paramenters.noise_factor = noise_factor
+    cell_type_parameters = stdp_cell_type_parameters(input_balance)
+    cell_type_parameters.ss_tag_decay_rate = 0.0002
     return ModelParameters(step_size=1,
                            starting_dopamine=0.0,
                            dopamine_decay=dopamine_decay,
-                           cell_type_parameters=stdp_cell_type_parameters(input_balance),
+                           cell_type_parameters=cell_type_parameters,
                            synapse_type_parameters=synapse_type_paramenters)
 
     
