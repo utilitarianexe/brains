@@ -194,8 +194,27 @@ if __name__ == "__main__" :
     epoch_length = args.epoch_length
 
     if profile:
-        import cProfile
-        cProfile.run('main(1000, 300, "handwriting",  handwritten_file_name="o_x_hand_written_short.csv")')
+        
+
+        import cProfile, pstats, io
+        from pstats import SortKey
+        pr = cProfile.Profile()
+        pr.enable()
+        main(steps, epoch_length,
+             world_type, import_name, environment_type, handwritten_file_name,
+             display_type, export_name)
+
+        pr.disable()
+        s = io.StringIO()
+        sortby = SortKey.CUMULATIVE
+        ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+        ps.print_stats()
+        print(s.getvalue())
+
+
+        
+        # import cProfile
+        # cProfile.run('main(1000, 300, "handwriting",  handwritten_file_name="o_x_hand_written_short.csv")')
     else:
         main(steps, epoch_length,
              world_type, import_name, environment_type, handwritten_file_name,

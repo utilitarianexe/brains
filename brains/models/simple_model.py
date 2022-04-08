@@ -115,41 +115,60 @@ class Synapse:
         self._noise_factor = synapse_type_parameters.noise_factor
         self._pre_cell_fired = False
         self._post_cell_fired = False
+        self._last_fire_step = 0
+
+    # def update(self, dopamine):
+    #     if self._cell_type == CellType.INHIBITORY:
+    #         return
+
+    #     # stdp
+    #     if self._pre_cell_fired:
+    #         self._s_tag -= self._stdp_scalar * self.post_cell.calcium()
+    #     if self._post_cell_fired:
+    #         self._s_tag += self._stdp_scalar * self.pre_cell.calcium()
+
+    #     if self._s_tag < 0.00001 and self._s_tag > -0.00001:
+    #         self._pre_cell_fired = False
+    #         self._post_cell_fired = False
+    #         return
+
+    #     self._s_tag = self._s_tag * (1 - self._s_tag_decay_rate)**self._step_size
+
+    #     # train
+    #     self.strength += self._s_tag * dopamine * self._reward_scalar
+    #     if self.strength >= self._max_strength:
+    #         self.strength = self._max_strength
+    #     if self.strength < self._min_strength:
+    #         self.strength = self._min_strength
+
+    #     self._pre_cell_fired = False
+    #     self._post_cell_fired = False
 
     def update(self, dopamine):
         if self._cell_type == CellType.INHIBITORY:
             return
-
-        # stdp
-        if self._pre_cell_fired:
-            self._s_tag -= self._stdp_scalar * self.post_cell.calcium()
-        if self._post_cell_fired:
-            self._s_tag += self._stdp_scalar * self.pre_cell.calcium()
-
-        if self._s_tag < 0.00001 and self._s_tag > -0.00001:
-            self._pre_cell_fired = False
-            self._post_cell_fired = False
-            return
-
-        self._s_tag = self._s_tag * (1 - self._s_tag_decay_rate)**self._step_size
-
-        # train
         self.strength += self._s_tag * dopamine * self._reward_scalar
         if self.strength >= self._max_strength:
             self.strength = self._max_strength
         if self.strength < self._min_strength:
             self.strength = self._min_strength
 
-        self._pre_cell_fired = False
-        self._post_cell_fired = False
+    def post_fire(self, step):
+        if self._cell_type == CellType.INHIBITORY:
+            return
 
-    def post_fire(self):
-        self._post_cell_fired = True
+        steps_sense_last_fire =  step - self._last_fire_step
+        self._last_fire_step = step
+        self._s_tag = self._s_tag * (1 - self._s_tag_decay_rate)**steps_sense_last_fire
+        self._s_tag += self._stdp_scalar * self.pre_cell.calcium()
 
-    def pre_fire(self):
-        self._pre_cell_fired = True
-
+    def pre_fire(self, step):
         if self._cell_type == CellType.EXCITATORY:
+            self._s_tag -= self._stdp_scalar * self.post_cell.calcium()
+            steps_sense_last_fire =  step - self._last_fire_step
+            self._last_fire_step = step
+            self._s_tag = self._s_tag * (1 - self._s_tag_decay_rate)**steps_sense_last_fire
+
             if self._noise_factor > 0:
                 noise = self._noise_factor * random.uniform(-1, 1) * self.strength
                 self.post_cell.receive_fire(self.strength + noise)
@@ -209,11 +228,11 @@ class CellMembrane:
             if self._reset_input_current:
                 self._input_current =self._input_current_reset
 
-        self._voltage = decay(self._voltage, self._voltage_decay, self._step_size)
+        self._voltage = self._voltage * (1 - self._voltage_decay)**self._step_size
         self._voltage += self._input_current * self._step_size
-        self._input_current = decay(self._input_current, self._current_decay, self._step_size)
-        self._calcium = decay(self._calcium, self._calcium_decay, self._step_size)
 
+        self._input_current = self._input_current * (1 - self._current_decay)**self._step_size
+        self._calcium = self._calcium * (1 - self._calcium)**self._step_size
 
 class Cell:
     def __init__(self, cell_definition, cell_membrane, input_balance):
@@ -264,9 +283,9 @@ class Cell:
 
     def apply_fire(self, step, environment=None):
         for synapse in self.output_synapses:
-            synapse.pre_fire()
+            synapse.pre_fire(step)
         for synapse in self.input_synapses:
-            synapse.post_fire()
+            synapse.post_fire(step)
         if environment is not None:
             environment.accept_fire(step, self.x_grid_position, self.y_grid_position)
 
