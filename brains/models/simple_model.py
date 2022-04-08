@@ -1,5 +1,5 @@
 from brains.utils import decay
-from brains.network import SynapseDefinition, NetworkDefinition
+from brains.network import SynapseDefinition, NetworkDefinition, CellType
 
 from collections import defaultdict
 from dataclasses import dataclass, asdict
@@ -46,7 +46,7 @@ class SynapseTypeParameters:
     noise_factor: float
 
 def stdp_synapse_type_parameters():
-    return SynapseTypeParameters(stdp_scalar=0.001,
+    return SynapseTypeParameters(stdp_scalar=0.01,
                                  reward_scalar=0.1,
                                  max_strength=0.4,
                                  min_strength=0.0,
@@ -99,6 +99,7 @@ class Synapse:
                  synapse_definition, step_size,
                  synapse_type_parameters):
         self.pre_cell = pre_cell
+        self._cell_type = pre_cell.cell_type
         self.post_cell = post_cell
         self.strength = synapse_definition.starting_strength
         self._step_size = step_size
@@ -116,6 +117,9 @@ class Synapse:
         self._post_cell_fired = False
 
     def update(self, dopamine):
+        if self._cell_type == CellType.INHIBITORY:
+            return
+
         # stdp
         if self._pre_cell_fired:
             self._s_tag -= self._stdp_scalar * self.post_cell.calcium()
@@ -126,7 +130,7 @@ class Synapse:
             self._pre_cell_fired = False
             self._post_cell_fired = False
             return
-            
+
         self._s_tag = self._s_tag * (1 - self._s_tag_decay_rate)**self._step_size
 
         # train
@@ -144,11 +148,15 @@ class Synapse:
 
     def pre_fire(self):
         self._pre_cell_fired = True
-        if self._noise_factor > 0:
-            noise = self._noise_factor * random.uniform(-1, 1) * self.strength
-            self.post_cell.receive_fire(self.strength + noise)
-        else:
-            self.post_cell.receive_fire(self.strength)
+
+        if self._cell_type == CellType.EXCITATORY:
+            if self._noise_factor > 0:
+                noise = self._noise_factor * random.uniform(-1, 1) * self.strength
+                self.post_cell.receive_fire(self.strength + noise)
+            else:
+                self.post_cell.receive_fire(self.strength)
+        elif self._cell_type == CellType.INHIBITORY:
+            self.post_cell.receive_fire(self.strength * -1.0)
 
 class CellMembrane:
     def __init__(self, cell_type_parameters, step_size):
@@ -217,6 +225,7 @@ class Cell:
         self.y_grid_position = cell_definition.y_grid_position
         self._input_balance = input_balance
         self._cell_membrane = cell_membrane
+        self.cell_type = cell_definition.cell_type
 
         # I don't like the coupling causing these to be public
         # I don't like how we initialize these outside constructor
@@ -254,13 +263,12 @@ class Cell:
         self._cell_membrane.receive_input(strength)
 
     def apply_fire(self, step, environment=None):
-        if self._cell_membrane.fired():
-            for synapse in self.output_synapses:
-                synapse.pre_fire()
-            for synapse in self.input_synapses:
-                synapse.post_fire()
-            if environment is not None:
-                environment.accept_fire(step, self.x_grid_position, self.y_grid_position)
+        for synapse in self.output_synapses:
+            synapse.pre_fire()
+        for synapse in self.input_synapses:
+            synapse.post_fire()
+        if environment is not None:
+            environment.accept_fire(step, self.x_grid_position, self.y_grid_position)
 
     def update(self, step, environment=None):
         if environment is not None:
@@ -301,12 +309,20 @@ class SimpleModel:
 
         self.update_dopamine(step, environment)
 
+
         for synapse in self.synapses:
             synapse.update(self._dopamine)
 
+        # horrific hack
+        real_step = step - 50
+        if real_step % 300 == 0:
+            for synapse in self.synapses:
+                synapse._s_tag = 0.0
+
         for cell in self._cells:
-            cell.apply_input_balance()
-            cell.apply_fire(step, environment)
+            if cell.fired():
+                cell.apply_input_balance()
+                cell.apply_fire(step, environment)
 
     def update_dopamine(self, step, environment=None):
         self._dopamine = decay(self._dopamine, self._dopamine_decay, self._step_size)

@@ -1,5 +1,6 @@
 refactoring
   environmnet majic numbers and copy paste code(should make base class)
+  horrific hack to reset s_tag
   main file is too long and needs tests
   paramterize delay or generally env variables
   need a better way to believe rewards are hitting at the right times
@@ -56,7 +57,9 @@ new funcitonality
       don't have the display modules run the model the main should
 
   management
+    periodically save brains during run
     add a ./run_tests file that runs a bunch of complete runs
+    labels for connections in run files
     add an adder environment as a mid level task
     should be able to quit and still get output file
     maybe all runs should make output files?

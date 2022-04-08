@@ -26,17 +26,18 @@ class EasyEnvironment:
         self._all_fired = 0
         self._indeterminate = 0
         self._epochs = 0
+        self._fire_random = False
 
     def potential_from_location(self, step, x_grid_position, y_grid_position):
         real_step = step - self._input_delay
         is_correct_time = real_step % self._epoch_length == 0 and step > real_step
-        is_input_cell = x_grid_position == 0
+        is_input_cell = x_grid_position == 0 or x_grid_position == 3
         if  is_correct_time and is_input_cell:
             if y_grid_position == 0 and self._zero_stage:
                 return 0.3
             if y_grid_position == 1 and self._one_stage:
                 return 0.3
-            if y_grid_position == 2 and random.random() > 0.5:
+            if y_grid_position == 2 and self._fire_random:
                 return 0.3
         return 0.0
 
@@ -44,12 +45,12 @@ class EasyEnvironment:
         real_step = step - self._input_delay
         if real_step % self._epoch_length == 0:
             self._epochs += 1
-            print("resetting env state")
             print("epochs", self._epochs, "loss", self._loss, "win", self._win, "none_fired", self._none_fired, "all_fired", self._all_fired, "indeterminate", self._indeterminate)
             self._correct_cell_fired = False
             self._incorrect_cell_fired = False
             self._rewarded = False
             self._reward = False
+            self._fire_random = random.random() > 0.5
             if random.random() > 0.5:
                 self._one_stage = False
                 self._zero_stage = True
@@ -59,7 +60,7 @@ class EasyEnvironment:
                 self._one_stage = True
                 return
                 
-        elif real_step % (self._epoch_length//2) == 0:
+        elif real_step % self._epoch_length == self._epoch_length//2:
             if self._correct_cell_fired and not self._incorrect_cell_fired:
                 self._win += 1
                 self._reward = True
@@ -81,7 +82,7 @@ class EasyEnvironment:
         if step <= real_step:
             return
 
-        if x_grid_position != 6:
+        if x_grid_position != 9:
             return
 
         if y_grid_position == 0 and self._zero_stage or y_grid_position == 1 and self._one_stage:
@@ -153,8 +154,6 @@ class STDPTestEnvironment:
 class HandwritenEnvironment:
     def __init__(self, input_delay=None, epoch_length=None, image_lines=None, shuffle=False,
                  last_layer_x_grid_position=None, file_name=None):
-        print(file_name)
-
         self._input_delay = input_delay
         self._epoch_length = epoch_length
         self._image_width = None
@@ -195,14 +194,12 @@ class HandwritenEnvironment:
         real_step = step - self._input_delay
         if real_step % self._epoch_length == 0:
             self._epochs += 1
-            print("resetting env state")
             print("epochs", self._epochs, "loss", self._loss, "win", self._win, "none_fired", self._none_fired, "all_fired", self._all_fired, "indeterminate", self._indeterminate)
             self._correct_cell_fired = False
             self._incorrect_cell_fired = False
             self._rewarded = False
             self._reward = False
-        elif real_step % (self._epoch_length//2) == 0:
-            print("env in output state")
+        elif real_step % self._epoch_length == self._epoch_length//2:
             if self._correct_cell_fired and not self._incorrect_cell_fired:
                 self._win += 1
                 self._reward = True
@@ -244,6 +241,11 @@ class HandwritenEnvironment:
         # bad names
         real_step = step - self._input_delay
         is_correct_time = real_step % self._epoch_length == 0 and step > real_step
+
+        if x_grid_position >= self._image_width  and x_grid_position < (self._image_width * 2) + 1:
+            x_grid_position = x_grid_position - self._image_width - 1
+            
+        
         is_input_cell = x_grid_position < self._image_width
         if  is_correct_time and is_input_cell:
             image_index = real_step//self._epoch_length - 1

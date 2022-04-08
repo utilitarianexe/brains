@@ -29,7 +29,7 @@ Runs in two display modes or with no display
 
 `python brains/main.py --steps=2000000    --world=easy --export_name=easy_2000000`
 
-Runs a simple brain for 2000000 steps with 5 neurons. Input from three neurons. One that fires randomly and a pair where at least one fires but which one is random. There are two output cells. If the same output cell fires as the input cell in the same row the network is rewarded and a win is recorded. The network starts out unbiased but will learn to fire the right output for the input.
+Runs a simple brain for 2000000 step. Input from three neurons. One that fires randomly and a pair where at least one fires but which one is random. There are two output cells. If the same output cell fires as the input cell in the same row the network is rewarded and a win is recorded. The network starts out unbiased but will learn to fire the right output for the input.
 
 ## pygame
 

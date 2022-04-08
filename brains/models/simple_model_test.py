@@ -1,6 +1,7 @@
 import brains.models.simple_model as simple_model
 import brains.environment as environment
 import brains.network as network
+from brains.network import CellType
 
 import unittest
 
@@ -42,8 +43,8 @@ class TestCellMembrane(unittest.TestCase):
 
 class TestModel(unittest.TestCase):
     def two_cell_network(self, starting_synapse_strength):
-        cells = [("a", (0, 0),),
-                 ("b", (1, 0),)]
+        cells = [("a", (0, 0), CellType.EXCITATORY),
+                 ("b", (1, 0), CellType.EXCITATORY)]
         synapses = [("a", "b", starting_synapse_strength)]
         return network.network_from_tuples(cells,
                                            synapses)

@@ -3,15 +3,19 @@ import brains.utils as utils
 from dataclasses import dataclass
 import random
 from collections import defaultdict
-from enum import Enum
+from enum import IntEnum
 import uuid
 from collections import namedtuple
 
 LayerDefinition = namedtuple('LayerDefinition', 'lable size layout is_inhibitory')
 
-class Layout(Enum):
+class Layout(IntEnum):
     SQUARE = 1
     LINE = 2
+
+class CellType(IntEnum):
+    INHIBITORY = 1
+    EXCITATORY = 2
 
 @dataclass
 class CellDefinition:
@@ -30,6 +34,7 @@ class CellDefinition:
     y_grid_position: int
     cell_number: int # bad name
     layer_id: str
+    cell_type: int
 
     def export_network_information(self):
         return (self.label, self.x_grid_position, self.y_grid_position)
@@ -84,12 +89,14 @@ class NetworkDefinition:
 
 
 class Layer:
-    def __init__(self, id, size, starting_x_position, layout=Layout.LINE):
+    def __init__(self, id, size, starting_x_position,
+                 layout=Layout.LINE, cell_type=CellType.EXCITATORY):
         self.id = id
         self.size = size
         self.layout = layout
         self.starting_x_position = starting_x_position
         self.edge_length = self._layer_edge_length()
+        self.cell_type = cell_type
 
     def _layer_edge_length(self):
         if self.layout == Layout.LINE:
@@ -127,8 +134,8 @@ def layers_from_definitons(layer_definitions):
     layers = []
     starting_x_position = 0
     for layer_definition in layer_definitions:
-        (id, size, layout) = layer_definition
-        layer = Layer(id, size, starting_x_position, layout)
+        (id, size, layout, cell_type) = layer_definition
+        layer = Layer(id, size, starting_x_position, layout, cell_type)
         layers.append(layer)
         starting_x_position += layer.edge_length + 2
     return layers
@@ -143,7 +150,7 @@ def network_from_layers(layers, layer_connections):
             label = layer.id + "_" +  str(cell_number)
             cell_definition = CellDefinition(str(uuid.uuid4()), label,
                                           x_grid_position, y_grid_position,
-                                          cell_number, layer.id)
+                                             cell_number, layer.id, layer.cell_type)
             cell_definitions.append(cell_definition)
             cell_definitions_by_layer[layer.id].append(cell_definition)
 
@@ -172,9 +179,9 @@ def network_from_tuples(cells,
 
     cell_definitions = []
     cells_by_label = {}
-    for (label, (x_grid_pos, y_grid_pos,),) in cells:
+    for (label, (x_grid_pos, y_grid_pos,), cell_type) in cells:
         cell_definition = CellDefinition(str(uuid.uuid4()), label,
-                                            x_grid_pos, y_grid_pos, None, None)
+                                            x_grid_pos, y_grid_pos, None, None, cell_type)
         cell_definitions.append(cell_definition)
         cells_by_label[label] = cell_definition
 
@@ -194,9 +201,9 @@ def network_from_tuples(cells,
 
 # eventually these should take a strength scaler parameter from the model
 def small_default_network():
-    cells = [("a", (0, 0),),
-             ("b", (1, 0),),
-             ("c", (2, 0),), ("d", (2, 1)),
+    cells = [("a", (0, 0), CellType.EXCITATORY),
+             ("b", (1, 0), CellType.EXCITATORY),
+             ("c", (2, 0), CellType.EXCITATORY), ("d", (2, 1), CellType.EXCITATORY),
              ("e", (3, 0),)]
     synapses = [("a", "b", 0.15),
                 ("b", "c", 0.15),
@@ -207,41 +214,44 @@ def small_default_network():
                                synapses)
 
 def stdp_test_network():
-    cells = [("a", (0, 0),),
-             ("b", (1, 0),),
-             ("c", (2, 0),)]
+    cells = [("a", (0, 0), CellType.EXCITATORY),
+             ("b", (1, 0), CellType.EXCITATORY),
+             ("c", (2, 0), CellType.EXCITATORY)]
     synapses = [("a", "c", 0.05),
                 ("b", "c", 0.05),]
     return network_from_tuples(cells,
                                synapses)
 
-
-# eventually these should take a strenght modifier parameter from the model
 def layer_based_default_network():
     image_size = 28*28
-    layers = [("a", image_size, Layout.SQUARE,),
-              ("b", 25, Layout.SQUARE,),
-              ("c", 25, Layout.SQUARE,),
-              ("d", 2, Layout.LINE,)]
+
+    layers = [("a", image_size, Layout.SQUARE, CellType.EXCITATORY),
+              ("i", image_size, Layout.SQUARE, CellType.INHIBITORY),
+              ("b", 25, Layout.SQUARE, CellType.EXCITATORY),
+              ("c", 2, Layout.LINE, CellType.EXCITATORY)]
     
     # Something about connection probability rubs me wrong.
     # connections might be more complex
-    layer_connections = [("a", "b", 1, 0.00035), ("b", "c", 1, 0.0023),
-                         ("c", "d", 1, 0.0055)]
+    layer_connections = [("a", "b", 1, 0.0005,),
+                         ("i", "b", 1, 0.00035,),
+                         ("b", "c", 1, 0.0055,)]
     return build_layer_based_network(layers, layer_connections)
 
-# def easy_layer_network():
-#     layers = [("a", 3, Layout.LINE,),
-#               ("b", 2, Layout.LINE,)]
+def easy_layer_simple_network():
+    layers = [("a", 3, Layout.LINE,),
+              ("b", 2, Layout.LINE,)]
     
-#     layer_connections = [("a", "b", 1, 0.035)]
-#     return build_layer_based_network(layers, layer_connections)
+    layer_connections = [("a", "b", 1, 0.035)]
+    return build_layer_based_network(layers, layer_connections)
 
 def easy_layer_network():
-    layers = [("a", 3, Layout.LINE,),
-              ("b", 3, Layout.LINE,),
-              ("c", 2, Layout.LINE,)]
-    
-    layer_connections = [("a", "b", 1, 0.035), ("b", "c", 1, 0.035)]
+    layers = [("a", 3, Layout.LINE, CellType.EXCITATORY),
+              ("i", 3, Layout.LINE, CellType.INHIBITORY),
+              ("b", 3, Layout.LINE, CellType.EXCITATORY),
+              ("c", 2, Layout.LINE, CellType.EXCITATORY)]
+
+    layer_connections = [("a", "b", 1, 0.08),
+                         ("i", "b", 1, 0.05),
+                         ("b", "c", 1, 0.05),]
     return build_layer_based_network(layers, layer_connections)
 
