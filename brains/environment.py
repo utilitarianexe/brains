@@ -28,6 +28,10 @@ class EasyEnvironment:
         self._epochs = 0
         self._fire_random = False
 
+    def active(self, step):
+        real_step = step - self._input_delay
+        return real_step % self._epoch_length == 0 and step > real_step
+
     def potential_from_location(self, step, x_grid_position, y_grid_position):
         real_step = step - self._input_delay
         is_correct_time = real_step % self._epoch_length == 0 and step > real_step
@@ -109,6 +113,9 @@ class TestEnvironment:
         self._reward = False
         self._reward_point = self._reward_points[0]
 
+    def active(self, step):
+        return step in self.input_dict
+
     def potential_from_location(self, step, x_grid_position, y_grid_position):
         return self.input_dict[step][x_grid_position][y_grid_position]
 
@@ -140,6 +147,11 @@ class STDPTestEnvironment:
         if step % self._epoch_length == 10 and step > 0 and is_second_cell :
             return 0.1
         return 0
+
+    def active(self, step):
+        first_cell_time = step % self._epoch_length == 0 and step > 0
+        second_cell_time =step % self._epoch_length == 10 and step > 0
+        return first_cell_time or  second_cell_time
 
     def has_reward(self):
         return False
@@ -234,6 +246,10 @@ class HandwritenEnvironment:
             self._correct_cell_fired = True
         else:
             self._incorrect_cell_fired = True
+            
+    def active(self, step):
+        real_step = step - self._input_delay
+        return real_step % self._epoch_length == 0 and step > real_step
         
     # so many magic numbers
     # also so many errors possilbe
@@ -250,7 +266,7 @@ class HandwritenEnvironment:
         if  is_correct_time and is_input_cell:
             image_index = real_step//self._epoch_length - 1
             if image_index >= len(self._images):
-                print("ran out of images to show network will continue running with no inputs")
+                #print("ran out of images to show network will continue running with no inputs")
                 return 0.0
 
             (_, image) = self._images[image_index]

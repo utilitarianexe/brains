@@ -61,6 +61,7 @@ class ModelParameters:
     dopamine_decay: float
     cell_type_parameters: CellTypeParameters
     synapse_type_parameters: SynapseTypeParameters
+    warp: bool
     
     def __post_init__(self):
         '''
@@ -76,7 +77,8 @@ def stdp_model_parameters(input_balance):
                            starting_dopamine=1.0,
                            dopamine_decay=0.0,
                            cell_type_parameters=stdp_cell_type_parameters(input_balance),
-                           synapse_type_parameters=stdp_synapse_type_parameters())
+                           synapse_type_parameters=stdp_synapse_type_parameters(),
+                           warp=True)
 
 def handwriting_model_parameters(input_balance,
                                  noise_factor=0.5,
@@ -89,7 +91,8 @@ def handwriting_model_parameters(input_balance,
                            starting_dopamine=0.0,
                            dopamine_decay=dopamine_decay,
                            cell_type_parameters=cell_type_parameters,
-                           synapse_type_parameters=synapse_type_paramenters)
+                           synapse_type_parameters=synapse_type_paramenters,
+                           warp=True)
 
     
 # voltage and current should be named potential everywhere
@@ -117,36 +120,8 @@ class Synapse:
         self._post_cell_fired = False
         self._last_fire_step = 0
 
-    # def update(self, dopamine):
-    #     if self._cell_type == CellType.INHIBITORY:
-    #         return
-
-    #     # stdp
-    #     if self._pre_cell_fired:
-    #         self._s_tag -= self._stdp_scalar * self.post_cell.calcium()
-    #     if self._post_cell_fired:
-    #         self._s_tag += self._stdp_scalar * self.pre_cell.calcium()
-
-    #     if self._s_tag < 0.00001 and self._s_tag > -0.00001:
-    #         self._pre_cell_fired = False
-    #         self._post_cell_fired = False
-    #         return
-
-    #     self._s_tag = self._s_tag * (1 - self._s_tag_decay_rate)**self._step_size
-
-    #     # train
-    #     self.strength += self._s_tag * dopamine * self._reward_scalar
-    #     if self.strength >= self._max_strength:
-    #         self.strength = self._max_strength
-    #     if self.strength < self._min_strength:
-    #         self.strength = self._min_strength
-
-    #     self._pre_cell_fired = False
-    #     self._post_cell_fired = False
-
     def update(self, dopamine):
-        if self._cell_type == CellType.INHIBITORY:
-            return
+        diff = self._s_tag * dopamine * self._reward_scalar
         self.strength += self._s_tag * dopamine * self._reward_scalar
         if self.strength >= self._max_strength:
             self.strength = self._max_strength
@@ -193,6 +168,9 @@ class CellMembrane:
         
         self._step_size = step_size
         self._fired = False # why not just check voltage
+        self.active = True
+        self.real_active = True
+        self.active_timer = 0
 
     def calcium(self):
         return self._calcium
@@ -209,6 +187,15 @@ class CellMembrane:
     def receive_input(self, strength):
         self._input_current += strength
 
+    def warp(self, time_steps):
+        self.active = True
+        self._voltage = self._voltage * (1 - self._voltage_decay)**time_steps
+        
+        # Figure out integral. 
+        # self._voltage += self._input_current * time_steps
+        self._input_current = self._input_current * (1 - self._current_decay)**time_steps
+        self._calcium = self._calcium * (1 - self._calcium_decay)**time_steps
+
     def update(self):
         '''
            Voltage and input tend to 0 from both the negative and positive side.
@@ -221,18 +208,25 @@ class CellMembrane:
         '''
         self._fired = False
 
+        voltage_before_update = self._voltage
+
         if self._voltage > self._max_voltage:
             self._voltage = self._voltage_reset
             self._fired = True
             self._calcium += self._calcium_increment
             if self._reset_input_current:
-                self._input_current =self._input_current_reset
+                self._input_current = self._input_current_reset
 
         self._voltage = self._voltage * (1 - self._voltage_decay)**self._step_size
         self._voltage += self._input_current * self._step_size
-
         self._input_current = self._input_current * (1 - self._current_decay)**self._step_size
-        self._calcium = self._calcium * (1 - self._calcium)**self._step_size
+        self._calcium = self._calcium * (1 - self._calcium_decay)**self._step_size
+
+        if self._voltage <= 0 or voltage_before_update >= self._voltage:
+            self.active = False
+        else:
+            self.active = True
+
 
 class Cell:
     def __init__(self, cell_definition, cell_membrane, input_balance):
@@ -250,7 +244,6 @@ class Cell:
         # I don't like how we initialize these outside constructor
         self.input_synapses = []
         self.output_synapses = []
-        
         self._initial_total_input_strength = 0.0
 
     def attach_synapses(self, synapses):
@@ -289,6 +282,9 @@ class Cell:
         if environment is not None:
             environment.accept_fire(step, self.x_grid_position, self.y_grid_position)
 
+    def warp(self, time_steps):
+        self._cell_membrane.warp(time_steps)
+
     def update(self, step, environment=None):
         if environment is not None:
             outside_current = environment.potential_from_location(step,
@@ -296,6 +292,9 @@ class Cell:
                                                                   self.y_grid_position)
             self._cell_membrane.receive_input(outside_current)
         self._cell_membrane.update()
+
+    def active(self):
+        return self._cell_membrane.active
         
     def membrane_voltage(self):
         return self._cell_membrane.voltage()
@@ -322,21 +321,63 @@ class SimpleModel:
                                                         model_parameters.synapse_type_parameters,
                                                         network_definition,
                                                         self._step_size)
-    def step(self, step, environment=None):
+        self._warp = model_parameters.warp
+        self._warping = False
+        self._last_active = 0
+
+    def _maybe_start_warp(self, step, environment):
+        if not self._warp:
+            return
+        
+        active = False
         for cell in self._cells:
-            cell.update(step, environment)
+            if cell.active():
+                active = True
+                break
+                    
+        if self._dopamine > 0.0001:
+            active = True
 
+        if environment is not None:
+            if environment.active(step):
+                active = True
+
+        if not active:
+            self._warp_timer += 1
+        else:
+            self._warp_timer = 0
+            
+        if self._warp_timer >= 10:
+            self._warping = True
+            self._warp_timer = 0
+        
+    def step(self, step, environment=None):
         self.update_dopamine(step, environment)
-
-
-        for synapse in self.synapses:
-            synapse.update(self._dopamine)
 
         # horrific hack
         real_step = step - 50
         if real_step % 300 == 0:
             for synapse in self.synapses:
                 synapse._s_tag = 0.0
+
+        if self._warping:
+            if not environment.active(step) and self._dopamine <= 0.0001:
+                return
+            for cell in self._cells:
+                cell.warp(step - self._last_active)
+            self._warping = False
+        else:
+            self._maybe_start_warp(step, environment)
+            if self._warping:
+                return
+            
+        if self._dopamine > 0.0001:
+            for synapse in self.synapses:
+                synapse.update(self._dopamine)
+        
+        self._last_active = step
+        for cell in self._cells:
+            cell.update(step, environment)
 
         for cell in self._cells:
             if cell.fired():

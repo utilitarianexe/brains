@@ -1,4 +1,7 @@
 refactoring
+  warmp fudge
+  paramaterize warp
+  take out dopamine cut off and warp timer parameter
   environmnet majic numbers and copy paste code(should make base class)
   horrific hack to reset s_tag
   main file is too long and needs tests
