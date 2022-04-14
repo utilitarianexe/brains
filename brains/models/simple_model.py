@@ -72,7 +72,7 @@ class ModelParameters:
         if isinstance(self.synapse_type_parameters, dict):
             self.synapse_type_parameters = SynapseTypeParameters(**self.synapse_type_parameters)
 
-def stdp_model_parameters(input_balance):
+def stdp_model_parameters(input_balance, warp=True):
     return ModelParameters(step_size=1,
                            starting_dopamine=1.0,
                            dopamine_decay=0.0,
@@ -81,8 +81,9 @@ def stdp_model_parameters(input_balance):
                            warp=True)
 
 def handwriting_model_parameters(input_balance,
-                                 noise_factor=0.5,
-                                 dopamine_decay=0.1):
+                                 noise_factor=0.2,
+                                 dopamine_decay=0.1,
+                                 warp=True):
     synapse_type_paramenters = stdp_synapse_type_parameters()
     synapse_type_paramenters.noise_factor = noise_factor
     cell_type_parameters = stdp_cell_type_parameters(input_balance)
@@ -105,6 +106,7 @@ class Synapse:
         self._cell_type = pre_cell.cell_type
         self.post_cell = post_cell
         self.strength = synapse_definition.starting_strength
+        self.label = self.pre_cell.label + " to " + self.post_cell.label
         self._step_size = step_size
 
         # can be though of as recording the firing pattern correlation
@@ -121,7 +123,9 @@ class Synapse:
         self._last_fire_step = 0
 
     def update(self, dopamine):
-        diff = self._s_tag * dopamine * self._reward_scalar
+        # incrament = self._s_tag * dopamine * self._reward_scalar
+        # if incrament > self.strength or incrament * -1 > self.strength:
+        #     print("incrament", incrament , "strength", self.strength)
         self.strength += self._s_tag * dopamine * self._reward_scalar
         if self.strength >= self._max_strength:
             self.strength = self._max_strength
@@ -244,7 +248,10 @@ class Cell:
         # I don't like how we initialize these outside constructor
         self.input_synapses = []
         self.output_synapses = []
-        self._initial_total_input_strength = 0.0
+        self._positive_total_input_strength = 0.0
+        self._negative_total_input_strength = 0.0
+        self._fire_history = []
+        self._target_fire_rate = cell_definition.target_fire_rate/400
 
     def attach_synapses(self, synapses):
         for synapse in synapses:
@@ -255,26 +262,99 @@ class Cell:
             else:
                 raise Exception("Attempted to attach synapse to cell but neither of the synapses "\
                                 "endpoints attach to the cell.")
-        self._initial_total_input_strength = self._current_total_input_strength()
+        self._positive_total_input_strength = self._current_total_input_strength(CellType.EXCITATORY)
+        self._negative_total_input_strength = self._current_total_input_strength(CellType.INHIBITORY)
+        self._rate_adaption = self._positive_total_input_strength * 0.01
 
-    def apply_input_balance(self):
+    def apply_input_balance(self, cell_type):
         if self._input_balance:
-            current_total_input_strength = self._current_total_input_strength()
+            current_total_input_strength = self._current_total_input_strength(cell_type)
             if current_total_input_strength > 0.0:
-                scale_factor = self._initial_total_input_strength / current_total_input_strength
+                if cell_type == CellType.EXCITATORY:
+                    scale_factor = self._positive_total_input_strength / current_total_input_strength
+                else:
+                    scale_factor = self._negative_total_input_strength / current_total_input_strength
                 for synapse in self.input_synapses:
-                    synapse.strength = synapse.strength * scale_factor
+                    if synapse._cell_type  == cell_type:
+                        synapse.strength = synapse.strength * scale_factor
+
+    def fire_rate_balance(self, step):
+        if step == 0 or self._target_fire_rate == 0:
+            return
+
+        new_fire_history = []
+        fires = 0
+        for fire_time in self._fire_history:
+            if fire_time > step  - (400 * 10):
+                new_fire_history.append(fire_time)
+                fires += 1
+
+        if step > 400 * 10:
+            running_fire_rate = fires / (400 * 10)
+        else:
+            running_fire_rate = fires / step
+            
+        self._fire_history = new_fire_history
+
+        if self.x_grid_position == 64 or self.x_grid_position == 67:
+            print("running", running_fire_rate, "xcor", self.x_grid_position,
+                  "target", self._target_fire_rate, "fires", fires, "pos in", self._positive_total_input_strength, "delta", self._rate_adaption)
+
+        # average = average * (1-alpha) + real * alpha
+        # real_fire_rate = self._fires/step
+        # delta = (real_fire_rate - self._running_fire_rate) * self._fire_rate_alpha
+        # # print("delta ", delta, "running", self._running_fire_rate, "real", real_fire_rate, "target", self._target_fire_rate)
+        # self._running_fire_rate += delta
+
+        if running_fire_rate > self._target_fire_rate:
+            down = self._target_fire_rate/running_fire_rate
+            # if self.x_grid_position == 6:
+            #     print("down grade")
+            self._positive_total_input_strength -= 0.01*(self._positive_total_input_strength - self._positive_total_input_strength * down)
+            self._negative_total_input_strength -= 0.01*(self._negative_total_input_strength - self._negative_total_input_strength * down)
+            if self.x_grid_position == 64:
+                print("fall", down)
+
+            # if self._positive_total_input_strength > 0:
+            #     self._positive_total_input_strength -= self._rate_adaption
+            # if self._negative_total_input_strength > 0:
+            #     self._negative_total_input_strength -= self._rate_adaption
+            # if self.x_grid_position == 67:
+            #     print("fall", self._positive_total_input_strength)
+        else:
+            if running_fire_rate == 0:
+                up = 2.0
+            else:
+                up = self._target_fire_rate/running_fire_rate
+            if self.x_grid_position == 64:
+                print("rise", up)
+
+            # if self.x_grid_position == 6:
+            #     print("up grade", self._positive_total_input_strength, self._negative_total_input_strength)
+            # does not feel semetrical to me if you are too low you rise faster with time
+            # too high you lower slower with time
+            self._positive_total_input_strength += (self._positive_total_input_strength * up - self._positive_total_input_strength) * 0.01#* 1.002
+            self._negative_total_input_strength += (self._negative_total_input_strength * up - self._negative_total_input_strength) * 0.01#* 1.002
+            
+            # self._positive_total_input_strength += self._rate_adaption
+            # self._negative_total_input_strength += self._rate_adaption
+            # if self.x_grid_position == 64:
+            #     print("rise")
+        self.apply_input_balance(CellType.EXCITATORY)
+        self.apply_input_balance(CellType.INHIBITORY)
                 
-    def _current_total_input_strength(self):
+    def _current_total_input_strength(self, cell_type):
         total = 0.0
         for synapse in self.input_synapses:
-            total += synapse.strength
+            if synapse._cell_type == cell_type:
+                total += synapse.strength
         return total
 
     def receive_fire(self, strength):
         self._cell_membrane.receive_input(strength)
 
     def apply_fire(self, step, environment=None):
+        self._fire_history.append(step)
         for synapse in self.output_synapses:
             synapse.pre_fire(step)
         for synapse in self.input_synapses:
@@ -350,15 +430,25 @@ class SimpleModel:
         if self._warp_timer >= 10:
             self._warping = True
             self._warp_timer = 0
+
+    def _epoch_updates(self, step):
+        # bad hack
+        for synapse in self.synapses:
+            synapse._s_tag = 0.0
+
+        for cell in self._cells:
+            cell.fire_rate_balance(step)
+            # cell.apply_input_balance(CellType.EXCITATORY)
+            # cell.apply_input_balance(CellType.INHIBITORY)
+
         
     def step(self, step, environment=None):
         self.update_dopamine(step, environment)
 
         # horrific hack
         real_step = step - 50
-        if real_step % 300 == 0:
-            for synapse in self.synapses:
-                synapse._s_tag = 0.0
+        if real_step % 400 == 0:
+            self._epoch_updates(step)
 
         if self._warping:
             if not environment.active(step) and self._dopamine <= 0.0001:
@@ -381,7 +471,6 @@ class SimpleModel:
 
         for cell in self._cells:
             if cell.fired():
-                cell.apply_input_balance()
                 cell.apply_fire(step, environment)
 
     def update_dopamine(self, step, environment=None):
@@ -394,8 +483,9 @@ class SimpleModel:
         updated_synapse_definitions = []
         for synapse in self.synapses:
             definition = SynapseDefinition(synapse.pre_cell.uuid,
-                                                   synapse.post_cell.uuid,
-                                                   synapse.strength)
+                                           synapse.post_cell.uuid,
+                                           synapse.strength,
+                                           synapse.label)
             updated_synapse_definitions.append(definition)
         
         updated_network_definition = NetworkDefinition(
@@ -466,7 +556,8 @@ class SimpleModel:
 
         return cells, synapses
 
-def import_model(blob):
+def import_model(blob, warp=True):
     network_definition = NetworkDefinition(**blob["network_definition"])
     model_parameters = ModelParameters(**blob["model_parameters"])
+    model_parameters.warp = warp
     return SimpleModel(network_definition, model_parameters)

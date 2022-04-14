@@ -8,18 +8,20 @@ from pathlib import Path
 from collections import namedtuple
 import argparse
 import json
+import signal
 
 World = namedtuple('World', 'model environment')
 
 def stdp_world(input_balance, epoch_length):
-    model_parameters = simple_model.stdp_model_parameters(input_balance)
+    model_parameters = simple_model.stdp_model_parameters(input_balance, warp=warp)
     network_definition = network.stdp_test_network()
     model = simple_model.SimpleModel(network_definition, model_parameters)
     return model, environment.STDPTestEnvironment(epoch_length)
 
-def handwriting_world(file_name, epoch_length, input_delay=50):
+def handwriting_world(file_name, epoch_length, input_delay=50, warp=True):
     model_parameters = simple_model.handwriting_model_parameters(True,
-                                                                 noise_factor=3.0)
+                                                                 noise_factor=0.5,
+                                                                 warp=warp)
 
     # need like some kind of average starting connection strength thing
     network_definition = network.layer_based_default_network()
@@ -32,9 +34,10 @@ def handwriting_world(file_name, epoch_length, input_delay=50):
     model = simple_model.SimpleModel(network_definition, model_parameters)
     return model, handwriten_environment
 
-def easy_world(epoch_length, input_delay=50):
+def easy_world(epoch_length, input_delay=50, warp=True):
     model_parameters = simple_model.handwriting_model_parameters(True,
-                                                                 noise_factor=0.5)
+                                                                 noise_factor=0.5,
+                                                                 warp=warp)
 
     # need like some kind of average starting connection strength thing
     network_definition = network.easy_layer_network()
@@ -44,7 +47,7 @@ def easy_world(epoch_length, input_delay=50):
 
 
 def user_specified_world(import_name, environment_type, handwritten_file_name,
-                         epoch_length, input_delay=50):
+                         epoch_length, input_delay=50, warp=True):
     print(handwritten_file_name)
 
 
@@ -52,7 +55,7 @@ def user_specified_world(import_name, environment_type, handwritten_file_name,
     file_path = (base_path / import_name).resolve()
     model_file = open(file_path)
     blob = json.load(model_file)
-    model = simple_model.import_model(blob)
+    model = simple_model.import_model(blob, warp=warp)
     if environment_type == 'handwriting':
         model_environment = environment.HandwritenEnvironment(
             input_delay=input_delay, epoch_length=epoch_length,
@@ -86,7 +89,7 @@ def create_args():
                            help='Number of steps to run the model.')
     my_parser.add_argument('--epoch_length',
                            type=int,
-                           default=300,
+                           default=400,
                            required=False,
                            help='Number of steps between presentations of input to a brain.')
     my_parser.add_argument('--export_name',
@@ -148,7 +151,7 @@ def create_world(world_type, epoch_length, import_name,
             return stdp_world(True, epoch_length)
 
     if import_name and environment_type:
-        return user_specified_world(import_name, environment_type, handwritten_file_name, epoch_length)
+        return user_specified_world(import_name, environment_type, handwritten_file_name, epoch_length, warp=False)
 
     print("Not enough information provided. Either supply a world argument or both a import_name and an environment to run it in")
     quit()
@@ -168,6 +171,13 @@ def main(steps, epoch_length,
     brain, environment = create_world(world_type, epoch_length,
                                       import_name, environment_type,
                                       handwritten_file_name)
+    def handler(signum, frame):
+        if export_name:
+            export(brain, export_name)
+        exit(1)
+
+    signal.signal(signal.SIGINT, handler)
+
     display = create_display(display_type, brain)
     for i in range(steps):
         environment.step(i)
@@ -179,7 +189,7 @@ def main(steps, epoch_length,
 
     if export_name:
         export(brain, export_name)
-
+  
 
 if __name__ == "__main__" :
     args = create_args()
@@ -194,8 +204,6 @@ if __name__ == "__main__" :
     epoch_length = args.epoch_length
 
     if profile:
-        
-
         import cProfile, pstats, io
         from pstats import SortKey
         pr = cProfile.Profile()
@@ -210,11 +218,6 @@ if __name__ == "__main__" :
         ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
         ps.print_stats()
         print(s.getvalue())
-
-
-        
-        # import cProfile
-        # cProfile.run('main(1000, 300, "handwriting",  handwritten_file_name="o_x_hand_written_short.csv")')
     else:
         main(steps, epoch_length,
              world_type, import_name, environment_type, handwritten_file_name,

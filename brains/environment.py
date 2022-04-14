@@ -243,6 +243,7 @@ class HandwritenEnvironment:
             return
 
         if y_grid_position == self._letter_id_by_letter[letter]:
+            print("correct", letter)
             self._correct_cell_fired = True
         else:
             self._incorrect_cell_fired = True
@@ -304,26 +305,28 @@ class HandwritenEnvironment:
             images_by_letter[letter].append(image)
         return images_by_letter
 
+def data_dir_file_path(file_name):
+    base_path = Path(__file__).parent / "data"
+    file_path = (base_path / file_name).resolve()
+    return file_path
+
 def shorten_file():
-    input_file = open("./data/A_Z Handwritten Data.csv")
-    output_file = open("./data/o_x_hand_written_long.csv", 'w')
-    wanted_images_per_letter = 1000
+    input_file = open(data_dir_file_path("A_Z Handwritten Data.csv"))
+    output_file = open(data_dir_file_path("o_x_hand_written_all.csv"), 'w')
+
+    wanted_images_per_letter = 5000
     wanted_letters = ['o', 'x']
-    current_letter_index = 0
-    current_letter_count = 0
+    letter_counts = {'o': 0, 'x': 0}
     for line in input_file:
         cells = line.split(",")
         alphabet = list(string.ascii_lowercase)
         letter = alphabet[int(cells[0])]
-        wanted_letter = wanted_letters[current_letter_index]
-        if letter == wanted_letter:
+        if letter in wanted_letters:
+            if letter_counts[letter] > wanted_images_per_letter:
+                continue
             output_file.write(line)
-            current_letter_count += 1
-            if current_letter_count == wanted_images_per_letter - 1:
-                current_letter_count = 0
-                current_letter_index += 1
-                if current_letter_index == len(wanted_letters):
-                    break
+            letter_counts[letter] += 1
+    print(letter_counts)
 
 if __name__ == '__main__':
     # read_handwriting()

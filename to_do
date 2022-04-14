@@ -1,5 +1,15 @@
+too high of a fire rate adaption seems to swamp the stdp
+but it feels to low to adapt the fire rate right
+maybe we need higher dopamine or stdp or calcium
+basically we need more change out of each win
+so we can turn up fire rate adaptation
+
+
+why the imbalanced letter count
+warp param everywhere in main
+
 refactoring
-  warmp fudge
+  remove warp fudge
   paramaterize warp
   take out dopamine cut off and warp timer parameter
   environmnet majic numbers and copy paste code(should make base class)
