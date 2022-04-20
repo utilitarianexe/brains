@@ -1,14 +1,14 @@
-from brains.network import network_from_layers, network_from_tuples, Layer, CellType
+from brains.network import network_from_layers, network_from_tuples, Layer, CellType, CellDefinition
 import unittest
 
 
 class TestBuildingNetwork(unittest.TestCase):
 
     def test_network_from_tuples(self):
-        cells = [("a", (0, 0), CellType.EXCITATORY),
-                 ("b", (1, 0), CellType.EXCITATORY),
-                 ("c", (2, 0), CellType.EXCITATORY), ("d", (2, 1), CellType.EXCITATORY),
-                 ("e", (3, 0), CellType.EXCITATORY)]
+        cells = [CellDefinition("a", 0, 0),
+                 CellDefinition("b", 1, 0),
+                 CellDefinition("c", 2, 0), CellDefinition("d", 2, 1),
+                 CellDefinition("e", 3, 0),]
         synapses = [("a", "b", 0.15),
                     ("b", "c", 0.15),
                     ("b", "d", 0.15),

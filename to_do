@@ -1,16 +1,16 @@
-too high of a fire rate adaption seems to swamp the stdp
-but it feels to low to adapt the fire rate right
-maybe we need higher dopamine or stdp or calcium
-basically we need more change out of each win
-so we can turn up fire rate adaptation
-
-
-why the imbalanced letter count
-warp param everywhere in main
-
-refactoring
+Refactors before any features
+  overrunning lines in emacs for fire_rate_balance
+  warp param everywhere in main
   remove warp fudge
   paramaterize warp
+  paramaterize fire rate adaptation
+  print in fire rate balance
+  new insturctions
+  default params for other dataclasses
+  delays make sense
+  environment hell
+
+refactoring
   take out dopamine cut off and warp timer parameter
   environmnet majic numbers and copy paste code(should make base class)
   horrific hack to reset s_tag
@@ -49,10 +49,7 @@ installation/updates
 new funcitonality
   cells
     output balancing
-
-  easy environment
-    inhibition
-    multiple layers
+    try other equation for fire rate balancing average = average * (1-alpha) + real * alpha
 
   display
     in pygame display labels for input and wins
@@ -70,6 +67,9 @@ new funcitonality
       don't have the display modules run the model the main should
 
   management
+    enter epochs instead of steps
+    figure out what images we are failing on
+    use handwirtten numbers db
     periodically save brains during run
     add a ./run_tests file that runs a bunch of complete runs
     labels for connections in run files
@@ -98,3 +98,4 @@ think about
   connecitons strengths should not just be random at the start but maybe also randomly change a bit?
   step sizes
   resettting input connections
+  multiple inhibit layers

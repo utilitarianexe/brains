@@ -1,7 +1,7 @@
 import brains.models.simple_model as simple_model
 import brains.environment as environment
 import brains.network as network
-from brains.network import CellType
+from brains.network import CellType, CellDefinition
 
 import unittest
 
@@ -11,7 +11,7 @@ class TestCellMembrane(unittest.TestCase):
         '''
         Ensure potential falls with time.
         '''
-        cell_type_parameters = simple_model.stdp_cell_type_parameters(False)
+        cell_type_parameters = simple_model.stdp_cell_type_parameters()
         cell_type_parameters.starting_membrane_voltage = 0.5
         step_size = 1
         membrane = simple_model.CellMembrane(cell_type_parameters, step_size)
@@ -24,7 +24,7 @@ class TestCellMembrane(unittest.TestCase):
         Cell should not fire until after voltage builds up from input. It should fire once
         and then not fire again as input decays or is reset.
         '''
-        cell_type_parameters = simple_model.stdp_cell_type_parameters(False)
+        cell_type_parameters = simple_model.stdp_cell_type_parameters()
         step_size = 1
         membrane = simple_model.CellMembrane(cell_type_parameters, step_size)        
 
@@ -43,14 +43,14 @@ class TestCellMembrane(unittest.TestCase):
 
 class TestModel(unittest.TestCase):
     def two_cell_network(self, starting_synapse_strength):
-        cells = [("a", (0, 0), CellType.EXCITATORY),
-                 ("b", (1, 0), CellType.EXCITATORY)]
+        cells = [CellDefinition("a", 0, 0),
+                 CellDefinition("b", 1, 0),]
         synapses = [("a", "b", starting_synapse_strength)]
         return network.network_from_tuples(cells,
                                            synapses)
 
     def two_cell_model(self, starting_synapse_strength):
-        model_parameters = simple_model.stdp_model_parameters(False)
+        model_parameters = simple_model.stdp_model_parameters()
         return simple_model.SimpleModel(self.two_cell_network(starting_synapse_strength),
                                         model_parameters)
         
@@ -152,11 +152,11 @@ class TestModel(unittest.TestCase):
         close sequence. And both are required to trigger the output cell.
 
         Both synapses should get stronger at first. But eventually the first cell to fire should be
-        strong enough to trigger the output cell on its before the second input cell fires. After this
-        point the synapse of the first input will continue to get stronger while the second will get
-        weaker because it fires after the output cell.
+        strong enough to trigger the output cell on its own before the second input cell fires. After
+        this point the synapse of the first input will continue to get stronger while the second will
+        get weaker because it fires after the output cell.
         '''
-        model_parameters = simple_model.stdp_model_parameters(False)
+        model_parameters = simple_model.stdp_model_parameters(warp=False)
         network_definition = network.stdp_test_network()
         test_environment = environment.STDPTestEnvironment()
         model =  simple_model.SimpleModel(network_definition,
@@ -166,7 +166,7 @@ class TestModel(unittest.TestCase):
             synapses_by_pre_cell[synapse.pre_cell.label] = synapse
         synapse_early_input = synapses_by_pre_cell["a"]
         synapse_late_input = synapses_by_pre_cell["b"]
-        starting_strength = synapse_early_input.strength 
+        starting_strength = synapse_early_input.strength
             
         for i in range(15000):
             model.step(i, test_environment)
@@ -174,6 +174,7 @@ class TestModel(unittest.TestCase):
             if i == 5000:
                 self.assertTrue(synapse_early_input.strength > starting_strength)
                 self.assertTrue(synapse_late_input.strength > synapse_early_input.strength)
+        print(synapse_early_input.strength, synapse_late_input.strength)
         self.assertTrue(synapse_early_input.strength > synapse_late_input.strength)
 
     def test_input_balancing(self):
@@ -184,9 +185,13 @@ class TestModel(unittest.TestCase):
         Overtime time the connection with the input cell that fires later should increase compared
         to the connection that fires earlier. Both have positive stdp but one has closer timing so it
         will increase faster and because of input balancing it will drive the other down comparatively.
+
+        Unlike the auto_input_selection input balancing will keep the early connection at too low a
+        strength to fire the output on its own. So it will never have a chance to overtake the late
+        connection by causing the output cell to fire before the late connection.
         '''
-        model_parameters = simple_model.stdp_model_parameters(True)
-        network_definition = network.stdp_test_network()
+        model_parameters = simple_model.stdp_model_parameters()
+        network_definition = network.stdp_test_network(input_balance=True)
         test_environment = environment.STDPTestEnvironment()
         model =  simple_model.SimpleModel(network_definition,
                                           model_parameters)

@@ -19,9 +19,8 @@ class CellTypeParameters:
     starting_calcium: float
     starting_input_current: float
     reset_input_current: bool
-    input_balance: bool
 
-def stdp_cell_type_parameters(input_balance):
+def stdp_cell_type_parameters():
     return CellTypeParameters(voltage_decay=0.01,
                               current_decay=0.03,
                               calcium_decay=0.1,
@@ -32,8 +31,7 @@ def stdp_cell_type_parameters(input_balance):
                               input_current_reset=0.0,
                               starting_input_current=0.0,
                               starting_calcium=0.0,                              
-                              reset_input_current=True,
-                              input_balance=input_balance)
+                              reset_input_current=True)
 
 @dataclass
 class SynapseTypeParameters:
@@ -62,6 +60,8 @@ class ModelParameters:
     cell_type_parameters: CellTypeParameters
     synapse_type_parameters: SynapseTypeParameters
     warp: bool
+    epoch_length: int
+    epoch_delay: int
     
     def __post_init__(self):
         '''
@@ -72,28 +72,35 @@ class ModelParameters:
         if isinstance(self.synapse_type_parameters, dict):
             self.synapse_type_parameters = SynapseTypeParameters(**self.synapse_type_parameters)
 
-def stdp_model_parameters(input_balance, warp=True):
+def stdp_model_parameters(warp=True,
+                          epoch_length=400,
+                          epoch_delay=50):
     return ModelParameters(step_size=1,
                            starting_dopamine=1.0,
                            dopamine_decay=0.0,
-                           cell_type_parameters=stdp_cell_type_parameters(input_balance),
+                           cell_type_parameters=stdp_cell_type_parameters(),
                            synapse_type_parameters=stdp_synapse_type_parameters(),
-                           warp=True)
+                           warp=warp,
+                           epoch_length=epoch_length,
+                           epoch_delay=epoch_delay)
 
-def handwriting_model_parameters(input_balance,
-                                 noise_factor=0.2,
+def handwriting_model_parameters(noise_factor=0.2,
                                  dopamine_decay=0.1,
-                                 warp=True):
+                                 warp=True,
+                                 epoch_length=400,
+                                 epoch_delay=50):
     synapse_type_paramenters = stdp_synapse_type_parameters()
     synapse_type_paramenters.noise_factor = noise_factor
-    cell_type_parameters = stdp_cell_type_parameters(input_balance)
+    cell_type_parameters = stdp_cell_type_parameters()
     cell_type_parameters.ss_tag_decay_rate = 0.0002
     return ModelParameters(step_size=1,
                            starting_dopamine=0.0,
                            dopamine_decay=dopamine_decay,
                            cell_type_parameters=cell_type_parameters,
                            synapse_type_parameters=synapse_type_paramenters,
-                           warp=True)
+                           warp=warp,
+                           epoch_length=epoch_length,
+                           epoch_delay=epoch_delay)
 
     
 # voltage and current should be named potential everywhere
@@ -106,7 +113,7 @@ class Synapse:
         self._cell_type = pre_cell.cell_type
         self.post_cell = post_cell
         self.strength = synapse_definition.starting_strength
-        self.label = self.pre_cell.label + " to " + self.post_cell.label
+        self.label = synapse_definition.label
         self._step_size = step_size
 
         # can be though of as recording the firing pattern correlation
@@ -123,9 +130,6 @@ class Synapse:
         self._last_fire_step = 0
 
     def update(self, dopamine):
-        # incrament = self._s_tag * dopamine * self._reward_scalar
-        # if incrament > self.strength or incrament * -1 > self.strength:
-        #     print("incrament", incrament , "strength", self.strength)
         self.strength += self._s_tag * dopamine * self._reward_scalar
         if self.strength >= self._max_strength:
             self.strength = self._max_strength
@@ -233,14 +237,14 @@ class CellMembrane:
 
 
 class Cell:
-    def __init__(self, cell_definition, cell_membrane, input_balance):
+    def __init__(self, cell_definition, cell_membrane):
         self.uuid = cell_definition.uuid
         self.label = cell_definition.label
         self._layer_id = cell_definition.layer_id
         self._cell_number = cell_definition.cell_number
         self.x_grid_position = cell_definition.x_grid_position
         self.y_grid_position = cell_definition.y_grid_position
-        self._input_balance = input_balance
+        
         self._cell_membrane = cell_membrane
         self.cell_type = cell_definition.cell_type
 
@@ -251,7 +255,10 @@ class Cell:
         self._positive_total_input_strength = 0.0
         self._negative_total_input_strength = 0.0
         self._fire_history = []
-        self._target_fire_rate = cell_definition.target_fire_rate/400
+
+        self._target_fire_rate_per_epoch = cell_definition.target_fire_rate_per_epoch
+        self._input_balance = cell_definition.input_balance
+        self._fire_rate_balance_scalar = 0.01
 
     def attach_synapses(self, synapses):
         for synapse in synapses:
@@ -264,82 +271,63 @@ class Cell:
                                 "endpoints attach to the cell.")
         self._positive_total_input_strength = self._current_total_input_strength(CellType.EXCITATORY)
         self._negative_total_input_strength = self._current_total_input_strength(CellType.INHIBITORY)
-        self._rate_adaption = self._positive_total_input_strength * 0.01
 
     def apply_input_balance(self, cell_type):
-        if self._input_balance:
-            current_total_input_strength = self._current_total_input_strength(cell_type)
-            if current_total_input_strength > 0.0:
-                if cell_type == CellType.EXCITATORY:
-                    scale_factor = self._positive_total_input_strength / current_total_input_strength
-                else:
-                    scale_factor = self._negative_total_input_strength / current_total_input_strength
-                for synapse in self.input_synapses:
-                    if synapse._cell_type  == cell_type:
-                        synapse.strength = synapse.strength * scale_factor
+        current_total_input_strength = self._current_total_input_strength(cell_type)
+        if current_total_input_strength > 0.0:
+            if cell_type == CellType.EXCITATORY:
+                scale_factor = self._positive_total_input_strength / current_total_input_strength
+            else:
+                scale_factor = self._negative_total_input_strength / current_total_input_strength
+            for synapse in self.input_synapses:
+                if synapse._cell_type  == cell_type:
+                    synapse.strength = synapse.strength * scale_factor
 
-    def fire_rate_balance(self, step):
-        if step == 0 or self._target_fire_rate == 0:
+    def fire_rate_balance(self, step, epoch_length):
+        if not self._input_balance:
+            return
+
+        target_fire_rate = self._target_fire_rate_per_epoch / epoch_length
+
+        if target_fire_rate == 0:
+            raise Exception("target fire rate should be greater than 0 with input balancing")
+            
+        if step == 0:
             return
 
         new_fire_history = []
         fires = 0
+        fire_history_length = 20
         for fire_time in self._fire_history:
-            if fire_time > step  - (400 * 10):
+            if fire_time > step  - (epoch_length * fire_history_length):
                 new_fire_history.append(fire_time)
                 fires += 1
 
-        if step > 400 * 10:
-            running_fire_rate = fires / (400 * 10)
+        if step > epoch_length * fire_history_length:
+            running_fire_rate = fires / (epoch_length * fire_history_length)
         else:
             running_fire_rate = fires / step
             
         self._fire_history = new_fire_history
 
-        if self.x_grid_position == 64 or self.x_grid_position == 67:
-            print("running", running_fire_rate, "xcor", self.x_grid_position,
-                  "target", self._target_fire_rate, "fires", fires, "pos in", self._positive_total_input_strength, "delta", self._rate_adaption)
+        # Print information for one cell in the middle layer and one cell in the output layer.
+        if (self._layer_id == 'b' or self._layer_id == 'c') and self._cell_number == 0:
+            print("xcor", self.x_grid_position,
+                  "running rate", running_fire_rate, "target rate", target_fire_rate,
+                  "fires", fires, "total positive in", self._positive_total_input_strength)
 
-        # average = average * (1-alpha) + real * alpha
-        # real_fire_rate = self._fires/step
-        # delta = (real_fire_rate - self._running_fire_rate) * self._fire_rate_alpha
-        # # print("delta ", delta, "running", self._running_fire_rate, "real", real_fire_rate, "target", self._target_fire_rate)
-        # self._running_fire_rate += delta
-
-        if running_fire_rate > self._target_fire_rate:
-            down = self._target_fire_rate/running_fire_rate
-            # if self.x_grid_position == 6:
-            #     print("down grade")
-            self._positive_total_input_strength -= 0.01*(self._positive_total_input_strength - self._positive_total_input_strength * down)
-            self._negative_total_input_strength -= 0.01*(self._negative_total_input_strength - self._negative_total_input_strength * down)
-            if self.x_grid_position == 64:
-                print("fall", down)
-
-            # if self._positive_total_input_strength > 0:
-            #     self._positive_total_input_strength -= self._rate_adaption
-            # if self._negative_total_input_strength > 0:
-            #     self._negative_total_input_strength -= self._rate_adaption
-            # if self.x_grid_position == 67:
-            #     print("fall", self._positive_total_input_strength)
+        if running_fire_rate > target_fire_rate:
+            down = target_fire_rate/running_fire_rate
+            self._positive_total_input_strength -= self._fire_rate_balance_scalar*(self._positive_total_input_strength - self._positive_total_input_strength * down)
+            self._negative_total_input_strength -= self._fire_rate_balance_scalar*(self._negative_total_input_strength - self._negative_total_input_strength * down)
         else:
             if running_fire_rate == 0:
                 up = 2.0
             else:
-                up = self._target_fire_rate/running_fire_rate
-            if self.x_grid_position == 64:
-                print("rise", up)
+                up = target_fire_rate/running_fire_rate
+            self._positive_total_input_strength += (self._positive_total_input_strength * up - self._positive_total_input_strength) * self._fire_rate_balance_scalar
+            self._negative_total_input_strength += (self._negative_total_input_strength * up - self._negative_total_input_strength) * self._fire_rate_balance_scalar
 
-            # if self.x_grid_position == 6:
-            #     print("up grade", self._positive_total_input_strength, self._negative_total_input_strength)
-            # does not feel semetrical to me if you are too low you rise faster with time
-            # too high you lower slower with time
-            self._positive_total_input_strength += (self._positive_total_input_strength * up - self._positive_total_input_strength) * 0.01#* 1.002
-            self._negative_total_input_strength += (self._negative_total_input_strength * up - self._negative_total_input_strength) * 0.01#* 1.002
-            
-            # self._positive_total_input_strength += self._rate_adaption
-            # self._negative_total_input_strength += self._rate_adaption
-            # if self.x_grid_position == 64:
-            #     print("rise")
         self.apply_input_balance(CellType.EXCITATORY)
         self.apply_input_balance(CellType.INHIBITORY)
                 
@@ -404,6 +392,9 @@ class SimpleModel:
         self._warp = model_parameters.warp
         self._warping = False
         self._last_active = 0
+        
+        self._epoch_delay = model_parameters.epoch_delay
+        self._epoch_length = model_parameters.epoch_length
 
     def _maybe_start_warp(self, step, environment):
         if not self._warp:
@@ -437,17 +428,14 @@ class SimpleModel:
             synapse._s_tag = 0.0
 
         for cell in self._cells:
-            cell.fire_rate_balance(step)
-            # cell.apply_input_balance(CellType.EXCITATORY)
-            # cell.apply_input_balance(CellType.INHIBITORY)
-
+            cell.fire_rate_balance(step, self._epoch_length)
         
     def step(self, step, environment=None):
         self.update_dopamine(step, environment)
 
-        # horrific hack
-        real_step = step - 50
-        if real_step % 400 == 0:
+        # We need a seperate epoch variable for the model
+        real_step = step - self._epoch_delay
+        if real_step % self._epoch_length == 0:
             self._epoch_updates(step)
 
         if self._warping:
@@ -533,7 +521,7 @@ class SimpleModel:
         cells = []
         for cell_definition in network_definition.cell_definitions:
             cell_membrane = CellMembrane(cell_type_parameters, step_size)
-            cell = Cell(cell_definition, cell_membrane, cell_type_parameters.input_balance)
+            cell = Cell(cell_definition, cell_membrane)
             cells_by_id[cell.uuid] = cell
             cells.append(cell)
 

@@ -12,14 +12,15 @@ import signal
 
 World = namedtuple('World', 'model environment')
 
-def stdp_world(input_balance, epoch_length):
-    model_parameters = simple_model.stdp_model_parameters(input_balance, warp=warp)
+def stdp_world(epoch_length, warp=False):
+    model_parameters = simple_model.stdp_model_parameters(warp=warp)
     network_definition = network.stdp_test_network()
     model = simple_model.SimpleModel(network_definition, model_parameters)
     return model, environment.STDPTestEnvironment(epoch_length)
 
-def handwriting_world(file_name, epoch_length, input_delay=50, warp=True):
-    model_parameters = simple_model.handwriting_model_parameters(True,
+def handwriting_world(file_name, epoch_length, input_delay=50, epoch_delay=50, warp=True):
+    model_parameters = simple_model.handwriting_model_parameters(epoch_length=epoch_length,
+                                                                 epoch_delay=epoch_delay,
                                                                  noise_factor=0.5,
                                                                  warp=warp)
 
@@ -34,8 +35,9 @@ def handwriting_world(file_name, epoch_length, input_delay=50, warp=True):
     model = simple_model.SimpleModel(network_definition, model_parameters)
     return model, handwriten_environment
 
-def easy_world(epoch_length, input_delay=50, warp=True):
-    model_parameters = simple_model.handwriting_model_parameters(True,
+def easy_world(epoch_length, input_delay=50, epoch_delay=50, warp=True):
+    model_parameters = simple_model.handwriting_model_parameters(epoch_length=epoch_length,
+                                                                 epoch_delay=epoch_delay,
                                                                  noise_factor=0.5,
                                                                  warp=warp)
 
@@ -78,7 +80,7 @@ def create_args():
     my_parser.add_argument(
         '--world',
         type=str,
-        choices=["spirit", "stdp", "example", "handwriting", "input_balance", "easy"],
+        choices=["spirit", "stdp", "example", "handwriting", "easy"],
         required=False,
         help='A world is a combination of a model and an environment. '\
         'A model is built from ModelParameters and a NetworkDefinition.')
@@ -138,7 +140,7 @@ def create_world(world_type, epoch_length, import_name,
     
     if world_type:
         if world_type == "stdp":
-            return stdp_world(False, epoch_length)
+            return stdp_world(epoch_length)
         elif world_type == "easy":
             return easy_world(epoch_length)
         elif world_type == "spirit":
@@ -147,8 +149,6 @@ def create_world(world_type, epoch_length, import_name,
             return World(example_model.ExampleModel(), None)
         elif world_type == "handwriting":
             return handwriting_world(handwritten_file_name, epoch_length)
-        elif world_type == "input_balance":
-            return stdp_world(True, epoch_length)
 
     if import_name and environment_type:
         return user_specified_world(import_name, environment_type, handwritten_file_name, epoch_length, warp=False)

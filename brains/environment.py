@@ -135,7 +135,7 @@ class TestEnvironment:
         return self._reward
 
 class STDPTestEnvironment:
-    def __init__(self, epoch_length=300):
+    def __init__(self, epoch_length=400):
         self._epoch_length = epoch_length
 
     # fix magic numbers
@@ -201,6 +201,7 @@ class HandwritenEnvironment:
         if shuffle:
             random.shuffle(self._images)
         self._letter_id_by_letter = {'o': 0, 'x': 1}
+        self._letter_by_letter_id = {0: '0', 1: 'x'}
 
     def step(self, step):
         real_step = step - self._input_delay
@@ -230,6 +231,7 @@ class HandwritenEnvironment:
     def has_reward(self):
         if self._reward and not self._rewarded:
             self._rewarded = True
+            print("reward")
             return True
         return False
 
@@ -243,7 +245,7 @@ class HandwritenEnvironment:
             return
 
         if y_grid_position == self._letter_id_by_letter[letter]:
-            print("correct", letter)
+            print(self._letter_by_letter_id[y_grid_position], "fired")
             self._correct_cell_fired = True
         else:
             self._incorrect_cell_fired = True
