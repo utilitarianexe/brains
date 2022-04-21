@@ -36,11 +36,7 @@ class CellDefinition:
     cell_type: int = CellType.EXCITATORY
     target_fire_rate_per_epoch: float = 0.0
     input_balance: bool = False
-    uuid: str = None
-
-    def __post_init__(self):
-        if self.uuid is None:
-            self.uuid = str(uuid.uuid4())
+    uuid: str = field(default_factory=lambda:str(uuid.uuid4()))
 
     def export_network_information(self):
         return (self.label, self.x_grid_position, self.y_grid_position)
