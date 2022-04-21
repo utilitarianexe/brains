@@ -1,21 +1,22 @@
-Refactors before any features
+unsorted issues
   overrunning lines in emacs for fire_rate_balance
-  warp param everywhere in main
   remove warp fudge
   paramaterize warp
   paramaterize fire rate adaptation
   print in fire rate balance
   new insturctions
-  default params for other dataclasses
-  delays make sense
+  delays make sense in env
   environment hell
+  test for learning on simple network
+  try another inhibitory layer
+  need a seperate epoch length/delay for envs
+  get profile working again
 
 refactoring
   take out dopamine cut off and warp timer parameter
   environmnet majic numbers and copy paste code(should make base class)
   horrific hack to reset s_tag
   main file is too long and needs tests
-  paramterize delay or generally env variables
   need a better way to believe rewards are hitting at the right times
   me need a world to step
   switch from "model" to "brain"
@@ -31,7 +32,6 @@ refactoring
   get rid of magic numbers(most at least moved to class definitions)
   follow python style guide
   reorder parameters
-  defaults on dataclasses for obvious variables, maybe freeze
   simple_model output is a mess
   get example and spirit working with video, export, import, and pyplot
   arguably export should be a type of display

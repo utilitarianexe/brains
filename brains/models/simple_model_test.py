@@ -11,8 +11,7 @@ class TestCellMembrane(unittest.TestCase):
         '''
         Ensure potential falls with time.
         '''
-        cell_type_parameters = simple_model.stdp_cell_type_parameters()
-        cell_type_parameters.starting_membrane_voltage = 0.5
+        cell_type_parameters = simple_model.CellTypeParameters(starting_membrane_voltage = 0.5)
         step_size = 1
         membrane = simple_model.CellMembrane(cell_type_parameters, step_size)
         membrane.update()
@@ -24,10 +23,9 @@ class TestCellMembrane(unittest.TestCase):
         Cell should not fire until after voltage builds up from input. It should fire once
         and then not fire again as input decays or is reset.
         '''
-        cell_type_parameters = simple_model.stdp_cell_type_parameters()
+        cell_type_parameters = simple_model.CellTypeParameters()
         step_size = 1
         membrane = simple_model.CellMembrane(cell_type_parameters, step_size)        
-
         self.assertFalse(membrane.fired())
         membrane.receive_input(0.8)
         membrane.update()
@@ -50,7 +48,7 @@ class TestModel(unittest.TestCase):
                                            synapses)
 
     def two_cell_model(self, starting_synapse_strength):
-        model_parameters = simple_model.stdp_model_parameters()
+        model_parameters = simple_model.ModelParameters()
         return simple_model.SimpleModel(self.two_cell_network(starting_synapse_strength),
                                         model_parameters)
         
@@ -156,7 +154,7 @@ class TestModel(unittest.TestCase):
         this point the synapse of the first input will continue to get stronger while the second will
         get weaker because it fires after the output cell.
         '''
-        model_parameters = simple_model.stdp_model_parameters(warp=False)
+        model_parameters = simple_model.ModelParameters(warp=False)
         network_definition = network.stdp_test_network()
         test_environment = environment.STDPTestEnvironment()
         model =  simple_model.SimpleModel(network_definition,
@@ -190,7 +188,7 @@ class TestModel(unittest.TestCase):
         strength to fire the output on its own. So it will never have a chance to overtake the late
         connection by causing the output cell to fire before the late connection.
         '''
-        model_parameters = simple_model.stdp_model_parameters()
+        model_parameters = simple_model.ModelParameters()
         network_definition = network.stdp_test_network(input_balance=True)
         test_environment = environment.STDPTestEnvironment()
         model =  simple_model.SimpleModel(network_definition,

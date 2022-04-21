@@ -2,66 +2,44 @@ from brains.utils import decay
 from brains.network import SynapseDefinition, NetworkDefinition, CellType
 
 from collections import defaultdict
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 import random
 import numpy as np
 
 @dataclass
 class CellTypeParameters:
-    voltage_decay: float
-    current_decay: float
-    calcium_decay: float
-    starting_membrane_voltage: float
-    max_voltage: float
-    voltage_reset: float
-    calcium_increment: float
-    input_current_reset: float
-    starting_calcium: float
-    starting_input_current: float
-    reset_input_current: bool
-
-def stdp_cell_type_parameters():
-    return CellTypeParameters(voltage_decay=0.01,
-                              current_decay=0.03,
-                              calcium_decay=0.1,
-                              starting_membrane_voltage=0.0,
-                              max_voltage=1.0,
-                              voltage_reset=-1.0,
-                              calcium_increment=1.0,
-                              input_current_reset=0.0,
-                              starting_input_current=0.0,
-                              starting_calcium=0.0,                              
-                              reset_input_current=True)
+    voltage_decay: float = 0.01
+    current_decay: float = 0.03
+    calcium_decay: float = 0.1
+    starting_membrane_voltage: float =0.0
+    max_voltage: float = 1.0
+    voltage_reset: float = -1.0
+    calcium_increment: float = 1.0
+    input_current_reset: float = 0.0
+    starting_calcium: float = 0.0
+    starting_input_current: float = 0.0
+    reset_input_current: bool = True
 
 @dataclass
 class SynapseTypeParameters:
-    stdp_scalar: float
-    reward_scalar: float
-    max_strength: float
-    min_strength: float
-    s_tag_decay_rate: float
-    starting_s_tag: float
-    noise_factor: float
-
-def stdp_synapse_type_parameters():
-    return SynapseTypeParameters(stdp_scalar=0.01,
-                                 reward_scalar=0.1,
-                                 max_strength=0.4,
-                                 min_strength=0.0,
-                                 s_tag_decay_rate=0.002,
-                                 starting_s_tag=0.0,
-                                 noise_factor=0.0)
+    stdp_scalar: float = 0.01
+    reward_scalar: float = 0.1
+    max_strength: float = 0.4
+    min_strength: float = 0.0
+    s_tag_decay_rate: float = 0.002
+    starting_s_tag: float = 0.0
+    noise_factor: float = 0.0
 
 @dataclass
 class ModelParameters:
-    step_size: int
-    starting_dopamine: float
-    dopamine_decay: float
-    cell_type_parameters: CellTypeParameters
-    synapse_type_parameters: SynapseTypeParameters
-    warp: bool
-    epoch_length: int
-    epoch_delay: int
+    step_size: int = 1
+    starting_dopamine: float = 1.0
+    dopamine_decay: float = 0.0
+    cell_type_parameters: CellTypeParameters = field(default_factory=CellTypeParameters)
+    synapse_type_parameters: SynapseTypeParameters = field(default_factory=SynapseTypeParameters)
+    warp: bool = True
+    epoch_length: int = 400
+    epoch_delay: int = 50
     
     def __post_init__(self):
         '''
@@ -72,31 +50,13 @@ class ModelParameters:
         if isinstance(self.synapse_type_parameters, dict):
             self.synapse_type_parameters = SynapseTypeParameters(**self.synapse_type_parameters)
 
-def stdp_model_parameters(warp=True,
-                          epoch_length=400,
-                          epoch_delay=50):
-    return ModelParameters(step_size=1,
-                           starting_dopamine=1.0,
-                           dopamine_decay=0.0,
-                           cell_type_parameters=stdp_cell_type_parameters(),
-                           synapse_type_parameters=stdp_synapse_type_parameters(),
-                           warp=warp,
-                           epoch_length=epoch_length,
-                           epoch_delay=epoch_delay)
 
-def handwriting_model_parameters(noise_factor=0.2,
-                                 dopamine_decay=0.1,
-                                 warp=True,
+def handwriting_model_parameters(warp=True,
                                  epoch_length=400,
                                  epoch_delay=50):
-    synapse_type_paramenters = stdp_synapse_type_parameters()
-    synapse_type_paramenters.noise_factor = noise_factor
-    cell_type_parameters = stdp_cell_type_parameters()
-    cell_type_parameters.ss_tag_decay_rate = 0.0002
-    return ModelParameters(step_size=1,
-                           starting_dopamine=0.0,
-                           dopamine_decay=dopamine_decay,
-                           cell_type_parameters=cell_type_parameters,
+    synapse_type_paramenters = SynapseTypeParameters(noise_factor=0.5)
+    return ModelParameters(starting_dopamine=0.0,
+                           dopamine_decay=0.1,
                            synapse_type_parameters=synapse_type_paramenters,
                            warp=warp,
                            epoch_length=epoch_length,
@@ -259,6 +219,7 @@ class Cell:
         self._target_fire_rate_per_epoch = cell_definition.target_fire_rate_per_epoch
         self._input_balance = cell_definition.input_balance
         self._fire_rate_balance_scalar = 0.01
+        self._fire_history_length = 20
 
     def attach_synapses(self, synapses):
         for synapse in synapses:
@@ -297,14 +258,13 @@ class Cell:
 
         new_fire_history = []
         fires = 0
-        fire_history_length = 20
         for fire_time in self._fire_history:
-            if fire_time > step  - (epoch_length * fire_history_length):
+            if fire_time > step  - (epoch_length * self._fire_history_length):
                 new_fire_history.append(fire_time)
                 fires += 1
 
-        if step > epoch_length * fire_history_length:
-            running_fire_rate = fires / (epoch_length * fire_history_length)
+        if step > epoch_length * self._fire_history_length:
+            running_fire_rate = fires / (epoch_length * self._fire_history_length)
         else:
             running_fire_rate = fires / step
             
@@ -392,9 +352,9 @@ class SimpleModel:
         self._warp = model_parameters.warp
         self._warping = False
         self._last_active = 0
-        
+
+        self.epoch_length = model_parameters.epoch_length
         self._epoch_delay = model_parameters.epoch_delay
-        self._epoch_length = model_parameters.epoch_length
 
     def _maybe_start_warp(self, step, environment):
         if not self._warp:
@@ -428,14 +388,14 @@ class SimpleModel:
             synapse._s_tag = 0.0
 
         for cell in self._cells:
-            cell.fire_rate_balance(step, self._epoch_length)
+            cell.fire_rate_balance(step, self.epoch_length)
         
     def step(self, step, environment=None):
         self.update_dopamine(step, environment)
 
         # We need a seperate epoch variable for the model
         real_step = step - self._epoch_delay
-        if real_step % self._epoch_length == 0:
+        if real_step % self.epoch_length == 0:
             self._epoch_updates(step)
 
         if self._warping:

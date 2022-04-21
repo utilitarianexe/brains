@@ -12,16 +12,15 @@ import signal
 
 World = namedtuple('World', 'model environment')
 
-def stdp_world(epoch_length, warp=False):
-    model_parameters = simple_model.stdp_model_parameters(warp=warp)
+def stdp_world(epoch_length, warp=True):
+    model_parameters = simple_model.ModelParameters(epoch_length=epoch_length, warp=warp)
     network_definition = network.stdp_test_network()
     model = simple_model.SimpleModel(network_definition, model_parameters)
-    return model, environment.STDPTestEnvironment(epoch_length)
+    return model, environment.STDPTestEnvironment()
 
 def handwriting_world(file_name, epoch_length, input_delay=50, epoch_delay=50, warp=True):
     model_parameters = simple_model.handwriting_model_parameters(epoch_length=epoch_length,
                                                                  epoch_delay=epoch_delay,
-                                                                 noise_factor=0.5,
                                                                  warp=warp)
 
     # need like some kind of average starting connection strength thing
@@ -38,7 +37,6 @@ def handwriting_world(file_name, epoch_length, input_delay=50, epoch_delay=50, w
 def easy_world(epoch_length, input_delay=50, epoch_delay=50, warp=True):
     model_parameters = simple_model.handwriting_model_parameters(epoch_length=epoch_length,
                                                                  epoch_delay=epoch_delay,
-                                                                 noise_factor=0.5,
                                                                  warp=warp)
 
     # need like some kind of average starting connection strength thing
@@ -49,10 +47,7 @@ def easy_world(epoch_length, input_delay=50, epoch_delay=50, warp=True):
 
 
 def user_specified_world(import_name, environment_type, handwritten_file_name,
-                         epoch_length, input_delay=50, warp=True):
-    print(handwritten_file_name)
-
-
+                         input_delay=50, warp=True):
     base_path = Path(__file__).parent / "data"
     file_path = (base_path / import_name).resolve()
     model_file = open(file_path)
@@ -60,15 +55,60 @@ def user_specified_world(import_name, environment_type, handwritten_file_name,
     model = simple_model.import_model(blob, warp=warp)
     if environment_type == 'handwriting':
         model_environment = environment.HandwritenEnvironment(
-            input_delay=input_delay, epoch_length=epoch_length,
+            input_delay=input_delay, epoch_length=model.epoch_length,
             image_lines=None, shuffle=True,
             last_layer_x_grid_position=model.network_definition.last_layer_x_grid_position,
             file_name=handwritten_file_name)
     elif environment_type == 'easy':
-        model_environment = environment.EasyEnvironment(epoch_length, input_delay)
+        model_environment = environment.EasyEnvironment(model.epoch_length, input_delay)
     elif environment_type == 'stdp':
-        model_environment = environment.STDPTestEnvironment()
+        model_environment = environment.STDPTestEnvironment(model.epoch_length)
     return model, model_environment
+
+def create_world(world_type, epoch_length, import_name,
+                 environment_type, handwritten_file_name,
+                 warp=False):
+    if world_type and import_name:
+        raise Exception("User should either create world with(import_name and environment) or " \
+                        "provide\ world_type")
+    
+    if world_type:
+        if world_type == "stdp":
+            return stdp_world(epoch_length, warp=warp)
+        elif world_type == "easy":
+            return easy_world(epoch_length, warp=warp)
+        elif world_type == "spirit":
+            return World(spirit_model.default_model(), None)
+        elif world_type == "example":
+            return World(example_model.ExampleModel(), None)
+        elif world_type == "handwriting":
+            return handwriting_world(handwritten_file_name, epoch_length, warp=warp)
+
+    if import_name and environment_type:
+        return user_specified_world(import_name, environment_type,
+                                    handwritten_file_name, epoch_length, warp=warp)
+
+    print("Not enough information provided. Either supply a world argument or both a import_name and an environment to run it in")
+    quit()
+
+def create_display(display_type, model):
+    if display_type == "pygame":
+        import display.game as game
+        display = game.GameDisplay(model)
+    elif display_type == "pyplot":
+        import display.plot as plot
+        display = plot.PlotDisplay(model)
+    else:
+        display = None
+    return display
+
+
+def export(brain, export_name):
+    blob = brain.export()
+    base_path = Path(__file__).parent / "data"
+    file_path = (base_path / export_name).resolve()
+    output_file = open(file_path, 'w')
+    json.dump(blob, output_file, sort_keys=True, indent=4)
 
 def create_args():
     my_parser = argparse.ArgumentParser(description='Run brains')
@@ -121,56 +161,15 @@ def create_args():
                            help='Profile code all other options are ignored if selected.')
     return my_parser.parse_args()
 
-def create_display(display_type, model):
-    if display_type == "pygame":
-        import display.game as game
-        display = game.GameDisplay(model)
-    elif display_type == "pyplot":
-        import display.plot as plot
-        display = plot.PlotDisplay(model)
-    else:
-        display = None
-    return display
-
-def create_world(world_type, epoch_length, import_name,
-                 environment_type, handwritten_file_name):
-    if world_type and import_name:
-        raise Exception("User should either create world with(import_name and environment) or " \
-                        "provide\ world_type")
-    
-    if world_type:
-        if world_type == "stdp":
-            return stdp_world(epoch_length)
-        elif world_type == "easy":
-            return easy_world(epoch_length)
-        elif world_type == "spirit":
-            return World(spirit_model.default_model(), None)
-        elif world_type == "example":
-            return World(example_model.ExampleModel(), None)
-        elif world_type == "handwriting":
-            return handwriting_world(handwritten_file_name, epoch_length)
-
-    if import_name and environment_type:
-        return user_specified_world(import_name, environment_type, handwritten_file_name, epoch_length, warp=False)
-
-    print("Not enough information provided. Either supply a world argument or both a import_name and an environment to run it in")
-    quit()
-
-def export(brain, export_name):
-    blob = brain.export()
-    base_path = Path(__file__).parent / "data"
-    file_path = (base_path / export_name).resolve()
-    output_file = open(file_path, 'w')
-    json.dump(blob, output_file, sort_keys=True, indent=4)
 
 def main(steps, epoch_length,
          world_type="", import_name="",
          environment_type="", handwritten_file_name="",
          display_type="", export_name=""):
-
+    warp = display_type != "pygame"
     brain, environment = create_world(world_type, epoch_length,
                                       import_name, environment_type,
-                                      handwritten_file_name)
+                                      handwritten_file_name, warp=warp)
     def handler(signum, frame):
         if export_name:
             export(brain, export_name)
