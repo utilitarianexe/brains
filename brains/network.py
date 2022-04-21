@@ -161,7 +161,7 @@ def network_from_layers(layers, layer_connections):
     for layer in layers:
         for cell_number in range(layer.size):
             (x_grid_position, y_grid_position,) = layer.cell_grid_position(cell_number)
-            label = "{}_{}".format(layer.id, str(cell_number))
+            label = f"{layer.id}_{cell_number}"
             cell_definition = CellDefinition(label,
                                              x_grid_position, y_grid_position,
                                              cell_number, layer.id, layer.cell_type,
@@ -175,8 +175,7 @@ def network_from_layers(layers, layer_connections):
         for cell_definition_pre_layer in cell_definitions_by_layer[pre_layer]:
             for cell_definition_post_layer in cell_definitions_by_layer[post_layer]:
                 if probability >= random.random():
-                    label = "{}_to_{}".format(cell_definition_pre_layer.label,
-                                              cell_definition_post_layer.label)
+                    label = f"{cell_definition_pre_layer.label}_to_{cell_definition_post_layer.label}"
                     synapse_definition = SynapseDefinition(cell_definition_pre_layer.uuid,
                                                            cell_definition_post_layer.uuid,
                                                            synapse_strength,
@@ -204,7 +203,7 @@ def network_from_tuples(cell_definitions,
     for (pre_cell_label, post_cell_label, strength) in  synapses:
         pre_cell_definition = cell_definitions_by_label[pre_cell_label]
         post_cell_definition = cell_definitions_by_label[post_cell_label]
-        label = "{}_to_{}".format(pre_cell_definition.label, post_cell_definition.label)
+        label = f"{pre_cell_definition.label}_to_{post_cell_definition.label}"
         synapse_definition = SynapseDefinition(pre_cell_definition.uuid, post_cell_definition.uuid,
                                                strength, label)
         synapse_definitions.append(synapse_definition)

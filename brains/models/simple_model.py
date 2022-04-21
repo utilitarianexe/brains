@@ -272,9 +272,9 @@ class Cell:
 
         # Print information for one cell in the middle layer and one cell in the output layer.
         if (self._layer_id == 'b' or self._layer_id == 'c') and self._cell_number == 0:
-            print("xcor", self.x_grid_position,
-                  "running rate", running_fire_rate, "target rate", target_fire_rate,
-                  "fires", fires, "total positive in", self._positive_total_input_strength)
+            print(f"xcor {self.x_grid_position} running rate {running_fire_rate} " \
+                  f"target rate {target_fire_rate} fires {fires} "\
+                  f"total positive in {self._positive_total_input_strength}")
 
         if running_fire_rate > target_fire_rate:
             down = target_fire_rate/running_fire_rate

@@ -49,7 +49,9 @@ class EasyEnvironment:
         real_step = step - self._input_delay
         if real_step % self._epoch_length == 0:
             self._epochs += 1
-            print("epochs", self._epochs, "loss", self._loss, "win", self._win, "none_fired", self._none_fired, "all_fired", self._all_fired, "indeterminate", self._indeterminate)
+            print("epochs", self._epochs, "loss", self._loss, "win", self._win,
+                  "none_fired", self._none_fired, "all_fired", self._all_fired,
+                  "indeterminate", self._indeterminate)
             self._correct_cell_fired = False
             self._incorrect_cell_fired = False
             self._rewarded = False
@@ -207,7 +209,9 @@ class HandwritenEnvironment:
         real_step = step - self._input_delay
         if real_step % self._epoch_length == 0:
             self._epochs += 1
-            print("epochs", self._epochs, "loss", self._loss, "win", self._win, "none_fired", self._none_fired, "all_fired", self._all_fired, "indeterminate", self._indeterminate)
+            print("epochs", self._epochs, "loss", self._loss, "win", self._win,
+                  "none_fired", self._none_fired, "all_fired", self._all_fired,
+                  "indeterminate", self._indeterminate)
             self._correct_cell_fired = False
             self._incorrect_cell_fired = False
             self._rewarded = False

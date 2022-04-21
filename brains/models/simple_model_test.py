@@ -172,7 +172,6 @@ class TestModel(unittest.TestCase):
             if i == 5000:
                 self.assertTrue(synapse_early_input.strength > starting_strength)
                 self.assertTrue(synapse_late_input.strength > synapse_early_input.strength)
-        print(synapse_early_input.strength, synapse_late_input.strength)
         self.assertTrue(synapse_early_input.strength > synapse_late_input.strength)
 
     def test_input_balancing(self):
