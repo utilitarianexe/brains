@@ -4,6 +4,31 @@ import string
 import random
 from collections import defaultdict
 from pathlib import Path
+from dataclasses import dataclass
+
+@dataclass
+class ResultTracker:
+    win: int = 0
+    loss: int = 0
+    none_fired: int = 0
+    all_fired: int = 0
+    indeterminate: int = 0
+    win: int = 0
+    epochs: int = 0
+
+    def update(self, correct_cell_fired, incorrect_cell_fired):
+        self.epochs += 1
+        if correct_cell_fired and not incorrect_cell_fired:
+            self.win += 1
+        elif not correct_cell_fired and not incorrect_cell_fired:
+            self.none_fired += 1
+            self.indeterminate += 1
+        elif correct_cell_fired and incorrect_cell_fired:
+            self.all_fired += 1
+            self.indeterminate += 1
+        elif not correct_cell_fired and incorrect_cell_fired:
+            self.loss += 1
+
 
 class EasyEnvironment:
     '''
@@ -19,14 +44,9 @@ class EasyEnvironment:
         self._input_delay = input_delay
         self._zero_stage = True
         self._one_stage = False
-
-        self._win = 0
-        self._loss = 0
-        self._none_fired = 0
-        self._all_fired = 0
-        self._indeterminate = 0
-        self._epochs = 0
         self._fire_random = False
+        self._result_tracker = ResultTracker()
+
 
     def active(self, step):
         real_step = step - self._input_delay
@@ -48,10 +68,7 @@ class EasyEnvironment:
     def step(self, step):
         real_step = step - self._input_delay
         if real_step % self._epoch_length == 0:
-            self._epochs += 1
-            print("epochs", self._epochs, "loss", self._loss, "win", self._win,
-                  "none_fired", self._none_fired, "all_fired", self._all_fired,
-                  "indeterminate", self._indeterminate)
+            print(self._result_tracker)
             self._correct_cell_fired = False
             self._incorrect_cell_fired = False
             self._rewarded = False
@@ -67,19 +84,10 @@ class EasyEnvironment:
                 return
                 
         elif real_step % self._epoch_length == self._epoch_length//2:
+            self._result_tracker.update(self._correct_cell_fired, self._incorrect_cell_fired)
             if self._correct_cell_fired and not self._incorrect_cell_fired:
-                self._win += 1
                 self._reward = True
-            elif not self._correct_cell_fired and not self._incorrect_cell_fired:
-                self._none_fired += 1
-                self._indeterminate += 1
-                self._reward = False
-            elif self._correct_cell_fired and self._incorrect_cell_fired:
-                self._all_fired += 1
-                self._indeterminate += 1
-                self._reward = False
-            elif not self._correct_cell_fired and self._incorrect_cell_fired:
-                self._loss += 1
+            else:
                 self._reward = False
 
     # should just take layer id
@@ -172,13 +180,8 @@ class HandwritenEnvironment:
         self._epoch_length = epoch_length
         self._image_width = None
         self._last_layer_x_grid_position = last_layer_x_grid_position
-        
-        self._win = 0
-        self._loss = 0
-        self._none_fired = 0
-        self._all_fired = 0
-        self._indeterminate = 0
-        self._epochs = 0
+
+        self._result_tracker = ResultTracker()
 
         self._reward = False
         self._correct_cell_fired = False
@@ -208,28 +211,16 @@ class HandwritenEnvironment:
     def step(self, step):
         real_step = step - self._input_delay
         if real_step % self._epoch_length == 0:
-            self._epochs += 1
-            print("epochs", self._epochs, "loss", self._loss, "win", self._win,
-                  "none_fired", self._none_fired, "all_fired", self._all_fired,
-                  "indeterminate", self._indeterminate)
+            print(self._result_tracker)
             self._correct_cell_fired = False
             self._incorrect_cell_fired = False
             self._rewarded = False
             self._reward = False
         elif real_step % self._epoch_length == self._epoch_length//2:
+            self._result_tracker.update(self._correct_cell_fired, self._incorrect_cell_fired)
             if self._correct_cell_fired and not self._incorrect_cell_fired:
-                self._win += 1
                 self._reward = True
-            elif not self._correct_cell_fired and not self._incorrect_cell_fired:
-                self._none_fired += 1
-                self._indeterminate += 1
-                self._reward = False
-            elif self._correct_cell_fired and self._incorrect_cell_fired:
-                self._all_fired += 1
-                self._indeterminate += 1
-                self._reward = False
-            elif not self._correct_cell_fired and self._incorrect_cell_fired:
-                self._loss += 1
+            else:
                 self._reward = False
 
     def has_reward(self):
