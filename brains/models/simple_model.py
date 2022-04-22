@@ -383,7 +383,7 @@ class SimpleModel:
             self._warp_timer = 0
 
     def _epoch_updates(self, step):
-        # bad hack
+        # bad hack(means messing with input delays breaks things
         for synapse in self.synapses:
             synapse._s_tag = 0.0
 

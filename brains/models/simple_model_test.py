@@ -166,10 +166,10 @@ class TestModel(unittest.TestCase):
         synapse_late_input = synapses_by_pre_cell["b"]
         starting_strength = synapse_early_input.strength
             
-        for i in range(15000):
+        for i in range(2000):
             model.step(i, test_environment)
             test_environment.step(i)
-            if i == 5000:
+            if i == 750:
                 self.assertTrue(synapse_early_input.strength > starting_strength)
                 self.assertTrue(synapse_late_input.strength > synapse_early_input.strength)
         self.assertTrue(synapse_early_input.strength > synapse_late_input.strength)

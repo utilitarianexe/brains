@@ -6,27 +6,36 @@ from collections import defaultdict
 from pathlib import Path
 from dataclasses import dataclass
 
-# fix magic numbers
 class STDPTestEnvironment:
     '''
-    Very basic environment that only provides input to a brain but ignores output from the brain
-    and does not reward it. All environments must implement these functions.
+    Very basic environment that provides input to a brain but ignores output from the brain
+    and does not reward the brain. Input is provided to 2 cells every epoch with a 10 step
+    delay between the when the cells get input. The timing dealy allows for stdp between the
+    two cells.
     '''
-    def __init__(self, epoch_length=400):
+    def __init__(self, epoch_length=400, input_delay=50):
         self._epoch_length = epoch_length
+        self._input_delay = input_delay
+        self._second_input_spike_delay = 10
 
     def potential_from_location(self, step, x_grid_position, y_grid_position):
+        real_step = step - self._input_delay
+        if real_step < 0:
+            return 0
+        
         is_first_cell = x_grid_position == 0 and y_grid_position == 0
         is_second_cell = x_grid_position == 1 and y_grid_position == 0
-        if step % self._epoch_length == 0 and step > 0 and is_first_cell :
+        
+        if real_step % self._epoch_length == 0 and is_first_cell:
             return 0.1
-        if step % self._epoch_length == 10 and step > 0 and is_second_cell :
+        if real_step % self._epoch_length == self._second_input_spike_delay  and is_second_cell :
             return 0.1
         return 0
 
     def active(self, step):
-        first_cell_time = step % self._epoch_length == 0 and step > 0
-        second_cell_time =step % self._epoch_length == 10 and step > 0
+        real_step = step - self._input_delay
+        first_cell_time = real_step % self._epoch_length == 0
+        second_cell_time = real_step % self._epoch_length == self._second_input_spike_delay
         return first_cell_time or  second_cell_time
 
     def has_reward(self):

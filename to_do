@@ -15,7 +15,7 @@ unsorted issues
 refactoring
   take out dopamine cut off and warp timer parameter
   environmnet majic numbers and copy paste code(should make base class)
-  horrific hack to reset s_tag
+  horrific hack to reset s_tag s tag stag
   main file is too long and needs tests
   need a better way to believe rewards are hitting at the right times
   me need a world to step
