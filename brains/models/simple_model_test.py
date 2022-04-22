@@ -139,7 +139,7 @@ class TestModel(unittest.TestCase):
         for i in range(500):
             if i == 150:
                 self.assertEqual(model.synapses[0].strength, starting_synapse_strength)
-            if i == 250:
+            if i == 260:
                 self.assertGreater(model.synapses[0].strength, starting_synapse_strength)
             model.step(i, test_environment)
             test_environment.step(i)
