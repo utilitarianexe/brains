@@ -180,7 +180,8 @@ def main(steps, epoch_length,
     display = create_display(display_type, brain)
     for i in range(steps):
         environment.step(i)
-        brain.step(i, environment)
+        stimuli = environment.stimuli(i)
+        brain.step(i, environment, stimuli)
         if display is not None:
             display.process_step()
     if display is not None:

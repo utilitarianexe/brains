@@ -6,7 +6,17 @@ unsorted issues
   print in fire rate balance
   new insturctions
   delays make sense in env
-  environment magic numbers for first and last layer positions
+
+  env later
+    env magic for reward and prints
+    maybe we could then remove grid position from the cells
+    x_input_position I don't like that these are default 0
+    need a world class to avoid simple_model repeating he step loop in every function
+    should not be sending to all cells
+    stop passing env to model
+    abstract base class
+    strength of stimuli is a magic number
+  
   unit test for learning on simple network
   try another inhibitory layer
   need a seperate epoch length/delay for envs

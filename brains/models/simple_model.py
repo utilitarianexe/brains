@@ -204,6 +204,10 @@ class Cell:
         self._cell_number = cell_definition.cell_number
         self.x_grid_position = cell_definition.x_grid_position
         self.y_grid_position = cell_definition.y_grid_position
+
+        self._is_input_cell = cell_definition.is_input_cell
+        self._x_input_position = cell_definition.x_input_position
+        self._y_input_position = cell_definition.y_input_position
         
         self._cell_membrane = cell_membrane
         self.cell_type = cell_definition.cell_type
@@ -313,12 +317,14 @@ class Cell:
     def warp(self, time_steps):
         self._cell_membrane.warp(time_steps)
 
-    def update(self, step, environment=None):
-        if environment is not None:
-            outside_current = environment.potential_from_location(step,
-                                                                  self.x_grid_position,
-                                                                  self.y_grid_position)
-            self._cell_membrane.receive_input(outside_current)
+    def update(self, step, stimuli=None):
+        if stimuli is not None:
+            if self._is_input_cell:
+                for stimulus in stimuli:
+                    if stimulus[0] == self._x_input_position and stimulus[1] == self._y_input_position:
+                        outside_current = stimulus[2]
+                        self._cell_membrane.receive_input(outside_current)
+                        break
         self._cell_membrane.update()
 
     def active(self):
@@ -390,7 +396,7 @@ class SimpleModel:
         for cell in self._cells:
             cell.fire_rate_balance(step, self.epoch_length)
         
-    def step(self, step, environment=None):
+    def step(self, step, environment=None, stimuli=None):
         self.update_dopamine(step, environment)
 
         # We need a seperate epoch variable for the model
@@ -415,7 +421,7 @@ class SimpleModel:
         
         self._last_active = step
         for cell in self._cells:
-            cell.update(step, environment)
+            cell.update(step, stimuli=stimuli)
 
         for cell in self._cells:
             if cell.fired():

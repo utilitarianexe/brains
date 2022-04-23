@@ -10,27 +10,23 @@ class STDPTestEnvironment:
     '''
     Very basic environment that provides input to a brain but ignores output from the brain
     and does not reward the brain. Input is provided to 2 cells every epoch with a 10 step
-    delay between the when the cells get input. The timing dealy allows for stdp between the
-    two cells.
+    delay between the when the cells get input.
     '''
     def __init__(self, epoch_length=400, input_delay=50):
         self._epoch_length = epoch_length
         self._input_delay = input_delay
         self._second_input_spike_delay = 10
 
-    def potential_from_location(self, step, x_grid_position, y_grid_position):
+    def stimuli(self, step):
         real_step = step - self._input_delay
         if real_step < 0:
-            return 0
-        
-        is_first_cell = x_grid_position == 0 and y_grid_position == 0
-        is_second_cell = x_grid_position == 1 and y_grid_position == 0
-        
-        if real_step % self._epoch_length == 0 and is_first_cell:
-            return 0.1
-        if real_step % self._epoch_length == self._second_input_spike_delay  and is_second_cell :
-            return 0.1
-        return 0
+            return set()
+
+        if real_step % self._epoch_length == 0:
+            return {(0, 0, 0.1,)}
+        if real_step % self._epoch_length == self._second_input_spike_delay:
+            return {(1, 0, 0.1,)}
+        return set()
 
     def active(self, step):
         real_step = step - self._input_delay
@@ -73,7 +69,7 @@ class ResultTracker:
 class BaseEpochChallengeEnvironment:
     '''
     User is expected to implement:
-    potential_from_location to act as input from the environment to the brain.
+    stimuli to act as input from the environment to the brain.
     accept_fire to handle output from the brain to determine if the brain has fired the right cell.
 
     Class handles rewarding at the right time assuming that the correct output cell and only the
@@ -130,18 +126,20 @@ class EasyEnvironment(BaseEpochChallengeEnvironment):
         self._one_stage = False
         self._fire_the_random_input_cell = False
 
-    def potential_from_location(self, step, x_grid_position, y_grid_position):
+    def stimuli(self, step):
         real_step = step - self._input_delay
         is_correct_time = real_step % self._epoch_length == 0 and step > real_step
-        is_input_cell = x_grid_position == 0 or x_grid_position == 3
-        if  is_correct_time and is_input_cell:
-            if y_grid_position == 0 and self._zero_stage:
-                return 0.3
-            if y_grid_position == 1 and self._one_stage:
-                return 0.3
-            if y_grid_position == 2 and self._fire_the_random_input_cell:
-                return 0.3
-        return 0.0
+        if not is_correct_time:
+            return set()
+
+        stimuli = set()
+        if self._zero_stage:
+            stimuli.add((0, 0, 0.3,))
+        if self._one_stage:
+            stimuli.add((0, 1, 0.3,))
+        if self._fire_the_random_input_cell:
+            stimuli.add((0, 2, 0.3,))
+        return stimuli
 
     def step(self, step):
         super().step(step)
@@ -172,20 +170,19 @@ class EasyEnvironment(BaseEpochChallengeEnvironment):
 class TestEnvironment(BaseEpochChallengeEnvironment):
     def __init__(self, input_points, reward_points, epoch_length, input_delay=0):
         super().__init__(epoch_length, input_delay)
-        
-        self.input_dict = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
+        self._stimuli = defaultdict(list)
         for (step, x, y, strength) in input_points:
-            self.input_dict[step][x][y] = strength
+            self._stimuli[step].append((x, y, strength,))
 
         # List of corrdinates or Nones specifying a reward for a given epoch
         self._reward_points = reward_points
         self._reward_point = self._reward_points[0]
 
     def active(self, step):
-        return step in self.input_dict
+        return step in self._stimuli
 
-    def potential_from_location(self, step, x_grid_position, y_grid_position):
-        return self.input_dict[step][x_grid_position][y_grid_position]
+    def stimuli(self, step):
+        return self._stimuli[step]
 
     def step(self, step):
         super().step(step)
@@ -233,31 +230,25 @@ class HandwritenEnvironment(BaseEpochChallengeEnvironment):
             self._correct_cell_fired = True
         else:
             self._incorrect_cell_fired = True
-            
-    # so many magic numbers
-    # also so many errors possilbe
-    def potential_from_location(self, step, x_grid_position, y_grid_position):
-        # bad names
+
+    def stimuli(self, step):
         real_step = step - self._input_delay
-        is_correct_time = real_step % self._epoch_length == 0 and step > real_step
+        is_correct_time = real_step % self._epoch_length == 0 and real_step > 0
+        if not is_correct_time:
+            return set()
+        image_index = real_step//self._epoch_length - 1
+        if image_index >= len(self._images):
+            #print("ran out of images to show network will continue running with no inputs")
+            return set()
 
-        if x_grid_position >= self._image_width  and x_grid_position < (self._image_width * 2) + 1:
-            x_grid_position = x_grid_position - self._image_width - 1
-            
-        
-        is_input_cell = x_grid_position < self._image_width
-        if  is_correct_time and is_input_cell:
-            image_index = real_step//self._epoch_length - 1
-            if image_index >= len(self._images):
-                #print("ran out of images to show network will continue running with no inputs")
-                return 0.0
-
-            (_, image) = self._images[image_index]
-            pixel_position = y_grid_position * self._image_width + x_grid_position
-            pixel = image[pixel_position]
+        stimuli = set()
+        (letter, image) = self._images[image_index]
+        for i, pixel in enumerate(image):
             if pixel > 50:
-                return 0.3
-        return 0.0
+                x = i % self._image_width
+                y = i // self._image_width
+                stimuli.add((x, y, 0.3,))
+        return stimuli
 
     def _get_image_lines_from_file(self, file_path):
         # magic file name

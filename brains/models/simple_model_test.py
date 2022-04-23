@@ -41,8 +41,14 @@ class TestCellMembrane(unittest.TestCase):
 
 class TestModel(unittest.TestCase):
     def two_cell_network(self, starting_synapse_strength):
-        cells = [CellDefinition("a", 0, 0),
-                 CellDefinition("b", 1, 0),]
+        cells = [CellDefinition("a", 0, 0,
+                                x_input_position=0,
+                                y_input_position=0,
+                                is_input_cell=True),
+                 CellDefinition("b", 1, 0,
+                                x_input_position=1,
+                                y_input_position=0,
+                                is_input_cell=True)]
         synapses = [("a", "b", starting_synapse_strength)]
         return network.network_from_tuples(cells,
                                            synapses)
@@ -61,10 +67,12 @@ class TestModel(unittest.TestCase):
 
         fire_history = []
         for i in range(100):
-            model.step(i, test_environment)
             test_environment.step(i)
-            outputs = model.outputs()
+            stimuli = test_environment.stimuli(i)
+            model.step(i, test_environment, stimuli)
+
             # clearly we need a nicer output system
+            outputs = model.outputs()
             if outputs["a"] > 1:
                 fire_history.append("a")
             if outputs["b"] > 1:
@@ -87,8 +95,9 @@ class TestModel(unittest.TestCase):
         model = self.two_cell_model(starting_synapse_strength)
         fire_history = []
         for i in range(200):
-            model.step(i, test_environment)
             test_environment.step(i)
+            stimuli = test_environment.stimuli(i)
+            model.step(i, test_environment, stimuli)
         self.assertGreater(model.synapses[0].strength, starting_synapse_strength)
 
     def test_stdp_post_pre(self):
@@ -105,8 +114,9 @@ class TestModel(unittest.TestCase):
         model = self.two_cell_model(starting_synapse_strength)
         fire_history = []
         for i in range(200):
-            model.step(i, test_environment)
             test_environment.step(i)
+            stimuli = test_environment.stimuli(i)
+            model.step(i, test_environment, stimuli)
         self.assertLess(model.synapses[0].strength, starting_synapse_strength)
 
     def test_rewarded_stdp(self):
@@ -141,8 +151,10 @@ class TestModel(unittest.TestCase):
                 self.assertEqual(model.synapses[0].strength, starting_synapse_strength)
             if i == 260:
                 self.assertGreater(model.synapses[0].strength, starting_synapse_strength)
-            model.step(i, test_environment)
+
             test_environment.step(i)
+            stimuli = test_environment.stimuli(i)
+            model.step(i, test_environment, stimuli)
 
     def test_stdp_auto_input_selection(self):
         '''
@@ -167,8 +179,9 @@ class TestModel(unittest.TestCase):
         starting_strength = synapse_early_input.strength
             
         for i in range(2000):
-            model.step(i, test_environment)
             test_environment.step(i)
+            stimuli = test_environment.stimuli(i)
+            model.step(i, test_environment, stimuli)
             if i == 750:
                 self.assertTrue(synapse_early_input.strength > starting_strength)
                 self.assertTrue(synapse_late_input.strength > synapse_early_input.strength)
@@ -200,8 +213,9 @@ class TestModel(unittest.TestCase):
         starting_strength = synapse_early_input.strength 
             
         for i in range(15000):
-            model.step(i, test_environment)
             test_environment.step(i)
+            stimuli = test_environment.stimuli(i)
+            model.step(i, test_environment, stimuli)
 
         self.assertTrue(synapse_late_input.strength > synapse_early_input.strength)
 

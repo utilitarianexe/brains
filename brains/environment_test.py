@@ -18,12 +18,11 @@ class TestBuildingNetwork(unittest.TestCase):
         environment = HandwritenEnvironment(delay, frequency, image_lines)
         first_image_step = delay + frequency
         third_image_step = delay + frequency * 3
-        self.assertEqual(environment.potential_from_location(first_image_step, 0, 0), 0)
-        self.assertGreater(environment.potential_from_location(first_image_step, 1, 0), 0)
-        self.assertEqual(environment.potential_from_location(first_image_step, 1, 1), 0)
-
-        # Note the image reordering this refers to x
-        self.assertGreater(environment.potential_from_location(third_image_step, 1, 1), 0)
+        self.assertEqual(environment.stimuli(first_image_step), {(1, 0, 0.3), (0, 1, 0.3)})
+        
+        # Note the image reordering this refers to x(letter 23) when not shuffled images are
+        # presented in alphabetical order.
+        self.assertEqual(environment.stimuli(third_image_step), {(1, 0, 0.3), (0, 1, 0.3), (1, 1, 0.3)})
 
     def test_reward(self):
         image_lines = ['14,0,51,51,0,\n',
