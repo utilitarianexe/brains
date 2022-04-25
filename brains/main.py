@@ -67,9 +67,9 @@ def user_specified_world(import_name, environment_type, handwritten_file_name,
 def create_world(world_type, epoch_length, import_name,
                  environment_type, handwritten_file_name,
                  warp=False):
-    if world_type and import_name:
+    if world_type and environment_type:
         raise Exception("User should either create world with(import_name and environment) or " \
-                        "provide\ world_type")
+                        "provide world_type")
     
     if world_type:
         if world_type == "stdp":
@@ -85,6 +85,9 @@ def create_world(world_type, epoch_length, import_name,
 
     if import_name and environment_type:
         return user_specified_world(import_name, environment_type,
+                                    handwritten_file_name, epoch_length, warp=warp)
+    if import_name and world_type:
+        return user_specified_world(import_name, world_type,
                                     handwritten_file_name, epoch_length, warp=warp)
 
     print("Not enough information provided. Either supply a world argument or both a import_name and an environment to run it in")
@@ -123,22 +126,24 @@ def create_args():
         required=False,
         help='A world is a combination of a model and an environment. '\
         'A model is built from ModelParameters and a NetworkDefinition.')
-    my_parser.add_argument('--steps',
+    my_parser.add_argument('--epochs',
                            type=int,
-                           default=30000,
+                           default=10000,
                            required=False,
-                           help='Number of steps to run the model.')
+                           help='Number of epochs to run the model.')
     my_parser.add_argument('--epoch_length',
                            type=int,
                            default=400,
                            required=False,
-                           help='Number of steps between presentations of input to a brain.')
+                           help='Number of steps per epoch.')
     my_parser.add_argument('--export_name',
                            type=str,
                            required=False,
                            help='Export model to at the end of a run. Just provide a name it will be added to the data directory.')
     
-    # create your own world with an imported model(network + parameters) and a selected environment.
+    # Create your own world by combining an imported model(network + parameters) and a selected
+    # environment. For convenience, if world is supplied but not environment, the environment for that
+    # world will be used with the imported model.
     my_parser.add_argument('--import_name',
                            type=str,
                            required=False,
@@ -192,7 +197,7 @@ def main(steps, epoch_length,
 
 if __name__ == "__main__" :
     args = create_args()
-    steps = args.steps
+    epochs = args.epochs
     world_type = args.world
     import_name = args.import_name
     environment_type = args.environment
@@ -201,6 +206,7 @@ if __name__ == "__main__" :
     export_name = args.export_name
     profile = args.profile
     epoch_length = args.epoch_length
+    steps =  epochs * epoch_length
 
     if profile:
         import cProfile, pstats, io

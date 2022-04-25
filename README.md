@@ -27,15 +27,15 @@ Runs in two display modes or with no display
 
 ## Basic learning using STDP
 
-`python brains/main.py --steps=2000000    --world=easy --export_name=easy_2000000`
+`python brains/main.py --epochs=5000    --world=easy --export_name=easy_2000000`
 
-Runs a simple brain for 2000000 step. Input from three neurons. One that fires randomly and a pair where at least one fires but which one is random. There are two output cells. If the same output cell fires as the input cell in the same row the network is rewarded and a win is recorded. The network starts out unbiased but will learn to fire the right output for the input.
+Runs a simple brain for 2000000 steps(400 per epoch). Input from three neurons. One that fires randomly and a pair where at least one fires but which one is random. There are two output cells. If the same output cell fires as the input cell in the same row the network is rewarded and a win is recorded. The network starts out unbiased but will learn to fire the right output for the input.
 
 ## pygame
 
 Watch network run in real time by importing the brain you just trained.
 
-`python brains/main.py --steps=2000000 --environment=easy --import_name=easy_2000000 --display=pygame`
+`python brains/main.py --environment=easy --import_name=easy_2000000 --display=pygame`
 
 Or watch a more complex network and environment(training for this one still does not work).
 
