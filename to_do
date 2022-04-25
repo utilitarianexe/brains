@@ -20,6 +20,7 @@ unsorted issues
     correct cell fired is a bad name
     dumb world vs env cli thing
     default to long file x o file
+    on import why does it take some time to stabalize
 
   dont run longer than we have images
   unit test for learning on simple network

@@ -69,6 +69,13 @@ def create_world(world_type, epoch_length, import_name,
     if world_type and environment_type:
         raise Exception("User should either create world with(import_name and environment) or " \
                         "provide world_type")
+
+    if import_name and environment_type:
+        return user_specified_world(import_name, environment_type,
+                                    handwritten_file_name, epoch_length, warp=warp)
+    if import_name and world_type:
+        return user_specified_world(import_name, world_type,
+                                    handwritten_file_name, epoch_length, warp=warp)
     
     if world_type:
         if world_type == "stdp":
@@ -81,13 +88,6 @@ def create_world(world_type, epoch_length, import_name,
             return World(example_model.ExampleModel(), None)
         elif world_type == "handwriting":
             return handwriting_world(handwritten_file_name, epoch_length, warp=warp)
-
-    if import_name and environment_type:
-        return user_specified_world(import_name, environment_type,
-                                    handwritten_file_name, epoch_length, warp=warp)
-    if import_name and world_type:
-        return user_specified_world(import_name, world_type,
-                                    handwritten_file_name, epoch_length, warp=warp)
 
     print("Not enough information provided. Either supply a world argument or both a import_name and an environment to run it in")
     quit()
