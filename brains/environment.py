@@ -40,7 +40,7 @@ class STDPTestEnvironment:
     def step(self, step):
         pass
 
-    def accept_fire(self, step, x_grid_position, y_grid_position):
+    def accept_fire(self, step, output_id):
         pass
 
 @dataclass
@@ -153,30 +153,26 @@ class EasyEnvironment(BaseEpochChallengeEnvironment):
                 self._zero_stage = False
                 self._one_stage = True
 
-    # should just take layer id
-    def accept_fire(self, step, x_grid_position, y_grid_position):
+    def accept_fire(self, step, output_id):
         real_step = step - self._input_delay
         if step <= real_step:
             return
 
-        if x_grid_position != 9:
-            return
-
-        if y_grid_position == 0 and self._zero_stage or y_grid_position == 1 and self._one_stage:
+        if output_id == 0 and self._zero_stage or output_id == 1 and self._one_stage:
             self._correct_cell_fired = True
         else:
             self._incorrect_cell_fired = True
     
 class TestEnvironment(BaseEpochChallengeEnvironment):
-    def __init__(self, input_points, reward_points, epoch_length, input_delay=0):
+    def __init__(self, input_points, reward_ids, epoch_length, input_delay=0):
         super().__init__(epoch_length, input_delay)
         self._stimuli = defaultdict(list)
         for (step, x, y, strength) in input_points:
             self._stimuli[step].append((x, y, strength,))
 
         # List of corrdinates or Nones specifying a reward for a given epoch
-        self._reward_points = reward_points
-        self._reward_point = self._reward_points[0]
+        self._reward_ids = reward_ids
+        self._reward_id = self._reward_ids[0]
 
     def active(self, step):
         return step in self._stimuli
@@ -188,45 +184,41 @@ class TestEnvironment(BaseEpochChallengeEnvironment):
         super().step(step)
         real_step = step - self._input_delay
         if real_step % self._epoch_length == 0:
-            self._reward_point = self._reward_points[real_step//self._epoch_length]
+            self._reward_id = self._reward_ids[real_step//self._epoch_length]
 
-    def accept_fire(self, step, x_grid_position, y_grid_position):
-        if self._reward_point is None:
+    def accept_fire(self, step, output_id):
+        if self._reward_id is None:
             return
-
-        if x_grid_position == self._reward_point[0] and y_grid_position == self._reward_point[1]:
+        if output_id == self._reward_id:
             self._correct_cell_fired = True
 
 
 class HandwritenEnvironment(BaseEpochChallengeEnvironment):
-    def __init__(self, input_delay=None, epoch_length=None,
-                 image_lines=None, shuffle=False,
-                 last_layer_x_grid_position=None, file_name=None):
+    def __init__(self, epoch_length, input_delay, output_id_by_letter,
+                 image_lines=None, shuffle=False, file_name=None):
         super().__init__(epoch_length, input_delay)
 
         self._image_width = None
-        self._last_layer_x_grid_position = last_layer_x_grid_position
         if (image_lines is None and file_name is None) or (image_lines and file_name):
             raise Exception("HandwrittenEnvironment contructor requires either a file_name or image_lines but not both")
         
         if image_lines is None:
             image_lines = self._get_image_lines_from_file(file_name)
-        wanted_letters = ['o', 'x']
+        
+        self._output_id_by_letter = output_id_by_letter
+        wanted_letters = sorted(output_id_by_letter.keys())
         self._images = self._load_handwriting(image_lines, wanted_letters, shuffle)
-        self._letter_id_by_letter = {'o': 0, 'x': 1}
-        self._letter_by_letter_id = {0: '0', 1: 'x'}
-
-    def accept_fire(self, step, x_grid_position, y_grid_position):
+        
+    def accept_fire(self, step, output_id):
         real_step = step - self._input_delay
-        (letter, _) = self._images[(real_step//self._epoch_length) - 1]
+        if real_step//self._epoch_length >= len(self._images):
+            return
+
+        (letter, image) = self._images[real_step//self._epoch_length]
         if step <= real_step:
             return
 
-        if x_grid_position != self._last_layer_x_grid_position:
-            return
-
-        if y_grid_position == self._letter_id_by_letter[letter]:
-            print(self._letter_by_letter_id[y_grid_position], "fired")
+        if output_id == self._output_id_by_letter[letter]:
             self._correct_cell_fired = True
         else:
             self._incorrect_cell_fired = True
@@ -277,14 +269,13 @@ class HandwritenEnvironment(BaseEpochChallengeEnvironment):
             letter = alphabet[cells[0]]
             images_by_letter[letter].append(image)
 
-        images = []
-        for letter, images_for_letter in images_by_letter.items():
-            if letter in  wanted_letters:
-                for image in images_for_letter:
-                    images.append((letter, image,))
+        letter_image_pairs = []
+        for letter in wanted_letters:
+            for image in images_by_letter[letter]:
+                letter_image_pairs.append((letter, image,))
         if shuffle:
-            random.shuffle(images)
-        return images
+            random.shuffle(letter_image_pairs)
+        return letter_image_pairs
 
 def data_dir_file_path(file_name):
     base_path = Path(__file__).parent / "data"

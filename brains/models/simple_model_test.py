@@ -48,7 +48,8 @@ class TestModel(unittest.TestCase):
                  CellDefinition("b", 1, 0,
                                 x_input_position=1,
                                 y_input_position=0,
-                                is_input_cell=True)]
+                                is_input_cell=True,
+                                is_output_cell=True)]
         synapses = [("a", "b", starting_synapse_strength)]
         return network.network_from_tuples(cells,
                                            synapses)
@@ -135,7 +136,7 @@ class TestModel(unittest.TestCase):
                        (410, 0, 0, 0.15),
                        (400, 1, 0, 0.15),
                        ]
-        reward_points =  [None, None, (1, 0,), None, None, None]
+        reward_points =  [None, None, 0, None, None, None]
         test_environment = environment.TestEnvironment(fire_points, reward_points, 100)
         model_parameters = simple_model.handwriting_model_parameters(False)
         

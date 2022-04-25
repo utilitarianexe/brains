@@ -26,9 +26,8 @@ def handwriting_world(file_name, epoch_length, input_delay=50, epoch_delay=50, w
     # need like some kind of average starting connection strength thing
     network_definition = network.layer_based_default_network()
     handwriten_environment = environment.HandwritenEnvironment(
-        input_delay=input_delay, epoch_length=epoch_length,
+        epoch_length, input_delay, {'o': 0, 'x': 1},
         image_lines=None, shuffle=True,
-        last_layer_x_grid_position=network_definition.last_layer_x_grid_position,
         file_name=file_name)
 
     model = simple_model.SimpleModel(network_definition, model_parameters)
@@ -55,7 +54,7 @@ def user_specified_world(import_name, environment_type, handwritten_file_name,
     model = simple_model.import_model(blob, warp=warp)
     if environment_type == 'handwriting':
         model_environment = environment.HandwritenEnvironment(
-            input_delay=input_delay, epoch_length=model.epoch_length,
+            model.epoch_length, input_delay, {'o': 0, 'x': 1},
             image_lines=None, shuffle=True,
             last_layer_x_grid_position=model.network_definition.last_layer_x_grid_position,
             file_name=handwritten_file_name)

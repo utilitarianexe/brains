@@ -34,7 +34,8 @@ class CellDefinition:
     is_input_cell: bool = False
     x_input_position: int = 0
     y_input_position: int = 0
-    cell_number: int = 0 # bad name
+    is_output_cell: bool = False
+    output_id: int = 0
     layer_id: str = ""
     cell_type: int = CellType.EXCITATORY
     target_fire_rate_per_epoch: float = 0.0
@@ -61,7 +62,6 @@ class NetworkDefinition:
     '''
     cell_definitions: list
     synapse_definitions: list
-    last_layer_x_grid_position: int
 
     def __post_init__(self):
         '''
@@ -103,7 +103,7 @@ class NetworkDefinition:
 # convenience tuple
 LayerDefinition = namedtuple('LayerDefinition',
                              'label size layout cell_type input_balance target_fire_rate_per_epoch '\
-                             'is_input_layer')
+                             'is_input_layer is_output_layer')
 
 class Layer:
     '''
@@ -113,7 +113,8 @@ class Layer:
                  target_fire_rate_per_epoch=0.0,
                  layout=Layout.LINE, cell_type=CellType.EXCITATORY,
                  input_balance=False,
-                 is_input_layer=False):
+                 is_input_layer=False,
+                 is_output_layer=False):
         self.id = id
         self.size = size
         self.layout = layout
@@ -123,6 +124,7 @@ class Layer:
         self.target_fire_rate_per_epoch = target_fire_rate_per_epoch
         self.input_balance = input_balance
         self.is_input_layer = is_input_layer
+        self.is_output_layer = is_output_layer
 
     def _layer_edge_length(self):
         if self.layout == Layout.LINE:
@@ -163,7 +165,8 @@ def layers_from_definitons(layer_definitions):
                       target_fire_rate_per_epoch=definition.target_fire_rate_per_epoch,
                       layout=definition.layout, cell_type=definition.cell_type,
                       input_balance=definition.input_balance,
-                      is_input_layer=definition.is_input_layer)
+                      is_input_layer=definition.is_input_layer,
+                      is_output_layer=definition.is_output_layer)
         layers.append(layer)
         starting_x_position += layer.edge_length + 2
     return layers
@@ -175,13 +178,14 @@ def network_from_layers(layers, layer_connections):
         for cell_number in range(layer.size):
             (x_grid_position, y_grid_position,) = layer.cell_grid_position(cell_number)
             (x_input_position, y_input_position,) = layer.cell_input_position(cell_number)
-            is_input_cell = layer.is_input_layer
             label = f"{layer.id}_{cell_number}"
             cell_definition = CellDefinition(label,
                                              x_grid_position, y_grid_position,
-                                             is_input_cell,
+                                             layer.is_input_layer,
                                              x_input_position, y_input_position,
-                                             cell_number, layer.id, layer.cell_type,
+                                             layer.is_output_layer,
+                                             cell_number,
+                                             layer.id, layer.cell_type,
                                              layer.target_fire_rate_per_epoch,
                                              layer.input_balance)
             cell_definitions.append(cell_definition)
@@ -199,8 +203,7 @@ def network_from_layers(layers, layer_connections):
                                                            label)
                     synapse_definitions.append(synapse_definition)
     return NetworkDefinition(cell_definitions,
-                             synapse_definitions,
-                             layers[-1].starting_x_position)
+                             synapse_definitions)
 
 # needs test and to validate input
 # also not sure if our actual graph data structure is the best way to compute
@@ -225,11 +228,8 @@ def network_from_tuples(cell_definitions,
                                                strength, label)
         synapse_definitions.append(synapse_definition)
 
-    # Would be for reward but we are not using layers when building networks of single cells.
-    last_layer_x_grid_position = None
     return NetworkDefinition(cell_definitions,
-                             synapse_definitions,
-                             last_layer_x_grid_position)
+                             synapse_definitions)
 
 
 # eventually these should take a strength scaler parameter from the model
@@ -265,11 +265,12 @@ def stdp_test_network(input_balance=False):
 
 def layer_based_default_network():
     image_size = 28*28
-
-    layers = [LayerDefinition("a", image_size, Layout.SQUARE, CellType.EXCITATORY, False, 0.0, True),
-              LayerDefinition("i", image_size, Layout.SQUARE, CellType.INHIBITORY, False, 0.0, True),
-              LayerDefinition("b", 6*6, Layout.SQUARE, CellType.EXCITATORY, True, 0.2, False),
-              LayerDefinition("c", 2, Layout.LINE, CellType.EXCITATORY, True, 0.5, False)]
+    layers = [LayerDefinition("a", image_size, Layout.SQUARE,
+                              CellType.EXCITATORY, False, 0.0, True, False),
+              LayerDefinition("i", image_size, Layout.SQUARE,
+                              CellType.INHIBITORY, False, 0.0, True, False),
+              LayerDefinition("b", 6*6, Layout.SQUARE, CellType.EXCITATORY, True, 0.2, False, False),
+              LayerDefinition("c", 2, Layout.LINE, CellType.EXCITATORY, True, 0.5, False, True)]
     
     # Something about connection probability rubs me wrong.
     # connections might be more complex
@@ -279,17 +280,17 @@ def layer_based_default_network():
     return build_layer_based_network(layers, layer_connections)
 
 def easy_layer_simple_network():
-    layers = [LayerDefinition("a", 3, Layout.LINE, CellType.EXCITATORY, False, 0.0, True),
-              LayerDefinition("b", 2, Layout.LINE, CellType.EXCITATORY, False, 0.0, False)]
+    layers = [LayerDefinition("a", 3, Layout.LINE, CellType.EXCITATORY, False, 0.0, True, False),
+              LayerDefinition("b", 2, Layout.LINE, CellType.EXCITATORY, False, 0.0, False, True)]
     
     layer_connections = [("a", "b", 1, 0.035)]
     return build_layer_based_network(layers, layer_connections)
 
 def easy_layer_network():
-    layers = [LayerDefinition("a", 3, Layout.LINE, CellType.EXCITATORY, False, 0.0, True),
-              LayerDefinition("i", 3, Layout.LINE, CellType.INHIBITORY, False, 0.0, True),
-              LayerDefinition("b", 4, Layout.LINE, CellType.EXCITATORY, True, 0.25, False),
-              LayerDefinition("c", 2, Layout.LINE, CellType.EXCITATORY, True, 0.5, False)]
+    layers = [LayerDefinition("a", 3, Layout.LINE, CellType.EXCITATORY, False, 0.0, True, False),
+              LayerDefinition("i", 3, Layout.LINE, CellType.INHIBITORY, False, 0.0, True, False),
+              LayerDefinition("b", 4, Layout.LINE, CellType.EXCITATORY, True, 0.25, False, False),
+              LayerDefinition("c", 2, Layout.LINE, CellType.EXCITATORY, True, 0.5, False, True)]
 
     layer_connections = [("a", "b", 1, 0.1),
                          ("i", "b", 1, 0.1),

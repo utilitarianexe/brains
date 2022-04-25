@@ -201,13 +201,14 @@ class Cell:
         self.uuid = cell_definition.uuid
         self.label = cell_definition.label
         self._layer_id = cell_definition.layer_id
-        self._cell_number = cell_definition.cell_number
+        
         self.x_grid_position = cell_definition.x_grid_position
         self.y_grid_position = cell_definition.y_grid_position
-
         self._is_input_cell = cell_definition.is_input_cell
         self._x_input_position = cell_definition.x_input_position
         self._y_input_position = cell_definition.y_input_position
+        self._is_output_cell = cell_definition.is_output_cell
+        self._output_id = cell_definition.output_id
         
         self._cell_membrane = cell_membrane
         self.cell_type = cell_definition.cell_type
@@ -275,7 +276,7 @@ class Cell:
         self._fire_history = new_fire_history
 
         # Print information for one cell in the middle layer and one cell in the output layer.
-        if (self._layer_id == 'b' or self._layer_id == 'c') and self._cell_number == 0:
+        if (self._layer_id == 'b' or self._layer_id == 'c') and self._output_id == 0:
             print(f"xcor {self.x_grid_position} running rate {running_fire_rate} " \
                   f"target rate {target_fire_rate} fires {fires} "\
                   f"total positive in {self._positive_total_input_strength}")
@@ -311,8 +312,8 @@ class Cell:
             synapse.pre_fire(step)
         for synapse in self.input_synapses:
             synapse.post_fire(step)
-        if environment is not None:
-            environment.accept_fire(step, self.x_grid_position, self.y_grid_position)
+        if environment is not None and self._is_output_cell:
+            environment.accept_fire(step, self._output_id)
 
     def warp(self, time_steps):
         self._cell_membrane.warp(time_steps)
@@ -444,8 +445,7 @@ class SimpleModel:
         
         updated_network_definition = NetworkDefinition(
             self.network_definition.cell_definitions,
-            updated_synapse_definitions,
-            self.network_definition.last_layer_x_grid_position)
+            updated_synapse_definitions)
                                                                
         blob = {"model_parameters": asdict(self.model_parameters),
                 "network_definition": asdict(updated_network_definition),

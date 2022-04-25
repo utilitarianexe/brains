@@ -6,19 +6,25 @@ unsorted issues
   print in fire rate balance
   new insturctions
   delays make sense in env
-
   env later
-    env magic for reward and prints
-    maybe we could then remove grid position from the cells
-    x_input_position I don't like that these are default 0
+    change grid position to display postion
+    cell_definition.x_input_position don't like the default 0
     need a world class to avoid simple_model repeating he step loop in every function
+    simulit return on env step, response return on brain step
     should not be sending to all cells
-    stop passing env to model
+    stop passing env to model in model.step
     abstract base class
     strength of stimuli is a magic number
-  
+    manual cell definition is ugly again
+    stop with the real step check repeated everywhere
+    correct cell fired is a bad name
+    dumb world vs env cli thing
+    default to long file x o file
+
+  dont run longer than we have images
   unit test for learning on simple network
   try another inhibitory layer
+  change the inhibitory display to below the other cells
   need a seperate epoch length/delay for envs
   get profile working again
 
