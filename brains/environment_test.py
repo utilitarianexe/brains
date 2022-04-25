@@ -16,8 +16,8 @@ class TestHandwritting(unittest.TestCase):
                                             image_lines=image_lines, shuffle=False)
 
         # When not shuffled images are shown is alphabetical order.
-        first_image_step = delay + frequency
-        third_image_step = delay + frequency * 3
+        first_image_step = delay
+        third_image_step = delay + frequency * 2
         self.assertEqual(environment.stimuli(first_image_step), {(1, 0, 0.3), (0, 1, 0.3)})
         self.assertEqual(environment.stimuli(third_image_step), {(1, 0, 0.3), (0, 1, 0.3), (1, 1, 0.3)})
 

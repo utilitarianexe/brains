@@ -214,9 +214,11 @@ class HandwritenEnvironment(BaseEpochChallengeEnvironment):
         if real_step//self._epoch_length >= len(self._images):
             return
 
-        (letter, image) = self._images[real_step//self._epoch_length]
-        if step <= real_step:
+        if real_step < 0:
             return
+
+        image_index = real_step//self._epoch_length
+        (letter, image) = self._images[image_index]
 
         if output_id == self._output_id_by_letter[letter]:
             self._correct_cell_fired = True
@@ -225,10 +227,11 @@ class HandwritenEnvironment(BaseEpochChallengeEnvironment):
 
     def stimuli(self, step):
         real_step = step - self._input_delay
-        is_correct_time = real_step % self._epoch_length == 0 and real_step > 0
+        is_correct_time = real_step % self._epoch_length == 0 and real_step >= 0
         if not is_correct_time:
             return set()
-        image_index = real_step//self._epoch_length - 1
+
+        image_index = real_step//self._epoch_length
         if image_index >= len(self._images):
             #print("ran out of images to show network will continue running with no inputs")
             return set()
