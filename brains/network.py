@@ -29,8 +29,8 @@ class CellDefinition:
     layer_id: which layer the cell is in
     '''
     label: str
-    x_grid_position: int
-    y_grid_position: int
+    x_display_position: int
+    y_display_position: int
     is_input_cell: bool = False
     x_input_position: int = 0
     y_input_position: int = 0
@@ -43,7 +43,7 @@ class CellDefinition:
     uuid: str = field(default_factory=lambda:str(uuid.uuid4()))
 
     def export_network_information(self):
-        return (self.label, self.x_grid_position, self.y_grid_position)
+        return (self.label, self.x_display_position, self.y_display_position)
 
 @dataclass
 class SynapseDefinition:
@@ -149,7 +149,7 @@ class Layer:
             return 0, 0
         return self._cell_layer_position(cell_number)
 
-    def cell_grid_position(self, cell_number):
+    def cell_display_position(self, cell_number):
         (layer_position_x, layer_position_y, ) = self._cell_layer_position(cell_number)
         return self.starting_x_position + layer_position_x, layer_position_y
 
@@ -176,11 +176,11 @@ def network_from_layers(layers, layer_connections):
     cell_definitions_by_layer = defaultdict(list)
     for layer in layers:
         for cell_number in range(layer.size):
-            (x_grid_position, y_grid_position,) = layer.cell_grid_position(cell_number)
+            (x_display_position, y_display_position,) = layer.cell_display_position(cell_number)
             (x_input_position, y_input_position,) = layer.cell_input_position(cell_number)
             label = f"{layer.id}_{cell_number}"
             cell_definition = CellDefinition(label,
-                                             x_grid_position, y_grid_position,
+                                             x_display_position, y_display_position,
                                              layer.is_input_layer,
                                              x_input_position, y_input_position,
                                              layer.is_output_layer,

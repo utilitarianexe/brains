@@ -6,44 +6,39 @@ unsorted issues
   print in fire rate balance
   new insturctions
   delays make sense in env
-  env later
-    change grid position to display postion
-    cell_definition.x_input_position don't like the default 0
-    need a world class to avoid simple_model repeating he step loop in every function
-    simulit return on env step, response return on brain step
-    should not be sending to all cells
-    stop passing env to model in model.step
-    abstract base class
-    strength of stimuli is a magic number
-    manual cell definition is ugly again
-    stop with the real step check repeated everywhere
-    correct cell fired is a bad name
-    dumb world vs env cli thing
-    default to long file x o file
-    on import why does it take some time to stabalize
-
+  cell_definition.x_input_position don't like the default 0
+  need a world class to avoid simple_model repeating he step loop in every function
+  simulit return on env step, response return on brain step
+  should not be sending simulous to all cells to filter themselves
+  stop passing env to model in model.step
+  abstract base class for env
+  strength of stimuli is a magic number in env
+  manual cell definition is ugly again
+  stop with the real step check repeated everywhere
+  correct cell fired is a bad name
+  dumb world vs env cli thing
+  default to long file x o file
+  on import why does it take some time to stabalize
   dont run longer than we have images
   unit test for learning on simple network
-  try another inhibitory layer
+  try another inhibitory layer(also move the displays for inhibitory under)
   change the inhibitory display to below the other cells
   need a seperate epoch length/delay for envs
   get profile working again
+  prints inside model should instead be an output things like average layer input strength
 
 refactoring
   take out dopamine cut off and warp timer parameter
   environmnet majic numbers and copy paste code(should make base class)
-  horrific hack to reset s_tag s tag stag
+  hack to reset s_tag s tag stag
   main file is too long and needs tests
-  need a better way to believe rewards are hitting at the right times
-  me need a world to step
   switch from "model" to "brain"
   use dacite package instead of __post__init__ bs
   test parameters confusion
-  simple is a bad name
+  simple_model is a bad name
   move parameters out of model file and networks out of network file
   clean up environment to allow for better tests without putting the test env in its own class
   also better tests for environment
-  pull out parameters especially environment and display
   remove to do type comments
   document
   get rid of magic numbers(most at least moved to class definitions)
@@ -84,14 +79,10 @@ new funcitonality
       don't have the display modules run the model the main should
 
   management
-    enter epochs instead of steps
     figure out what images we are failing on
-    use handwirtten numbers db
     periodically save brains during run
     add a ./run_tests file that runs a bunch of complete runs
-    labels for connections in run files
     add an adder environment as a mid level task
-    should be able to quit and still get output file
     maybe all runs should make output files?
     make a plotting tool with our basic equations in it
       like how much does s_tag decay in an epoch
@@ -107,10 +98,7 @@ new funcitonality
 
 think about
   try handwriting with one less layer
-  when we reward should we stick at 1 or hit it once
   what distribution should we use for noise
-  what happens if we double spike during reward
-  feel like the model is unnecarily complex
   get more backround on simulation generally(really need to retake calc)
   connecitons strengths should not just be random at the start but maybe also randomly change a bit?
   step sizes

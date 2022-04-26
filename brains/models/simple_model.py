@@ -202,8 +202,8 @@ class Cell:
         self.label = cell_definition.label
         self._layer_id = cell_definition.layer_id
         
-        self.x_grid_position = cell_definition.x_grid_position
-        self.y_grid_position = cell_definition.y_grid_position
+        self.x_display_position = cell_definition.x_display_position
+        self.y_display_position = cell_definition.y_display_position
         self._is_input_cell = cell_definition.is_input_cell
         self._x_input_position = cell_definition.x_input_position
         self._y_input_position = cell_definition.y_input_position
@@ -277,7 +277,7 @@ class Cell:
 
         # Print information for one cell in the middle layer and one cell in the output layer.
         if (self._layer_id == 'b' or self._layer_id == 'c') and self._output_id == 0:
-            print(f"xcor {self.x_grid_position} running rate {running_fire_rate} " \
+            print(f"xcor {self.x_display_position} running rate {running_fire_rate} " \
                   f"target rate {target_fire_rate} fires {fires} "\
                   f"total positive in {self._positive_total_input_strength}")
 
@@ -458,7 +458,7 @@ class SimpleModel:
         for cell in self._cells:
             # maybe make a class
             drawable = {"id": cell.label,
-                        "x": cell.x_grid_position, "y": cell.y_grid_position,
+                        "x": cell.x_display_position, "y": cell.y_display_position,
                         "strength": cell.membrane_voltage()}
             drawables.append(drawable)
         texts = ["dopamine: " + str(round(self._dopamine, 4))]
