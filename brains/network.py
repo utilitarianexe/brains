@@ -109,24 +109,32 @@ class Layer:
     '''
     Convenience class not exported to files.
     '''
-    def __init__(self, id, size, starting_x_position,
+    def __init__(self, id, size,
+                 starting_x_position, starting_y_position,
                  target_fire_rate_per_epoch=0.0,
                  layout=Layout.LINE, cell_type=CellType.EXCITATORY,
                  input_balance=False,
-                 is_input_layer=False,
-                 is_output_layer=False):
+                 is_input_layer=False, is_output_layer=False):
         self.id = id
         self.size = size
         self.layout = layout
         self.starting_x_position = starting_x_position
-        self.edge_length = self._layer_edge_length()
+        self.starting_y_position = starting_y_position
         self.cell_type = cell_type
         self.target_fire_rate_per_epoch = target_fire_rate_per_epoch
         self.input_balance = input_balance
         self.is_input_layer = is_input_layer
         self.is_output_layer = is_output_layer
 
-    def _layer_edge_length(self):
+    def _cell_layer_position(self, cell_number):
+        if self.layout == Layout.LINE:
+            return (0, cell_number,)
+
+        x = cell_number % self.width()
+        y = cell_number // self.width()
+        return (x, y,)
+
+    def width(self):
         if self.layout == Layout.LINE:
             return 1
         
@@ -135,13 +143,11 @@ class Layer:
             return sqrt
         return sqrt + 1
 
-    def _cell_layer_position(self, cell_number):
+    def height(self):
         if self.layout == Layout.LINE:
-            return (0, cell_number,)
-
-        x = cell_number % self.edge_length
-        y = cell_number // self.edge_length
-        return (x, y,)
+            return self.size
+        else:
+            return self.width()
 
     def cell_input_position(self, cell_number):
         if not self.is_input_layer:
@@ -151,7 +157,7 @@ class Layer:
 
     def cell_display_position(self, cell_number):
         (layer_position_x, layer_position_y, ) = self._cell_layer_position(cell_number)
-        return self.starting_x_position + layer_position_x, layer_position_y
+        return self.starting_x_position + layer_position_x, layer_position_y + self.starting_y_position
 
 def build_layer_based_network(layer_definitions, layer_connections):
     layers = layers_from_definitons(layer_definitions)
@@ -159,16 +165,29 @@ def build_layer_based_network(layer_definitions, layer_connections):
 
 def layers_from_definitons(layer_definitions):
     layers = []
-    starting_x_position = 0
+    previous_height = 0
+    previous_width = 0
+    previous_x_position = 0
     for definition in layer_definitions:
-        layer = Layer(definition.label, definition.size, starting_x_position,
+        if definition.cell_type == CellType.INHIBITORY:
+            starting_x_position = previous_x_position
+            starting_y_position = previous_height + 2
+        else:
+            starting_x_position = previous_width + previous_x_position + 2
+            starting_y_position = 0
+
+        layer = Layer(definition.label, definition.size,
+                      starting_x_position, starting_y_position,
                       target_fire_rate_per_epoch=definition.target_fire_rate_per_epoch,
                       layout=definition.layout, cell_type=definition.cell_type,
                       input_balance=definition.input_balance,
                       is_input_layer=definition.is_input_layer,
                       is_output_layer=definition.is_output_layer)
         layers.append(layer)
-        starting_x_position += layer.edge_length + 2
+        previous_height = layer.height()
+        previous_x_position = starting_x_position
+        previous_width =  layer.width()
+
     return layers
 
 def network_from_layers(layers, layer_connections):

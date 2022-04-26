@@ -32,9 +32,9 @@ class TestBuildingNetwork(unittest.TestCase):
 
 
     def test_network_from_layers(self):
-        layers = [Layer("a", 1, 0, is_input_layer=True),
-                  Layer("b", 2, 1),
-                  Layer("c", 1, 2, is_output_layer=True),
+        layers = [Layer("a", 1, 0, 0, is_input_layer=True),
+                  Layer("b", 2, 1, 0),
+                  Layer("c", 1, 2, 0, is_output_layer=True),
                   ]
         layer_connections = [("a", "b", 1, 0.1), ("b", "c", 1, 0.1)]
         network_definition = network_from_layers(layers,

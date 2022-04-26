@@ -22,10 +22,10 @@ unsorted issues
   dont run longer than we have images
   unit test for learning on simple network
   try another inhibitory layer(also move the displays for inhibitory under)
-  change the inhibitory display to below the other cells
   need a seperate epoch length/delay for envs
   get profile working again
   prints inside model should instead be an output things like average layer input strength
+  network.py now has too much display info in it
 
 refactoring
   take out dopamine cut off and warp timer parameter

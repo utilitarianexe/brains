@@ -20,20 +20,19 @@ def color_from_strength(strength):
     return red, green, blue
 
 def update_screen(screen, drawables, texts):
-    x_spacing = 5
-    y_spacing = 5
-    border = 5
-    height = 20
-    width = 20
+    x_spacing = 3
+    y_spacing = 3
+    border = 3
+    edge_length = 10
     blue = (0, 0, 255)
     screen.fill(blue)
 
     # super inefficient to rebuild the squares but meh
     for drawable in drawables:
-        square = pygame.Surface((20, 20,))
+        square = pygame.Surface((edge_length, edge_length,))
 
-        x_position = drawable["x"] * (width + x_spacing) + border
-        y_position = drawable["y"] * (height + y_spacing) + border
+        x_position = drawable["x"] * (edge_length + x_spacing) + border
+        y_position = drawable["y"] * (edge_length + y_spacing) + border
         color = color_from_strength(drawable["strength"])
         try:
             square.fill(color)
