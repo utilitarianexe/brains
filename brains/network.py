@@ -14,6 +14,7 @@ class Layout(IntEnum):
 class CellType(IntEnum):
     EXCITATORY = 1
     INHIBITORY = 2
+    MIXED = 2
 
 @dataclass
 class CellDefinition:
@@ -307,8 +308,7 @@ def easy_layer_simple_network():
 
 def easy_layer_network():
     layers = [LayerDefinition("a", 3, Layout.LINE, CellType.EXCITATORY, False, 0.0, True, False),
-              LayerDefinition("i", 3, Layout.LINE, CellType.INHIBITORY, False, 0.0, True, False),
-              LayerDefinition("b", 4, Layout.LINE, CellType.EXCITATORY, True, 0.25, False, False),
+              LayerDefinition("b", 4, Layout.LINE, CellType.MIXED, True, 0.25, False, False),
               LayerDefinition("c", 2, Layout.LINE, CellType.EXCITATORY, True, 0.5, False, True)]
 
     layer_connections = [("a", "b", 1, 0.1),

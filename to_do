@@ -7,9 +7,9 @@ unsorted issues
   new insturctions
   delays make sense in env
   cell_definition.x_input_position don't like the default 0
-  need a world class to avoid simple_model repeating he step loop in every function
-  simulit return on env step, response return on brain step
-  should not be sending simulous to all cells to filter themselves
+  need a world class to avoid simple_model repeating the step loop in every function
+  stimuli return on env step, response return on brain step
+  should not be sending simuli to all cells to filter themselves
   stop passing env to model in model.step
   abstract base class for env
   strength of stimuli is a magic number in env
@@ -26,6 +26,7 @@ unsorted issues
   get profile working again
   prints inside model should instead be an output things like average layer input strength
   network.py now has too much display info in it
+  try removing inhibitory layers in favour of biinhibition cells
 
 refactoring
   take out dopamine cut off and warp timer parameter
