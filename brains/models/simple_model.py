@@ -70,7 +70,7 @@ class Synapse:
                  synapse_definition, step_size,
                  synapse_type_parameters):
         self.pre_cell = pre_cell
-        self._cell_type = pre_cell.cell_type
+        self._pre_cell_type = pre_cell.cell_type
         self.post_cell = post_cell
         self.strength = synapse_definition.starting_strength
         self.label = synapse_definition.label
@@ -97,7 +97,7 @@ class Synapse:
             self.strength = self._min_strength
 
     def post_fire(self, step):
-        if self._cell_type == CellType.INHIBITORY:
+        if self._pre_cell_type == CellType.INHIBITORY:
             return
 
         steps_sense_last_fire =  step - self._last_fire_step
@@ -106,7 +106,7 @@ class Synapse:
         self._s_tag += self._stdp_scalar * self.pre_cell.calcium()
 
     def pre_fire(self, step):
-        if self._cell_type == CellType.EXCITATORY:
+        if self._pre_cell_type == CellType.EXCITATORY:
             self._s_tag -= self._stdp_scalar * self.post_cell.calcium()
             steps_sense_last_fire =  step - self._last_fire_step
             self._last_fire_step = step
@@ -117,7 +117,7 @@ class Synapse:
                 self.post_cell.receive_fire(self.strength + noise)
             else:
                 self.post_cell.receive_fire(self.strength)
-        elif self._cell_type == CellType.INHIBITORY:
+        elif self._pre_cell_type == CellType.INHIBITORY:
             self.post_cell.receive_fire(self.strength * -1.0)
 
 class CellMembrane:
@@ -246,7 +246,7 @@ class Cell:
             else:
                 scale_factor = self._negative_total_input_strength / current_total_input_strength
             for synapse in self.input_synapses:
-                if synapse._cell_type  == cell_type:
+                if synapse._pre_cell_type  == cell_type:
                     synapse.strength = synapse.strength * scale_factor
 
     def fire_rate_balance(self, step, epoch_length):
@@ -299,7 +299,7 @@ class Cell:
     def _current_total_input_strength(self, cell_type):
         total = 0.0
         for synapse in self.input_synapses:
-            if synapse._cell_type == cell_type:
+            if synapse._pre_cell_type == cell_type:
                 total += synapse.strength
         return total
 
