@@ -27,7 +27,7 @@ Runs in two display modes or with no display
 
 ## Basic learning using STDP
 
-`python brains/main.py --epochs=5000    --world=easy --export_name=easy_2000000`
+`python brains/main.py --epochs=5000  --world=easy --export_name=easy_network`
 
 Runs a simple brain for 2000000 steps(400 per epoch). Input from three neurons. One that fires randomly and a pair where at least one fires but which one is random. There are two output cells. If the same output cell fires as the input cell in the same row the network is rewarded and a win is recorded. The network starts out unbiased but will learn to fire the right output for the input.
 
@@ -35,13 +35,15 @@ Runs a simple brain for 2000000 steps(400 per epoch). Input from three neurons. 
 
 Watch network run in real time by importing the brain you just trained.
 
-`python brains/main.py --environment=easy --import_name=easy_2000000 --display=pygame`
+`python brains/main.py --environment=easy --import_name=easy_network --display=pygame`
 
 Or watch a more complex network and environment(training for this one still does not work).
 
 `python brains/main.py --display pygame --world handwriting`
 
 Current input data for this mode is a small subset of https://www.kaggle.com/sachinpatel21/az-handwritten-alphabets-in-csv-format
+
+Clicking on the screen will disable the display speeding up the program. Clicking again will re-enable the display.
 
 I needed
 `MESA_LOADER_DRIVER_OVERRIDE=i965`

@@ -46,11 +46,11 @@ def update_screen(screen, drawables, texts):
     black = (0, 0, 0)
     x_text_pos = 0
     # waste to load here
-    myfont = pygame.font.SysFont("monospace", 15)
+    myfont = pygame.font.SysFont("monospace", 20)
     for text in texts:
         label = myfont.render(text, 1, black)
         screen.blit(label, (x_text_pos, 900))
-        x_text_pos + 50
+        x_text_pos += 200
 
 class GameDisplay():
     def __init__(self, model):
@@ -58,23 +58,45 @@ class GameDisplay():
         pygame.init()
         size = width, height = 1800, 1000
         self._screen = pygame.display.set_mode(size)
+        self._update_ui = True
 
-    def process_step(self):
+    def process_step(self, step):
         # We don't need a display step every model step other options possible
         # and really we have 3 types of steps
         # one each for pygame, video_output, and model
         # could also record the model then play it?
 
+        turn_off = False
         for event in pygame.event.get():
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if self._update_ui:
+                    self._update_ui = False
+                    turn_off = True
+                else:
+                    self._update_ui = True
             if event.type == pygame.QUIT:
                 sys.exit()
 
-        drawables, texts = self._model.video_output()
-        update_screen(self._screen, drawables, texts)
-        pygame.display.flip()
+        if self._update_ui:
+            drawables, texts = self._model.video_output()
+            texts.append(f'step: {step}')
+            update_screen(self._screen, drawables, texts)
+            pygame.display.flip()
         
-        # really should not need
-        time.sleep(0.01)
+            # really should not need
+            time.sleep(0.01)
+
+        if turn_off:
+            turn_off = False
+            black = (0, 0, 0)
+            blue = (0, 0, 255)
+            self._screen.fill(black)
+            myfont = pygame.font.SysFont("monospace", 20)
+            label = myfont.render("display off(runs faster) click anywhere to turn on", 2, blue)
+            self._screen.blit(label, (0, 0))
+            pygame.display.flip()
+
+            
 
     def final_output(self):
         pass

@@ -186,7 +186,7 @@ def main(steps, epoch_length,
         stimuli = environment.stimuli(i)
         brain.step(i, environment, stimuli)
         if display is not None:
-            display.process_step()
+            display.process_step(i)
     if display is not None:
         display.final_output()
 
