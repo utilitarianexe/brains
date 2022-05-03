@@ -73,6 +73,7 @@ class Synapse:
         self._pre_cell_type = pre_cell.cell_type
         self.post_cell = post_cell
         self.strength = synapse_definition.starting_strength
+        self.inhibitory_strength = synapse_definition.starting_inhibitory_strength
         self.label = synapse_definition.label
         self._step_size = step_size
 
@@ -106,7 +107,11 @@ class Synapse:
         self._s_tag += self._stdp_scalar * self.pre_cell.calcium()
 
     def pre_fire(self, step):
-        if self._pre_cell_type == CellType.EXCITATORY:
+        if self._pre_cell_type == CellType.INHIBITORY:
+            self.post_cell.receive_fire(self.strength * -1.0)
+            return
+
+        if self._pre_cell_type == CellType.EXCITATORY or self._pre_cell_type == CellType.MIXED:
             self._s_tag -= self._stdp_scalar * self.post_cell.calcium()
             steps_sense_last_fire =  step - self._last_fire_step
             self._last_fire_step = step
@@ -117,8 +122,9 @@ class Synapse:
                 self.post_cell.receive_fire(self.strength + noise)
             else:
                 self.post_cell.receive_fire(self.strength)
-        elif self._pre_cell_type == CellType.INHIBITORY:
-            self.post_cell.receive_fire(self.strength * -1.0)
+                
+        if self._pre_cell_type == CellType.MIXED:
+            self.post_cell.receive_fire(-1.0 * self.inhibitory_strength)
 
 class CellMembrane:
     def __init__(self, cell_type_parameters, step_size):
@@ -217,8 +223,8 @@ class Cell:
         # I don't like how we initialize these outside constructor
         self.input_synapses = []
         self.output_synapses = []
-        self._positive_total_input_strength = 0.0
-        self._negative_total_input_strength = 0.0
+        self._target_positive_input_strength = 0.0
+        self._target_negative_input_strength = 0.0
         self._fire_history = []
 
         self._target_fire_rate_per_epoch = cell_definition.target_fire_rate_per_epoch
@@ -235,19 +241,25 @@ class Cell:
             else:
                 raise Exception("Attempted to attach synapse to cell but neither of the synapses "\
                                 "endpoints attach to the cell.")
-        self._positive_total_input_strength = self._current_total_input_strength(CellType.EXCITATORY)
-        self._negative_total_input_strength = self._current_total_input_strength(CellType.INHIBITORY)
+        totals = self._current_total_input_strength()
+        (self._target_positive_input_strength, self._target_negative_input_strength,) = totals
 
-    def apply_input_balance(self, cell_type):
-        current_total_input_strength = self._current_total_input_strength(cell_type)
-        if current_total_input_strength > 0.0:
-            if cell_type == CellType.EXCITATORY:
-                scale_factor = self._positive_total_input_strength / current_total_input_strength
-            else:
-                scale_factor = self._negative_total_input_strength / current_total_input_strength
-            for synapse in self.input_synapses:
-                if synapse._pre_cell_type  == cell_type:
-                    synapse.strength = synapse.strength * scale_factor
+
+    def _apply_input_balance(self):
+        totals = self._current_total_input_strength()
+        current_positive_input_strength, current_negative_input_strength) = totals
+        if current_total_positive_input_strength > 0.0:
+            positive_scale_factor = self._target_positive_input_strength / current_positive_input_strength
+        else:
+            positive_scale_factor = 1.0
+        if current_total_positive_input_strength > 0.0:
+            negative_scale_factor = 1.0
+        else:
+            negative_scale_factor = self._negative_target_input_strength / current_negative_input_strength
+            
+        for synapse in self.input_synapses:
+                synapse.strength = synapse.strength * positive_scale_factor
+                synapse.inhibitory_strength = synapse.inhibitory_strength * negative_scale_factor
 
     def fire_rate_balance(self, step, epoch_length):
         if not self._input_balance:
@@ -282,9 +294,13 @@ class Cell:
                   f"total positive in {self._positive_total_input_strength}")
 
         if running_fire_rate > target_fire_rate:
-            down = target_fire_rate/running_fire_rate
-            self._positive_total_input_strength -= self._fire_rate_balance_scalar*(self._positive_total_input_strength - self._positive_total_input_strength * down)
-            self._negative_total_input_strength -= self._fire_rate_balance_scalar*(self._negative_total_input_strength - self._negative_total_input_strength * down)
+            rate_based_down_scale_factor = target_fire_rate/running_fire_rate
+            self._positive_target_input_strength -= self._target_strenght_change(
+                rate_based_down_scale_factor,
+                self._positive_target_input_strength)
+            self._negative_target_input_strength -= self._target_strenght_change(
+                rate_based_down_scale_factor,
+                self._negative_target_input_strength)
         else:
             if running_fire_rate == 0:
                 up = 2.0
@@ -293,15 +309,22 @@ class Cell:
             self._positive_total_input_strength += (self._positive_total_input_strength * up - self._positive_total_input_strength) * self._fire_rate_balance_scalar
             self._negative_total_input_strength += (self._negative_total_input_strength * up - self._negative_total_input_strength) * self._fire_rate_balance_scalar
 
-        self.apply_input_balance(CellType.EXCITATORY)
-        self.apply_input_balance(CellType.INHIBITORY)
+        self._apply_input_balance(CellType.EXCITATORY)
+        self._apply_input_balance(CellType.INHIBITORY)
+        self._apply_input_balance(CellType.MIXED)
+
+    def _target_stength_change(self, rate_based_down_scale_factor, current_target_strength):
+        rate_based_positive_reduction = current_target_strength * rate_based_down_scale_factor
+        rate_based_positive_target = current_target_strength - rate_based_positive_reduction
+        return self._fire_rate_balance_scalar * rate_based_positive_target
                 
-    def _current_total_input_strength(self, cell_type):
-        total = 0.0
+    def _current_total_input_strength(self):
+        positive_total = 0.0
+        negative_total = 0.0
         for synapse in self.input_synapses:
-            if synapse._pre_cell_type == cell_type:
-                total += synapse.strength
-        return total
+            positive_total += synapse.strength
+            negative_total += synapse.inhibitory_strength
+        return positive_total, negative_total
 
     def receive_fire(self, strength):
         self._cell_membrane.receive_input(strength)
@@ -440,6 +463,7 @@ class SimpleModel:
             definition = SynapseDefinition(synapse.pre_cell.uuid,
                                            synapse.post_cell.uuid,
                                            synapse.strength,
+                                           synapse.inhibitory_strength,
                                            synapse.label)
             updated_synapse_definitions.append(definition)
         

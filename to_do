@@ -27,6 +27,7 @@ unsorted issues
   prints inside model should instead be an output things like average layer input strength
   network.py now has too much display info in it
   try removing inhibitory layers in favour of biinhibition cells
+  use pattern matching and type hints
 
 refactoring
   take out dopamine cut off and warp timer parameter

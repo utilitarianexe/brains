@@ -14,7 +14,7 @@ class Layout(IntEnum):
 class CellType(IntEnum):
     EXCITATORY = 1
     INHIBITORY = 2
-    MIXED = 2
+    MIXED = 3
 
 @dataclass
 class CellDefinition:
@@ -54,6 +54,7 @@ class SynapseDefinition:
     pre_cell_id: str
     post_cell_id: str
     starting_strength: float
+    starting_inhibitory_strength: float
     label: str
 
 @dataclass
@@ -220,6 +221,7 @@ def network_from_layers(layers, layer_connections):
                     synapse_definition = SynapseDefinition(cell_definition_pre_layer.uuid,
                                                            cell_definition_post_layer.uuid,
                                                            synapse_strength,
+                                                           synapse_strength,
                                                            label)
                     synapse_definitions.append(synapse_definition)
     return NetworkDefinition(cell_definitions,
@@ -245,7 +247,7 @@ def network_from_tuples(cell_definitions,
         post_cell_definition = cell_definitions_by_label[post_cell_label]
         label = f"{pre_cell_definition.label}_to_{post_cell_definition.label}"
         synapse_definition = SynapseDefinition(pre_cell_definition.uuid, post_cell_definition.uuid,
-                                               strength, label)
+                                               strength, strength, label)
         synapse_definitions.append(synapse_definition)
 
     return NetworkDefinition(cell_definitions,
@@ -306,13 +308,23 @@ def easy_layer_simple_network():
     layer_connections = [("a", "b", 1, 0.035)]
     return build_layer_based_network(layers, layer_connections)
 
+# def easy_layer_network():
+#     layers = [LayerDefinition("a", 3, Layout.LINE, CellType.EXCITATORY, False, 0.0, True, False),
+#               LayerDefinition("b", 4, Layout.LINE, CellType.MIXED, True, 0.25, False, False),
+#               LayerDefinition("c", 2, Layout.LINE, CellType.EXCITATORY, True, 0.5, False, True)]
+
+#     layer_connections = [("a", "b", 1, 0.1),
+#                          ("i", "b", 1, 0.1),
+#                          ("b", "c", 1, 0.05),]
+#     return build_layer_based_network(layers, layer_connections)
+
 def easy_layer_network():
-    layers = [LayerDefinition("a", 3, Layout.LINE, CellType.EXCITATORY, False, 0.0, True, False),
+    layers = [LayerDefinition("a", 3, Layout.LINE, CellType.MIXED, False, 0.0, True, False),
               LayerDefinition("b", 4, Layout.LINE, CellType.MIXED, True, 0.25, False, False),
               LayerDefinition("c", 2, Layout.LINE, CellType.EXCITATORY, True, 0.5, False, True)]
 
     layer_connections = [("a", "b", 1, 0.1),
-                         ("i", "b", 1, 0.1),
                          ("b", "c", 1, 0.05),]
     return build_layer_based_network(layers, layer_connections)
+
 
