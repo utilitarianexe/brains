@@ -92,10 +92,16 @@ class Synapse:
 
     def update(self, dopamine):
         self.strength += self._s_tag * dopamine * self._reward_scalar
-        if self.strength >= self._max_strength:
-            self.strength = self._max_strength
-        if self.strength < self._min_strength:
-            self.strength = self._min_strength
+        # if self.strength >= self._max_strength:
+        #     self.strength = self._max_strength
+        # if self.strength < self._min_strength:
+        #     self.strength = self._min_strength
+
+        # if self.inhibitory_strength >= self._max_strength:
+        #     self.inhibitory_strength = self._max_strength
+        # if self.inhibitory_strength < self._min_strength:
+        #     self.inhibitory_strength = self._min_strength
+
 
     def post_fire(self, step):
         if self._pre_cell_type == CellType.INHIBITORY:
@@ -107,9 +113,8 @@ class Synapse:
         self._s_tag += self._stdp_scalar * self.pre_cell.calcium()
 
     def pre_fire(self, step):
-        if self._pre_cell_type == CellType.INHIBITORY:
-            self.post_cell.receive_fire(self.strength * -1.0)
-            return
+        if self._pre_cell_type == CellType.INHIBITORY or self._pre_cell_type == CellType.MIXED:
+            self.post_cell.receive_fire(self.inhibitory_strength * -1.0)
 
         if self._pre_cell_type == CellType.EXCITATORY or self._pre_cell_type == CellType.MIXED:
             self._s_tag -= self._stdp_scalar * self.post_cell.calcium()
@@ -122,9 +127,6 @@ class Synapse:
                 self.post_cell.receive_fire(self.strength + noise)
             else:
                 self.post_cell.receive_fire(self.strength)
-                
-        if self._pre_cell_type == CellType.MIXED:
-            self.post_cell.receive_fire(-1.0 * self.inhibitory_strength)
 
 class CellMembrane:
     def __init__(self, cell_type_parameters, step_size):
@@ -247,19 +249,20 @@ class Cell:
 
     def _apply_input_balance(self):
         totals = self._current_total_input_strength()
-        current_positive_input_strength, current_negative_input_strength) = totals
-        if current_total_positive_input_strength > 0.0:
-            positive_scale_factor = self._target_positive_input_strength / current_positive_input_strength
+        (current_positive_strength, current_negative_strength, ) = totals
+        if current_positive_strength > 0.0:
+            positive_scale_factor = self._target_positive_input_strength / current_positive_strength
         else:
             positive_scale_factor = 1.0
-        if current_total_positive_input_strength > 0.0:
-            negative_scale_factor = 1.0
+            
+        if current_negative_strength > 0.0:
+            negative_scale_factor = self._target_negative_input_strength / current_negative_strength
         else:
-            negative_scale_factor = self._negative_target_input_strength / current_negative_input_strength
+            negative_scale_factor = 1.0
             
         for synapse in self.input_synapses:
-                synapse.strength = synapse.strength * positive_scale_factor
-                synapse.inhibitory_strength = synapse.inhibitory_strength * negative_scale_factor
+            synapse.strength = synapse.strength * positive_scale_factor
+            synapse.inhibitory_strength = synapse.inhibitory_strength * negative_scale_factor
 
     def fire_rate_balance(self, step, epoch_length):
         if not self._input_balance:
@@ -291,32 +294,40 @@ class Cell:
         if (self._layer_id == 'b' or self._layer_id == 'c') and self._output_id == 0:
             print(f"xcor {self.x_display_position} running rate {running_fire_rate} " \
                   f"target rate {target_fire_rate} fires {fires} "\
-                  f"total positive in {self._positive_total_input_strength}")
+                  f"target positive in {self._target_positive_input_strength}")
 
         if running_fire_rate > target_fire_rate:
             rate_based_down_scale_factor = target_fire_rate/running_fire_rate
-            self._positive_target_input_strength -= self._target_strenght_change(
+            self._target_positive_input_strength -= self._target_strength_reduction(
                 rate_based_down_scale_factor,
-                self._positive_target_input_strength)
-            self._negative_target_input_strength -= self._target_strenght_change(
+                self._target_positive_input_strength)
+            self._target_negative_input_strength -= self._target_strength_reduction(
                 rate_based_down_scale_factor,
-                self._negative_target_input_strength)
+                self._target_negative_input_strength)
         else:
             if running_fire_rate == 0:
-                up = 2.0
+                rate_based_up_scale_factor = 2.0
             else:
-                up = target_fire_rate/running_fire_rate
-            self._positive_total_input_strength += (self._positive_total_input_strength * up - self._positive_total_input_strength) * self._fire_rate_balance_scalar
-            self._negative_total_input_strength += (self._negative_total_input_strength * up - self._negative_total_input_strength) * self._fire_rate_balance_scalar
+                rate_based_up_scale_factor = target_fire_rate/running_fire_rate
 
-        self._apply_input_balance(CellType.EXCITATORY)
-        self._apply_input_balance(CellType.INHIBITORY)
-        self._apply_input_balance(CellType.MIXED)
+            self._target_positive_input_strength += self._target_strength_increase(
+                rate_based_up_scale_factor,
+                self._target_positive_input_strength)
+            self._target_negative_input_strength += self._target_strength_increase(
+                rate_based_up_scale_factor,
+                self._target_negative_input_strength)
+                
+        self._apply_input_balance()
 
-    def _target_stength_change(self, rate_based_down_scale_factor, current_target_strength):
-        rate_based_positive_reduction = current_target_strength * rate_based_down_scale_factor
-        rate_based_positive_target = current_target_strength - rate_based_positive_reduction
-        return self._fire_rate_balance_scalar * rate_based_positive_target
+    def _target_strength_reduction(self, rate_based_down_scale_factor, current_target_strength):
+        rate_based_target = current_target_strength * rate_based_down_scale_factor
+        rate_based_change = current_target_strength - rate_based_target
+        return self._fire_rate_balance_scalar * rate_based_change
+    
+    def _target_strength_increase(self, rate_based_up_scale_factor, current_target_strength):
+        rate_based_target = current_target_strength * rate_based_up_scale_factor
+        rate_based_change = rate_based_target - current_target_strength
+        return self._fire_rate_balance_scalar * rate_based_change
                 
     def _current_total_input_strength(self):
         positive_total = 0.0

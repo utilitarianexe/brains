@@ -1,5 +1,6 @@
 unsorted issues
-  overrunning lines in emacs for fire_rate_balance
+  layer based diagnostics like total input strength
+  model based error condition tracking like double fires or not resetting by the time of epoch
   remove warp fudge
   paramaterize warp
   paramaterize fire rate adaptation
@@ -21,12 +22,10 @@ unsorted issues
   on import why does it take some time to stabalize
   dont run longer than we have images
   unit test for learning on simple network
-  try another inhibitory layer(also move the displays for inhibitory under)
   need a seperate epoch length/delay for envs
   get profile working again
   prints inside model should instead be an output things like average layer input strength
   network.py now has too much display info in it
-  try removing inhibitory layers in favour of biinhibition cells
   use pattern matching and type hints
 
 refactoring
