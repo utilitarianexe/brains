@@ -208,7 +208,7 @@ class Cell:
     def __init__(self, cell_definition, cell_membrane):
         self.uuid = cell_definition.uuid
         self.label = cell_definition.label
-        self._layer_id = cell_definition.layer_id
+        self.layer_id = cell_definition.layer_id
         
         self.x_display_position = cell_definition.x_display_position
         self.y_display_position = cell_definition.y_display_position
@@ -291,7 +291,7 @@ class Cell:
         self._fire_history = new_fire_history
 
         # Print information for one cell in the middle layer and one cell in the output layer.
-        if (self._layer_id == 'b' or self._layer_id == 'c') and self._output_id == 0:
+        if (self.layer_id == 'b' or self.layer_id == 'c') and self._output_id == 0:
             print(f"xcor {self.x_display_position} running rate {running_fire_rate} " \
                   f"target rate {target_fire_rate} fires {fires} "\
                   f"target positive in {self._target_positive_input_strength}")
@@ -488,12 +488,33 @@ class SimpleModel:
                 }
         return blob
 
+    def _average_layer_strengths(self):
+        target_strength_by_layer_id = defaultdict(int)
+        layer_size_by_layer_id = defaultdict(int)
+        for cell in self._cells:
+            layer_size_by_layer_id[cell.layer_id] += 1
+            target_strength_by_layer_id[cell.layer_id] += cell._target_positive_input_strength
+        average_strength_by_layer_id = defaultdict(float)
+        for layer_id, layer_size in layer_size_by_layer_id.items():
+            layer_strength = target_strength_by_layer_id[layer_id]
+            average_strength_by_layer_id[layer_id] = layer_strength/layer_size
+        return average_strength_by_layer_id
+
+    def cli_output(self):
+        pass
+
     def video_output(self):
         drawables = []
+        for layer_id, average_strength in self._average_layer_strengths().items():
+            text = str(round(average_strength, 4))
+            drawable = {"column_header": layer_id,
+                        "row_header": "average target strength",
+                        "text": text}
+            drawables.append(drawable)
+            
         for cell in self._cells:
             # maybe make a class
-            drawable = {"id": cell.label,
-                        "x": cell.x_display_position, "y": cell.y_display_position,
+            drawable = {"x": cell.x_display_position, "y": cell.y_display_position,
                         "strength": cell.membrane_voltage()}
             drawables.append(drawable)
         texts = ["dopamine: " + str(round(self._dopamine, 4))]

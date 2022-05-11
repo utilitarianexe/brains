@@ -65,6 +65,8 @@ new funcitonality
     try other equation for fire rate balancing average = average * (1-alpha) + real * alpha
 
   display
+    bug stacking inhibitory layers
+    layers_from_definitons in network.py is doing too much ui work
     in pygame display labels for input and wins
     accuracy graph
     red should be positive green negative
@@ -75,16 +77,13 @@ new funcitonality
     detect screen size
     attach to unreal engine or something
     UI to build network
-    cli interface
-      parameters for choosing model,network,environment,display
-      don't have the display modules run the model the main should
+    should try to get input hitting faster so users see it earlier
 
   management
     figure out what images we are failing on
     periodically save brains during run
     add a ./run_tests file that runs a bunch of complete runs
     add an adder environment as a mid level task
-    maybe all runs should make output files?
     make a plotting tool with our basic equations in it
       like how much does s_tag decay in an epoch
     should be a model level synapse connection strength that is then scaled per synapse

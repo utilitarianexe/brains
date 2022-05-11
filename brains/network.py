@@ -170,13 +170,18 @@ def layers_from_definitons(layer_definitions):
     previous_height = 0
     previous_width = 0
     previous_x_position = 0
+    first = True
     for definition in layer_definitions:
-        if definition.cell_type == CellType.INHIBITORY:
+        if first:
+            starting_x_position = 0
+            starting_y_position = 0
+            first = False
+        elif definition.cell_type == CellType.INHIBITORY:
             starting_x_position = previous_x_position
             starting_y_position = previous_height + 2
         else:
             starting_x_position = previous_width + previous_x_position + 2
-            starting_y_position = 0
+            starting_y_position = 0            
 
         layer = Layer(definition.label, definition.size,
                       starting_x_position, starting_y_position,

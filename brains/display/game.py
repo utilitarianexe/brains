@@ -19,44 +19,53 @@ def color_from_strength(strength):
         green = 255
     return red, green, blue
 
+# def text_matrix_from_drawables(drawables):
+#     column_headers = {}
+#     row_headers = defaultdict(int)
+#     for drawable in drawables:
+#         if "column_header" in drawable:
+#     cells = []
+#     return cells
+
 def update_screen(screen, drawables, texts):
+    myfont = pygame.font.SysFont("monospace", 20)
     x_spacing = 3
     y_spacing = 3
-    border = 3
+    border = 10
     edge_length = 10
     blue = (0, 0, 255)
+    black = (0, 0, 0)
+
     screen.fill(blue)
 
     # super inefficient to rebuild the squares but meh
     for drawable in drawables:
-        square = pygame.Surface((edge_length, edge_length,))
-
-        x_position = drawable["x"] * (edge_length + x_spacing) + border
-        y_position = drawable["y"] * (edge_length + y_spacing) + border
-        color = color_from_strength(drawable["strength"])
-        try:
+        if "strength" in drawable:
+            x_position = drawable["x"] * (edge_length + x_spacing) + border
+            y_position = drawable["y"] * (edge_length + y_spacing) + border
+            position = (x_position, y_position,)
+            square = pygame.Surface((edge_length, edge_length,))
+            color = color_from_strength(drawable["strength"])
             square.fill(color)
-        except:
-            print(color)
-            sys.exit()
-
-        screen.blit(square, (x_position, y_position,))
+            screen.blit(square, position)
+        if "column_header" in drawable:
+            text = myfont.render(drawable["text"], 1, black)
+            screen.blit(text, position)
+            
 
     screen.blit(square, (x_position, y_position,))
-    black = (0, 0, 0)
     x_text_pos = 0
     # waste to load here
-    myfont = pygame.font.SysFont("monospace", 20)
     for text in texts:
-        label = myfont.render(text, 1, black)
-        screen.blit(label, (x_text_pos, 900))
+        label = myfont.render(text, 2, black)
+        screen.blit(label, (x_text_pos, 700))
         x_text_pos += 200
 
 class GameDisplay():
     def __init__(self, model):
         self._model = model
         pygame.init()
-        size = width, height = 1800, 1000
+        size = width, height = 1200, 800
         self._screen = pygame.display.set_mode(size)
         self._update_ui = True
 
