@@ -1,5 +1,6 @@
 import brains.models.simple_model as simple_model
 import brains.environment.environment as environment
+from brains.environment.stdp import STDPTestEnvironment
 import brains.network as network
 from brains.network import CellType, CellDefinition
 
@@ -169,7 +170,7 @@ class TestModel(unittest.TestCase):
         '''
         model_parameters = simple_model.ModelParameters(warp=False)
         network_definition = network.stdp_test_network()
-        test_environment = environment.STDPTestEnvironment()
+        test_environment = STDPTestEnvironment()
         model =  simple_model.SimpleModel(network_definition,
                                           model_parameters)
         synapses_by_pre_cell = {}
@@ -203,7 +204,7 @@ class TestModel(unittest.TestCase):
         '''
         model_parameters = simple_model.ModelParameters()
         network_definition = network.stdp_test_network(input_balance=True)
-        test_environment = environment.STDPTestEnvironment()
+        test_environment = STDPTestEnvironment()
         model =  simple_model.SimpleModel(network_definition,
                                           model_parameters)
         synapses_by_pre_cell = {}

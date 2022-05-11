@@ -3,6 +3,7 @@ import brains.models.example_model as example_model
 import brains.models.simple_model as simple_model
 import brains.network as network
 import brains.environment.environment as environment
+from brains.environment.stdp import STDPTestEnvironment
 
 from pathlib import Path
 from collections import namedtuple
@@ -16,7 +17,7 @@ def stdp_world(epoch_length, warp=True):
     model_parameters = simple_model.ModelParameters(epoch_length=epoch_length, warp=warp)
     network_definition = network.stdp_test_network()
     model = simple_model.SimpleModel(network_definition, model_parameters)
-    return model, environment.STDPTestEnvironment()
+    return model, STDPTestEnvironment()
 
 def handwriting_world(file_name, epoch_length, input_delay=50, epoch_delay=50, warp=True):
     model_parameters = simple_model.handwriting_model_parameters(epoch_length=epoch_length,
@@ -60,7 +61,7 @@ def user_specified_world(import_name, environment_type, handwritten_file_name,
     elif environment_type == 'easy':
         model_environment = environment.EasyEnvironment(model.epoch_length, input_delay)
     elif environment_type == 'stdp':
-        model_environment = environment.STDPTestEnvironment(model.epoch_length)
+        model_environment = STDPTestEnvironment(model.epoch_length)
     return model, model_environment
 
 def create_world(world_type, epoch_length, import_name,

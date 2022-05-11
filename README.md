@@ -53,7 +53,7 @@ to make pygame work on Ubuntu
 
 Display potential graphs for each cell using pyplot
 
-`python brains/main.py --display pyplot --world stdp`
+`python brains/main.py --display pyplot --world stdp --epochs 5`
 
 ## Options
 
