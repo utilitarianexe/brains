@@ -245,12 +245,8 @@ class HandwritenEnvironment(BaseEpochChallengeEnvironment):
                 stimuli.add((x, y, 0.3,))
         return stimuli
 
-    def _get_image_lines_from_file(self, file_path):
-        # magic file name
-        # not checking exceptions
-        # wrong place for this function
-        base_path = Path(__file__).parent / "data"
-        file_path = (base_path / file_path).resolve()
+    def _get_image_lines_from_file(self, file_name):
+        file_path = data_dir_file_path(file_name)
         return open(file_path)
         
 
@@ -281,7 +277,7 @@ class HandwritenEnvironment(BaseEpochChallengeEnvironment):
         return letter_image_pairs
 
 def data_dir_file_path(file_name):
-    base_path = Path(__file__).parent / "data"
+    base_path = Path(__file__).parent.parent / "data"
     file_path = (base_path / file_name).resolve()
     return file_path
 

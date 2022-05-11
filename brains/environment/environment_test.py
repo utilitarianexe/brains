@@ -1,4 +1,4 @@
-from brains.environment import HandwritenEnvironment
+from brains.environment.environment import HandwritenEnvironment
 import unittest
 
 class TestHandwritting(unittest.TestCase):

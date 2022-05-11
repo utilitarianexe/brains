@@ -1,8 +1,8 @@
 import brains.models.spirit_model as spirit_model
 import brains.models.example_model as example_model
 import brains.models.simple_model as simple_model
-import network
-import environment
+import brains.network as network
+import brains.environment.environment as environment
 
 from pathlib import Path
 from collections import namedtuple
