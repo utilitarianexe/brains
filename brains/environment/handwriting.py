@@ -1,93 +1,12 @@
 import brains.utils as utils
-from brains.environment.base import BaseEpochChallengeEnvironment
+import brains.environment.base as base
 
 import string
 import random
 from collections import defaultdict
 from pathlib import Path
 
-class EasyEnvironment(BaseEpochChallengeEnvironment):
-    '''
-    Designed for easy leaning
-
-    Randomly chooses to spike one of two input cells each epoch. If the corresponding output cell
-    fires the brain is rewarded. Also spikes a third input cell randomly that is unrelated to what
-    output cell is rewarded.
-    '''
-    def __init__(self, epoch_length, input_delay):
-        super().__init__(epoch_length, input_delay)
-        self._zero_stage = True
-        self._one_stage = False
-        self._fire_the_random_input_cell = False
-
-    def stimuli(self, step):
-        real_step = step - self._input_delay
-        is_correct_time = real_step % self._epoch_length == 0 and step > real_step
-        if not is_correct_time:
-            return set()
-
-        stimuli = set()
-        if self._zero_stage:
-            stimuli.add((0, 0, 0.3,))
-        if self._one_stage:
-            stimuli.add((0, 1, 0.3,))
-        if self._fire_the_random_input_cell:
-            stimuli.add((0, 2, 0.3,))
-        return stimuli
-
-    def step(self, step):
-        super().step(step)
-        real_step = step - self._input_delay
-        if real_step % self._epoch_length == 0:
-            self._fire_the_random_input_cell = random.random() > 0.5
-            if random.random() > 0.5:
-                self._one_stage = False
-                self._zero_stage = True
-            else:
-                self._zero_stage = False
-                self._one_stage = True
-
-    def accept_fire(self, step, output_id):
-        real_step = step - self._input_delay
-        if step <= real_step:
-            return
-
-        if output_id == 0 and self._zero_stage or output_id == 1 and self._one_stage:
-            self._correct_cell_fired = True
-        else:
-            self._incorrect_cell_fired = True
-    
-class TestEnvironment(BaseEpochChallengeEnvironment):
-    def __init__(self, input_points, reward_ids, epoch_length, input_delay=0):
-        super().__init__(epoch_length, input_delay)
-        self._stimuli = defaultdict(list)
-        for (step, x, y, strength) in input_points:
-            self._stimuli[step].append((x, y, strength,))
-
-        # List of corrdinates or Nones specifying a reward for a given epoch
-        self._reward_ids = reward_ids
-        self._reward_id = self._reward_ids[0]
-
-    def active(self, step):
-        return step in self._stimuli
-
-    def stimuli(self, step):
-        return self._stimuli[step]
-
-    def step(self, step):
-        super().step(step)
-        real_step = step - self._input_delay
-        if real_step % self._epoch_length == 0:
-            self._reward_id = self._reward_ids[real_step//self._epoch_length]
-
-    def accept_fire(self, step, output_id):
-        if self._reward_id is None:
-            return
-        if output_id == self._reward_id:
-            self._correct_cell_fired = True
-
-
-class HandwritenEnvironment(BaseEpochChallengeEnvironment):
+class HandwritingEnvironment(base.BaseEpochChallengeEnvironment):
     def __init__(self, epoch_length, input_delay, output_id_by_letter,
                  image_lines=None, shuffle=False, file_name=None):
         super().__init__(epoch_length, input_delay)

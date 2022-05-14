@@ -2,7 +2,8 @@ import brains.models.spirit_model as spirit_model
 import brains.models.example_model as example_model
 import brains.models.simple_model as simple_model
 import brains.network as network
-import brains.environment.environment as environment
+from brains.environment.easy import EasyEnvironment
+from brains.environment.handwriting import HandwritingEnvironment
 from brains.environment.stdp import STDPTestEnvironment
 
 from pathlib import Path
@@ -26,13 +27,13 @@ def handwriting_world(file_name, epoch_length, input_delay=50, epoch_delay=50, w
 
     # need like some kind of average starting connection strength thing
     network_definition = network.layer_based_default_network()
-    handwriten_environment = environment.HandwritenEnvironment(
+    handwriting_environment = HandwritingEnvironment(
         epoch_length, input_delay, {'o': 0, 'x': 1},
         image_lines=None, shuffle=True,
         file_name=file_name)
 
     model = simple_model.SimpleModel(network_definition, model_parameters)
-    return model, handwriten_environment
+    return model, handwriting_environment
 
 def easy_world(epoch_length, input_delay=50, epoch_delay=50, warp=True):
     model_parameters = simple_model.handwriting_model_parameters(epoch_length=epoch_length,
@@ -41,7 +42,7 @@ def easy_world(epoch_length, input_delay=50, epoch_delay=50, warp=True):
 
     # need like some kind of average starting connection strength thing
     network_definition = network.easy_layer_network()
-    easy_environment = environment.EasyEnvironment(epoch_length, input_delay)
+    easy_environment = EasyEnvironment(epoch_length, input_delay)
     model = simple_model.SimpleModel(network_definition, model_parameters)
     return model, easy_environment
 
@@ -54,12 +55,12 @@ def user_specified_world(import_name, environment_type, handwritten_file_name,
     blob = json.load(model_file)
     model = simple_model.import_model(blob, warp=warp)
     if environment_type == 'handwriting':
-        model_environment = environment.HandwritenEnvironment(
+        model_environment = HandwritingEnvironment(
             model.epoch_length, input_delay, {'o': 0, 'x': 1},
             image_lines=None, shuffle=True,
             file_name=handwritten_file_name)
     elif environment_type == 'easy':
-        model_environment = environment.EasyEnvironment(model.epoch_length, input_delay)
+        model_environment = EasyEnvironment(model.epoch_length, input_delay)
     elif environment_type == 'stdp':
         model_environment = STDPTestEnvironment(model.epoch_length)
     return model, model_environment

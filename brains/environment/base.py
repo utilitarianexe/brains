@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from collections import defaultdict
 
 @dataclass
 class ResultTracker:
@@ -68,3 +69,32 @@ class BaseEpochChallengeEnvironment:
             self._reward_provided = True
             return True
         return False
+
+class FakeEnvironment(BaseEpochChallengeEnvironment):
+    def __init__(self, input_points, reward_ids, epoch_length, input_delay=0):
+        super().__init__(epoch_length, input_delay)
+        self._stimuli = defaultdict(list)
+        for (step, x, y, strength) in input_points:
+            self._stimuli[step].append((x, y, strength,))
+
+        # List of corrdinates or Nones specifying a reward for a given epoch
+        self._reward_ids = reward_ids
+        self._reward_id = self._reward_ids[0]
+
+    def active(self, step):
+        return step in self._stimuli
+
+    def stimuli(self, step):
+        return self._stimuli[step]
+
+    def step(self, step):
+        super().step(step)
+        real_step = step - self._input_delay
+        if real_step % self._epoch_length == 0:
+            self._reward_id = self._reward_ids[real_step//self._epoch_length]
+
+    def accept_fire(self, step, output_id):
+        if self._reward_id is None:
+            return
+        if output_id == self._reward_id:
+            self._correct_cell_fired = True
