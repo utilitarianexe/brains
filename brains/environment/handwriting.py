@@ -4,7 +4,6 @@ import brains.environment.base as base
 import string
 import random
 from collections import defaultdict
-from pathlib import Path
 
 class HandwritingEnvironment(base.BaseEpochChallengeEnvironment):
     def __init__(self, epoch_length, input_delay, output_id_by_letter,
@@ -59,7 +58,7 @@ class HandwritingEnvironment(base.BaseEpochChallengeEnvironment):
         return stimuli
 
     def _get_image_lines_from_file(self, file_name):
-        file_path = data_dir_file_path(file_name)
+        file_path = utils.data_dir_file_path(file_name)
         return open(file_path)
         
 
@@ -89,14 +88,9 @@ class HandwritingEnvironment(base.BaseEpochChallengeEnvironment):
             random.shuffle(letter_image_pairs)
         return letter_image_pairs
 
-def data_dir_file_path(file_name):
-    base_path = Path(__file__).parent.parent / "data"
-    file_path = (base_path / file_name).resolve()
-    return file_path
-
 def shorten_file():
-    input_file = open(data_dir_file_path("A_Z Handwritten Data.csv"))
-    output_file = open(data_dir_file_path("o_x_hand_written_all.csv"), 'w')
+    input_file = open(utils.data_dir_file_path("A_Z Handwritten Data.csv"))
+    output_file = open(utils.data_dir_file_path("o_x_hand_written_all.csv"), 'w')
 
     wanted_images_per_letter = 5000
     wanted_letters = ['o', 'x']

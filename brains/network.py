@@ -301,6 +301,23 @@ def layer_based_default_network():
                          ("b", "c", 1, 0.006,)]
     return build_layer_based_network(layers, layer_connections)
 
+def mnist_network():
+    image_size = 28*28
+    layers = [LayerDefinition("a", image_size, Layout.SQUARE,
+                              CellType.EXCITATORY, False, 0.0, True, False),
+              LayerDefinition("i", image_size, Layout.SQUARE,
+                              CellType.INHIBITORY, False, 0.0, True, False),
+              LayerDefinition("b", 6*6, Layout.SQUARE, CellType.EXCITATORY, True, 0.2, False, False),
+              LayerDefinition("c", 10, Layout.LINE, CellType.EXCITATORY, True, 0.1, False, True)]
+    
+    # Something about connection probability rubs me wrong.
+    # connections might be more complex
+    layer_connections = [("a", "b", 1, 0.01,),
+                         ("i", "b", 1, 0.01,),
+                         ("b", "c", 1, 0.006,)]
+    return build_layer_based_network(layers, layer_connections)
+
+
 # def layer_based_default_network():
 #     image_size = 28*28
 #     layers = [LayerDefinition("a", image_size, Layout.SQUARE,

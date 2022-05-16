@@ -1,4 +1,7 @@
 unsorted issues
+  nmist and handwriting too much copy paste
+  main file too big
+  network definitions need sperated from network file
   layer based diagnostics like total input strength
   model based error condition tracking like double fires or not resetting by the time of epoch
   remove warp fudge
