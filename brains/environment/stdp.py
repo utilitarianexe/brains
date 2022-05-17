@@ -34,3 +34,6 @@ class STDPTestEnvironment:
 
     def accept_fire(self, step, output_id):
         pass
+
+    def video_output(self, step):
+        return ["answer: none"]

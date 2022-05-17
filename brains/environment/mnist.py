@@ -39,22 +39,18 @@ class MnistEnvironment(base.BaseEpochChallengeEnvironment):
                 stimuli.add((x, y, 0.3,))
         return stimuli
 
-
-    def accept_fire(self, step, output_id):
+    def desired_output_id(self, step):
         real_step = step - self._input_delay
         if real_step//self._epoch_length >= len(self._digits_and_images):
-            return
+            return None
 
         if real_step < 0:
-            return
+            return None
 
         image_index = real_step//self._epoch_length
         (digit, image) = self._digits_and_images[image_index]
+        return digit
 
-        if output_id == digit:
-            self._correct_cell_fired = True
-        else:
-            self._incorrect_cell_fired = True
 
 def read(image_file_name, label_file_name, number_of_images_to_read):
     label_file = open(utils.data_dir_file_path(label_file_name), "rb")

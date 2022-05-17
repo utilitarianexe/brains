@@ -20,23 +20,19 @@ class HandwritingEnvironment(base.BaseEpochChallengeEnvironment):
         self._output_id_by_letter = output_id_by_letter
         wanted_letters = sorted(output_id_by_letter.keys())
         self._images = self._load_handwriting(image_lines, wanted_letters, shuffle)
-        
-    def accept_fire(self, step, output_id):
+
+    def desired_output_id(self, step):
         real_step = step - self._input_delay
         if real_step//self._epoch_length >= len(self._images):
-            return
+            return None
 
         if real_step < 0:
-            return
+            return None
 
         image_index = real_step//self._epoch_length
         (letter, image) = self._images[image_index]
-
-        if output_id == self._output_id_by_letter[letter]:
-            self._correct_cell_fired = True
-        else:
-            self._incorrect_cell_fired = True
-
+        return self._output_id_by_letter[letter]
+        
     def stimuli(self, step):
         real_step = step - self._input_delay
         is_correct_time = real_step % self._epoch_length == 0 and real_step >= 0

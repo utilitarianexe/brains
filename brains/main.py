@@ -113,10 +113,10 @@ def create_world(world_type, epoch_length, import_name,
     print("Not enough information provided. Either supply a world argument or both a import_name and an environment to run it in")
     quit()
 
-def create_display(display_type, model):
+def create_display(display_type, model, environment=None):
     if display_type == "pygame":
         import display.game as game
-        display = game.GameDisplay(model)
+        display = game.GameDisplay(model, environment=environment)
     elif display_type == "pyplot":
         import display.plot as plot
         display = plot.PlotDisplay(model)
@@ -201,7 +201,7 @@ def main(steps, epoch_length,
 
     signal.signal(signal.SIGINT, handler)
 
-    display = create_display(display_type, brain)
+    display = create_display(display_type, brain, environment=environment)
     for i in range(steps):
         environment.step(i)
         stimuli = environment.stimuli(i)

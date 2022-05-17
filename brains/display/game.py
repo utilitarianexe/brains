@@ -50,11 +50,12 @@ def update_screen(screen, drawables, texts):
     for text in texts:
         label = myfont.render(text, 1, black)
         screen.blit(label, (x_text_pos, 900))
-        x_text_pos += 200
+        x_text_pos += 300
 
 class GameDisplay():
-    def __init__(self, model):
+    def __init__(self, model, environment=None):
         self._model = model
+        self._environment = environment
         pygame.init()
         size = width, height = 1800, 1000
         self._screen = pygame.display.set_mode(size)
@@ -79,6 +80,11 @@ class GameDisplay():
 
         if self._update_ui:
             drawables, texts = self._model.video_output()
+            if self._environment is not None:
+                enivronment_texts = self._environment.video_output(step)
+                texts = texts + enivronment_texts
+                
+            self._model.video_output()
             texts.append(f'step: {step}')
             update_screen(self._screen, drawables, texts)
             pygame.display.flip()

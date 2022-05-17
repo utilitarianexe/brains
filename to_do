@@ -1,4 +1,9 @@
 unsorted issues
+  print what did fire to screen
+  need seperate win loss for reward and for recording
+  better way to handle running out of images
+  accept fire should just record output_ids
+
   nmist and handwriting too much copy paste
   main file too big
   network definitions need sperated from network file

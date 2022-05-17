@@ -43,12 +43,12 @@ class EasyEnvironment(base.BaseEpochChallengeEnvironment):
                 self._zero_stage = False
                 self._one_stage = True
 
-    def accept_fire(self, step, output_id):
+    def desired_output_id(self, step):
         real_step = step - self._input_delay
         if step <= real_step:
-            return
+            return None
 
-        if output_id == 0 and self._zero_stage or output_id == 1 and self._one_stage:
-            self._correct_cell_fired = True
+        if self._zero_stage:
+            return 0
         else:
-            self._incorrect_cell_fired = True
+            return 1

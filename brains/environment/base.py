@@ -29,6 +29,7 @@ class BaseEpochChallengeEnvironment:
     User is expected to implement:
     stimuli to act as input from the environment to the brain.
     accept_fire to handle output from the brain to determine if the brain has fired the right cell.
+    desired_output ...
 
     Class handles rewarding at the right time assuming that the correct output cell and only the
     current output cell must fire by half way through the epoch and that after that a reward should
@@ -64,11 +65,28 @@ class BaseEpochChallengeEnvironment:
             else:
                 self._success = False
 
+    def video_output(self, step):
+        output_id = self.desired_output_id(step)
+        if output_id is None:
+            return ["expected output: none"]
+        return [f"expected output: {output_id}"]
+
     def has_reward(self):
         if self._success and not self._reward_provided:
             self._reward_provided = True
             return True
         return False
+
+    def accept_fire(self, step, output_id):
+        wanted_id = self.desired_output_id(step)
+        if wanted_id is None:
+            return
+
+        if output_id == wanted_id:
+            self._correct_cell_fired = True
+        else:
+            self._incorrect_cell_fired = True
+
 
 class FakeEnvironment(BaseEpochChallengeEnvironment):
     def __init__(self, input_points, reward_ids, epoch_length, input_delay=0):
@@ -93,8 +111,5 @@ class FakeEnvironment(BaseEpochChallengeEnvironment):
         if real_step % self._epoch_length == 0:
             self._reward_id = self._reward_ids[real_step//self._epoch_length]
 
-    def accept_fire(self, step, output_id):
-        if self._reward_id is None:
-            return
-        if output_id == self._reward_id:
-            self._correct_cell_fired = True
+    def desired_output_id(self, step):
+        return self._reward_id
