@@ -9,6 +9,7 @@ class HandwritingEnvironment(base.BaseEpochChallengeEnvironment):
     def __init__(self, epoch_length, input_delay, output_id_by_letter,
                  image_lines=None, shuffle=False, file_name=None):
         super().__init__(epoch_length, input_delay)
+        self._possible_outputs = range(len(output_id_by_letter))
 
         self._image_width = None
         if (image_lines is None and file_name is None) or (image_lines and file_name):

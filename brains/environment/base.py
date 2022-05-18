@@ -1,6 +1,17 @@
 from dataclasses import dataclass
 from collections import defaultdict
 
+def result_convert(found_output_ids, desired_output_id):
+    correct_cell_fired = False
+    incorrect_cell_fired = False
+    if desired_output_id in found_output_ids:
+        correct_cell_fired = True
+
+    for out_id in found_output_ids:
+        if out_id != desired_output_id:
+            incorrect_cell_fired = True
+    return correct_cell_fired, incorrect_cell_fired
+
 @dataclass
 class ResultTracker:
     win: int = 0
@@ -8,28 +19,36 @@ class ResultTracker:
     none_fired: int = 0
     all_fired: int = 0
     indeterminate: int = 0
-    win: int = 0
+    rewarded: int = 0
     epochs: int = 0
 
-    def update(self, correct_cell_fired, incorrect_cell_fired):
+    def update(self, found_output_ids, desired_output_id, possible_outputs):
+        #print(f"found: {found_output_ids} desired: {desired_output_id}")
         self.epochs += 1
+        if desired_output_id in found_output_ids:
+            self.rewarded += 1
+        
+        correct_cell_fired, incorrect_cell_fired = result_convert(found_output_ids, desired_output_id)
         if correct_cell_fired and not incorrect_cell_fired:
             self.win += 1
-        elif not correct_cell_fired and not incorrect_cell_fired:
+        if not correct_cell_fired and incorrect_cell_fired:
+            self.loss += 1
+
+        # I guess technically these could be wins and losses
+        if len(found_output_ids) == 0:
             self.none_fired += 1
             self.indeterminate += 1
-        elif correct_cell_fired and incorrect_cell_fired:
+        if len(found_output_ids) == len(possible_outputs):
             self.all_fired += 1
             self.indeterminate += 1
-        elif not correct_cell_fired and incorrect_cell_fired:
-            self.loss += 1
 
 class BaseEpochChallengeEnvironment:
     '''
     User is expected to implement:
     stimuli to act as input from the environment to the brain.
-    accept_fire to handle output from the brain to determine if the brain has fired the right cell.
-    desired_output ...
+    desired_output expected output from brain to determine if the brain has fired the right cell
+    _possible_outputs variable
+    See FakeEnvironment for examples
 
     Class handles rewarding at the right time assuming that the correct output cell and only the
     current output cell must fire by half way through the epoch and that after that a reward should
@@ -41,10 +60,10 @@ class BaseEpochChallengeEnvironment:
 
         self._success = False
         self._reward_provided = False
-        self._correct_cell_fired = False
-        self._incorrect_cell_fired = False
 
+        self._found_output_ids = []
         self._result_tracker = ResultTracker()
+        self._possible_outputs = []
         
     def active(self, step):
         real_step = step - self._input_delay
@@ -54,16 +73,24 @@ class BaseEpochChallengeEnvironment:
         real_step = step - self._input_delay
         if real_step % self._epoch_length == 0:
             print(self._result_tracker)
-            self._correct_cell_fired = False
-            self._incorrect_cell_fired = False
+            self._found_output_ids = []
             self._reward_provided = False
             self._success = False
         elif real_step % self._epoch_length == self._epoch_length//2:
-            self._result_tracker.update(self._correct_cell_fired, self._incorrect_cell_fired)
-            if self._correct_cell_fired and not self._incorrect_cell_fired:
+            desired_output_id = self.desired_output_id(step)
+            self._result_tracker.update(self._found_output_ids, desired_output_id,
+                                        self._possible_outputs)
+            if self.has_success(desired_output_id):
                 self._success = True
             else:
                 self._success = False
+                
+    def has_success(self, desired_output_id):
+        #return desired_output_id in self._found_output_ids
+        correct_cell_fired, incorrect_cell_fired = result_convert(self._found_output_ids,
+                                                                  desired_output_id)
+        return correct_cell_fired and not incorrect_cell_fired
+        
 
     def video_output(self, step):
         output_id = self.desired_output_id(step)
@@ -77,20 +104,16 @@ class BaseEpochChallengeEnvironment:
             return True
         return False
 
+    # really output ids should come from step
+    # that way model does not need to carry around environment
     def accept_fire(self, step, output_id):
-        wanted_id = self.desired_output_id(step)
-        if wanted_id is None:
-            return
-
-        if output_id == wanted_id:
-            self._correct_cell_fired = True
-        else:
-            self._incorrect_cell_fired = True
+        self._found_output_ids.append(output_id)
 
 
 class FakeEnvironment(BaseEpochChallengeEnvironment):
     def __init__(self, input_points, reward_ids, epoch_length, input_delay=0):
         super().__init__(epoch_length, input_delay)
+        self._possible_outputs = set(reward_ids)
         self._stimuli = defaultdict(list)
         for (step, x, y, strength) in input_points:
             self._stimuli[step].append((x, y, strength,))

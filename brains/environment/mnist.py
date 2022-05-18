@@ -9,6 +9,7 @@ import random
 class MnistEnvironment(base.BaseEpochChallengeEnvironment):
     def __init__(self, epoch_length, input_delay=0, shuffle=True):
         super().__init__(epoch_length, input_delay)
+        self._possible_outputs = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
         images_by_label = read_mnist()
         self._image_width = 28
         self._digits_and_images = []

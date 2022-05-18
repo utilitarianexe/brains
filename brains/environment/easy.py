@@ -12,6 +12,7 @@ class EasyEnvironment(base.BaseEpochChallengeEnvironment):
     '''
     def __init__(self, epoch_length, input_delay):
         super().__init__(epoch_length, input_delay)
+        self._possible_outputs = [0, 1]
         self._zero_stage = True
         self._one_stage = False
         self._fire_the_random_input_cell = False
