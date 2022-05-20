@@ -333,9 +333,11 @@ def mnist_network():
 
 def easy_layer_simple_network():
     layers = [LayerDefinition("a", 3, Layout.LINE, CellType.EXCITATORY, False, 0.0, True, False),
-              LayerDefinition("b", 2, Layout.LINE, CellType.EXCITATORY, False, 0.0, False, True)]
+              LayerDefinition("b", 3, Layout.LINE, CellType.INHIBITION, False, 0.0, True, False),
+              LayerDefinition("c", 2, Layout.LINE, CellType.EXCITATORY, False, 0.0, False, True)]
     
-    layer_connections = [("a", "b", 1, 0.035)]
+    layer_connections = [("a", "c", 1, 0.035),
+                         ("b", "c", 1, 0.035)]
     return build_layer_based_network(layers, layer_connections)
 
 # no mixed cells
