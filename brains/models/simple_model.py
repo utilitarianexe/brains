@@ -92,15 +92,15 @@ class Synapse:
 
     def update(self, dopamine):
         self.strength += self._s_tag * dopamine * self._reward_scalar
-        # if self.strength >= self._max_strength:
-        #     self.strength = self._max_strength
-        # if self.strength < self._min_strength:
-        #     self.strength = self._min_strength
+        if self.strength >= self._max_strength:
+            self.strength = self._max_strength
+        if self.strength < self._min_strength:
+            self.strength = self._min_strength
 
-        # if self.inhibitory_strength >= self._max_strength:
-        #     self.inhibitory_strength = self._max_strength
-        # if self.inhibitory_strength < self._min_strength:
-        #     self.inhibitory_strength = self._min_strength
+        if self.inhibitory_strength >= self._max_strength:
+            self.inhibitory_strength = self._max_strength
+        if self.inhibitory_strength < self._min_strength:
+            self.inhibitory_strength = self._min_strength
 
 
     def post_fire(self, step):
@@ -291,10 +291,17 @@ class Cell:
         self._fire_history = new_fire_history
 
         # Print information for one cell in the middle layer and one cell in the output layer.
+<<<<<<< HEAD
         if (self.layer_id == 'b' or self.layer_id == 'c') and self._output_id == 0:
             print(f"xcor {self.x_display_position} running rate {running_fire_rate} " \
                   f"target rate {target_fire_rate} fires {fires} "\
                   f"target positive in {self._target_positive_input_strength}")
+=======
+        if (self._layer_id == 'b' or self._layer_id == 'c') and self._output_id == 0:
+            print(f"xcor {self.x_display_position} running_rate {running_fire_rate} " \
+                  f"target_rate {target_fire_rate} fires {fires} "\
+                  f"target_positive_input {self._target_positive_input_strength}")
+>>>>>>> main
 
         if running_fire_rate > target_fire_rate:
             rate_based_down_scale_factor = target_fire_rate/running_fire_rate

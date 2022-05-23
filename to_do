@@ -1,4 +1,16 @@
 unsorted issues
+  porportion award
+  track progress porportionally
+  sort found list
+  output balance
+  
+  print what did fire to screen
+  better way to handle running out of images
+  accept fire should just record output_ids
+
+  nmist and handwriting too much copy paste
+  main file too big
+  network definitions need sperated from network file
   layer based diagnostics like total input strength
   model based error condition tracking like double fires or not resetting by the time of epoch
   remove warp fudge

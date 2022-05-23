@@ -290,40 +290,59 @@ def stdp_test_network(input_balance=False):
     return network_from_tuples(cells,
                                synapses)
 
-# def layer_based_default_network():
-#     image_size = 28*28
-#     layers = [LayerDefinition("a", image_size, Layout.SQUARE,
-#                               CellType.EXCITATORY, False, 0.0, True, False),
-#               LayerDefinition("i", image_size, Layout.SQUARE,
-#                               CellType.INHIBITORY, False, 0.0, True, False),
-#               LayerDefinition("b", 6*6, Layout.SQUARE, CellType.EXCITATORY, True, 0.2, False, False),
-#               LayerDefinition("c", 2, Layout.LINE, CellType.EXCITATORY, True, 0.5, False, True)]
-    
-#     # Something about connection probability rubs me wrong.
-#     # connections might be more complex
-#     layer_connections = [("a", "b", 1, 0.01,),
-#                          ("i", "b", 1, 0.01,),
-#                          ("b", "c", 1, 0.006,)]
-#     return build_layer_based_network(layers, layer_connections)
-
 def layer_based_default_network():
     image_size = 28*28
     layers = [LayerDefinition("a", image_size, Layout.SQUARE,
-                              CellType.MIXED, False, 0.0, True, False),
+                              CellType.EXCITATORY, False, 0.0, True, False),
+              LayerDefinition("i", image_size, Layout.SQUARE,
+                              CellType.INHIBITORY, False, 0.0, True, False),
               LayerDefinition("b", 6*6, Layout.SQUARE, CellType.EXCITATORY, True, 0.2, False, False),
               LayerDefinition("c", 2, Layout.LINE, CellType.EXCITATORY, True, 0.5, False, True)]
     
     # Something about connection probability rubs me wrong.
     # connections might be more complex
     layer_connections = [("a", "b", 1, 0.01,),
+                         ("i", "b", 1, 0.01,),
                          ("b", "c", 1, 0.006,)]
     return build_layer_based_network(layers, layer_connections)
 
+def mnist_network():
+    image_size = 28*28
+    layers = [LayerDefinition("a", image_size, Layout.SQUARE,
+                              CellType.EXCITATORY, False, 0.0, True, False),
+              LayerDefinition("i", image_size, Layout.SQUARE,
+                              CellType.INHIBITORY, False, 0.0, True, False),
+              LayerDefinition("b", 6*6, Layout.SQUARE, CellType.EXCITATORY, True, 0.2, False, False),
+              LayerDefinition("c", 10, Layout.LINE, CellType.EXCITATORY, True, 0.1, False, True)]
+    
+    # Something about connection probability rubs me wrong.
+    # connections might be more complex
+    layer_connections = [("a", "b", 1, 0.01,),
+                         ("i", "b", 1, 0.01,),
+                         ("b", "c", 1, 0.006,)]
+    return build_layer_based_network(layers, layer_connections)
+
+
+# def layer_based_default_network():
+#     image_size = 28*28
+#     layers = [LayerDefinition("a", image_size, Layout.SQUARE,
+#                               CellType.MIXED, False, 0.0, True, False),
+#               LayerDefinition("b", 6*6, Layout.SQUARE, CellType.EXCITATORY, True, 0.2, False, False),
+#               LayerDefinition("c", 2, Layout.LINE, CellType.EXCITATORY, True, 0.5, False, True)]
+    
+#     # Something about connection probability rubs me wrong.
+#     # connections might be more complex
+#     layer_connections = [("a", "b", 1, 0.01,),
+#                          ("b", "c", 1, 0.006,)]
+#     return build_layer_based_network(layers, layer_connections)
+
 def easy_layer_simple_network():
     layers = [LayerDefinition("a", 3, Layout.LINE, CellType.EXCITATORY, False, 0.0, True, False),
-              LayerDefinition("b", 2, Layout.LINE, CellType.EXCITATORY, False, 0.0, False, True)]
+              LayerDefinition("b", 3, Layout.LINE, CellType.INHIBITION, False, 0.0, True, False),
+              LayerDefinition("c", 2, Layout.LINE, CellType.EXCITATORY, False, 0.0, False, True)]
     
-    layer_connections = [("a", "b", 1, 0.035)]
+    layer_connections = [("a", "c", 1, 0.035),
+                         ("b", "c", 1, 0.035)]
     return build_layer_based_network(layers, layer_connections)
 
 # no mixed cells

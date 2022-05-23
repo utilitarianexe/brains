@@ -1,8 +1,8 @@
-from brains.environment import HandwritenEnvironment
+from brains.environment.handwriting import HandwritingEnvironment
 import unittest
 
-class TestHandwritting(unittest.TestCase):
-    def test_read_handwritting(self):
+class TestHandwriting(unittest.TestCase):
+    def test_read_handwriting(self):
         '''
         '''
         # Each string is a letter and one image.
@@ -12,7 +12,7 @@ class TestHandwritting(unittest.TestCase):
                        '14,0,51,0,51']
         delay = 50
         frequency = 150
-        environment = HandwritenEnvironment(frequency, delay, {'o': 0, 'x': 1},
+        environment = HandwritingEnvironment(frequency, delay, {'o': 0, 'x': 1},
                                             image_lines=image_lines, shuffle=False)
 
         # When not shuffled images are shown is alphabetical order.
@@ -22,13 +22,13 @@ class TestHandwritting(unittest.TestCase):
         self.assertEqual(environment.stimuli(third_image_step), {(1, 0, 0.3), (0, 1, 0.3), (1, 1, 0.3)})
 
     def test_reward(self):
-        # See comments in test_read_handwritting
+        # See comments in test_read_handwriting
         image_lines = ['14,0,51,51,0,\n',
                        '23,0,51,51,51\n',
                        '14,0,51,0,51']
         delay = 50
         frequency = 400
-        environment = HandwritenEnvironment(frequency, delay, {'o': 0, 'x': 1},
+        environment = HandwritingEnvironment(frequency, delay, {'o': 0, 'x': 1},
                                             image_lines=image_lines, shuffle=False)
         first_image_step = delay
         third_image_step = delay + frequency * 2
@@ -52,7 +52,6 @@ class TestHandwritting(unittest.TestCase):
             if i == third_image_step + 210:
                 # no reward even after enough time because wrong cell fired.
                 self.assertFalse(environment.has_reward())
-
 
 if __name__ == '__main__':
     unittest.main()

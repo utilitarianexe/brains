@@ -1,5 +1,6 @@
 import brains.models.simple_model as simple_model
-import brains.environment as environment
+from brains.environment.base import FakeEnvironment
+from brains.environment.stdp import STDPTestEnvironment
 import brains.network as network
 from brains.network import CellType, CellDefinition
 
@@ -64,7 +65,7 @@ class TestModel(unittest.TestCase):
         Causing one cell to spike should cause the next to spike
         '''
         model = self.two_cell_model(0.1)
-        test_environment = environment.TestEnvironment([(1, 0, 0, 0.15)], [None], 1000)
+        test_environment = FakeEnvironment([(1, 0, 0, 0.15)], [None], 1000)
 
         fire_history = []
         for i in range(100):
@@ -91,7 +92,7 @@ class TestModel(unittest.TestCase):
                        (100, 0, 0, 0.15),
                        (110, 1, 0, 0.15),
                        ]
-        test_environment = environment.TestEnvironment(fire_points, [None], 1000)
+        test_environment = FakeEnvironment(fire_points, [None], 1000)
         starting_synapse_strength = 0.0
         model = self.two_cell_model(starting_synapse_strength)
         fire_history = []
@@ -110,7 +111,7 @@ class TestModel(unittest.TestCase):
                        (110, 0, 0, 0.15),
                        (100, 1, 0, 0.15),
                        ]
-        test_environment = environment.TestEnvironment(fire_points, [None], 1000)
+        test_environment = FakeEnvironment(fire_points, [None], 1000)
         starting_synapse_strength = 0.01
         model = self.two_cell_model(starting_synapse_strength)
         fire_history = []
@@ -137,7 +138,7 @@ class TestModel(unittest.TestCase):
                        (400, 1, 0, 0.15),
                        ]
         reward_points =  [None, None, 0, None, None, None]
-        test_environment = environment.TestEnvironment(fire_points, reward_points, 100)
+        test_environment = FakeEnvironment(fire_points, reward_points, 100)
         model_parameters = simple_model.handwriting_model_parameters(False)
         
         # Strength is set very low to prevent spike propagation. Spikes are created artificially.
@@ -169,7 +170,7 @@ class TestModel(unittest.TestCase):
         '''
         model_parameters = simple_model.ModelParameters(warp=False)
         network_definition = network.stdp_test_network()
-        test_environment = environment.STDPTestEnvironment()
+        test_environment = STDPTestEnvironment()
         model =  simple_model.SimpleModel(network_definition,
                                           model_parameters)
         synapses_by_pre_cell = {}
@@ -203,7 +204,7 @@ class TestModel(unittest.TestCase):
         '''
         model_parameters = simple_model.ModelParameters()
         network_definition = network.stdp_test_network(input_balance=True)
-        test_environment = environment.STDPTestEnvironment()
+        test_environment = STDPTestEnvironment()
         model =  simple_model.SimpleModel(network_definition,
                                           model_parameters)
         synapses_by_pre_cell = {}

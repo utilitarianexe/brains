@@ -1,8 +1,11 @@
 import brains.models.spirit_model as spirit_model
 import brains.models.example_model as example_model
 import brains.models.simple_model as simple_model
-import network
-import environment
+import brains.network as network
+from brains.environment.easy import EasyEnvironment
+from brains.environment.handwriting import HandwritingEnvironment
+from brains.environment.mnist import MnistEnvironment
+from brains.environment.stdp import STDPTestEnvironment
 
 from pathlib import Path
 from collections import namedtuple
@@ -16,7 +19,7 @@ def stdp_world(epoch_length, warp=True):
     model_parameters = simple_model.ModelParameters(epoch_length=epoch_length, warp=warp)
     network_definition = network.stdp_test_network()
     model = simple_model.SimpleModel(network_definition, model_parameters)
-    return model, environment.STDPTestEnvironment()
+    return model, STDPTestEnvironment()
 
 def handwriting_world(file_name, epoch_length, input_delay=50, epoch_delay=50, warp=True):
     model_parameters = simple_model.handwriting_model_parameters(epoch_length=epoch_length,
@@ -25,13 +28,26 @@ def handwriting_world(file_name, epoch_length, input_delay=50, epoch_delay=50, w
 
     # need like some kind of average starting connection strength thing
     network_definition = network.layer_based_default_network()
-    handwriten_environment = environment.HandwritenEnvironment(
+    environment = HandwritingEnvironment(
         epoch_length, input_delay, {'o': 0, 'x': 1},
         image_lines=None, shuffle=True,
         file_name=file_name)
 
     model = simple_model.SimpleModel(network_definition, model_parameters)
-    return model, handwriten_environment
+    return model, environment
+
+def mnist_world(epoch_length, input_delay=50, epoch_delay=50, warp=True):
+    model_parameters = simple_model.handwriting_model_parameters(epoch_length=epoch_length,
+                                                                 epoch_delay=epoch_delay,
+                                                                 warp=warp)
+
+    # need like some kind of average starting connection strength thing
+    network_definition = network.mnist_network()
+    environment = MnistEnvironment(epoch_length, input_delay)
+
+    model = simple_model.SimpleModel(network_definition, model_parameters)
+    return model, environment
+
 
 def easy_world(epoch_length, input_delay=50, epoch_delay=50, warp=True):
     model_parameters = simple_model.handwriting_model_parameters(epoch_length=epoch_length,
@@ -40,7 +56,7 @@ def easy_world(epoch_length, input_delay=50, epoch_delay=50, warp=True):
 
     # need like some kind of average starting connection strength thing
     network_definition = network.easy_layer_network()
-    easy_environment = environment.EasyEnvironment(epoch_length, input_delay)
+    easy_environment = EasyEnvironment(epoch_length, input_delay)
     model = simple_model.SimpleModel(network_definition, model_parameters)
     return model, easy_environment
 
@@ -53,14 +69,17 @@ def user_specified_world(import_name, environment_type, handwritten_file_name,
     blob = json.load(model_file)
     model = simple_model.import_model(blob, warp=warp)
     if environment_type == 'handwriting':
-        model_environment = environment.HandwritenEnvironment(
+        model_environment = HandwritingEnvironment(
             model.epoch_length, input_delay, {'o': 0, 'x': 1},
             image_lines=None, shuffle=True,
             file_name=handwritten_file_name)
+    elif environment_type == 'mnist':
+        model_environment = MnistEnvironment(
+            model.epoch_length, input_delay)
     elif environment_type == 'easy':
-        model_environment = environment.EasyEnvironment(model.epoch_length, input_delay)
+        model_environment = EasyEnvironment(model.epoch_length, input_delay)
     elif environment_type == 'stdp':
-        model_environment = environment.STDPTestEnvironment(model.epoch_length)
+        model_environment = STDPTestEnvironment(model.epoch_length)
     return model, model_environment
 
 def create_world(world_type, epoch_length, import_name,
@@ -88,14 +107,16 @@ def create_world(world_type, epoch_length, import_name,
             return World(example_model.ExampleModel(), None)
         elif world_type == "handwriting":
             return handwriting_world(handwritten_file_name, epoch_length, warp=warp)
+        elif world_type == "mnist":
+            return mnist_world(epoch_length, warp=warp)
 
     print("Not enough information provided. Either supply a world argument or both a import_name and an environment to run it in")
     quit()
 
-def create_display(display_type, model):
+def create_display(display_type, model, environment=None):
     if display_type == "pygame":
         import display.game as game
-        display = game.GameDisplay(model)
+        display = game.GameDisplay(model, environment=environment)
     elif display_type == "pyplot":
         import display.plot as plot
         display = plot.PlotDisplay(model)
@@ -121,7 +142,7 @@ def create_args():
     my_parser.add_argument(
         '--world',
         type=str,
-        choices=["spirit", "stdp", "example", "handwriting", "easy"],
+        choices=["spirit", "stdp", "example", "handwriting", "easy", "mnist"],
         required=False,
         help='A world is a combination of a model and an environment. '\
         'A model is built from ModelParameters and a NetworkDefinition.')
@@ -148,7 +169,7 @@ def create_args():
                            required=False,
                            help='Import model. Should be the name of a file in the data directory.')
     my_parser.add_argument('--environment',
-                           choices=["stdp", "handwriting", "easy"],
+                           choices=["stdp", "handwriting", "easy", "mnist"],
                            type=str,
                            required=False,
                            help='Type of environment to run.')
@@ -180,7 +201,7 @@ def main(steps, epoch_length,
 
     signal.signal(signal.SIGINT, handler)
 
-    display = create_display(display_type, brain)
+    display = create_display(display_type, brain, environment=environment)
     for i in range(steps):
         environment.step(i)
         stimuli = environment.stimuli(i)
