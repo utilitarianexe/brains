@@ -37,13 +37,15 @@ Watch network run in real time by importing the brain you just trained.
 
 `python brains/main.py --environment=easy --import_name=easy_network --display=pygame`
 
-Or watch a more complex network and environment(training for this one still does not work).
+Or watch a more complex network and environment.
 
 `python brains/main.py --display pygame --world handwriting`
 
 Current input data for this mode is a small subset of https://www.kaggle.com/sachinpatel21/az-handwritten-alphabets-in-csv-format
 
-Clicking on the screen will disable the display speeding up the program. Clicking again will re-enable the display.
+Clicking on the screen will cycle the modes (cells, weights, and none).
+
+None will allow the program to run much faster.
 
 I needed
 `MESA_LOADER_DRIVER_OVERRIDE=i965`
@@ -58,8 +60,7 @@ Display potential graphs for each cell using pyplot
 ## Options
 
 You can export models to preserve changes to the network during a run using the export_name option.
-You can then import the model using the import_name option. You will also need the environment option
-as this is not stored as part of the model. world is a combination of environment and model.
+You can then import the model using the import_name option. You will also need the environment option, as this is not stored as part of the model. world is a combination of environment and model.
 
 
 ## Future
