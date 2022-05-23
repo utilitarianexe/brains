@@ -41,6 +41,8 @@ class CellDefinition:
     cell_type: int = CellType.EXCITATORY
     target_fire_rate_per_epoch: float = 0.0
     input_balance: bool = False
+    x_layer_position: int = 0
+    y_layer_position: int = 0
     uuid: str = field(default_factory=lambda:str(uuid.uuid4()))
 
     def export_network_information(self):
@@ -128,7 +130,7 @@ class Layer:
         self.is_input_layer = is_input_layer
         self.is_output_layer = is_output_layer
 
-    def _cell_layer_position(self, cell_number):
+    def cell_layer_position(self, cell_number):
         if self.layout == Layout.LINE:
             return (0, cell_number,)
 
@@ -155,11 +157,13 @@ class Layer:
         if not self.is_input_layer:
             # kinda ugly
             return 0, 0
-        return self._cell_layer_position(cell_number)
+        return self.cell_layer_position(cell_number)
 
     def cell_display_position(self, cell_number):
-        (layer_position_x, layer_position_y, ) = self._cell_layer_position(cell_number)
-        return self.starting_x_position + layer_position_x, layer_position_y + self.starting_y_position
+        (layer_position_x, layer_position_y, ) = self.cell_layer_position(cell_number)
+        display_x_position = self.starting_x_position + layer_position_x
+        display_y_position = layer_position_y + self.starting_y_position
+        return display_x_position, display_y_position
 
 def build_layer_based_network(layer_definitions, layer_connections):
     layers = layers_from_definitons(layer_definitions)
@@ -170,13 +174,18 @@ def layers_from_definitons(layer_definitions):
     previous_height = 0
     previous_width = 0
     previous_x_position = 0
+    first = True
     for definition in layer_definitions:
-        if definition.cell_type == CellType.INHIBITORY:
+        if first:
+            starting_x_position = 0
+            starting_y_position = 0
+            first = False
+        elif definition.cell_type == CellType.INHIBITORY:
             starting_x_position = previous_x_position
             starting_y_position = previous_height + 2
         else:
             starting_x_position = previous_width + previous_x_position + 2
-            starting_y_position = 0
+            starting_y_position = 0            
 
         layer = Layer(definition.label, definition.size,
                       starting_x_position, starting_y_position,
@@ -197,8 +206,10 @@ def network_from_layers(layers, layer_connections):
     cell_definitions_by_layer = defaultdict(list)
     for layer in layers:
         for cell_number in range(layer.size):
-            (x_display_position, y_display_position,) = layer.cell_display_position(cell_number)
+            (x_display_position, y_display_position,) = layer.cell_display_position(
+                cell_number)
             (x_input_position, y_input_position,) = layer.cell_input_position(cell_number)
+            (x_layer_position, y_layer_position,) = layer.cell_layer_position(cell_number)
             label = f"{layer.id}_{cell_number}"
             cell_definition = CellDefinition(label,
                                              x_display_position, y_display_position,
@@ -208,7 +219,8 @@ def network_from_layers(layers, layer_connections):
                                              cell_number,
                                              layer.id, layer.cell_type,
                                              layer.target_fire_rate_per_epoch,
-                                             layer.input_balance)
+                                             layer.input_balance,
+                                             x_layer_position, y_layer_position)
             cell_definitions.append(cell_definition)
             cell_definitions_by_layer[layer.id].append(cell_definition)
 

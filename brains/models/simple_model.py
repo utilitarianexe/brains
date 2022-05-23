@@ -208,10 +208,12 @@ class Cell:
     def __init__(self, cell_definition, cell_membrane):
         self.uuid = cell_definition.uuid
         self.label = cell_definition.label
-        self._layer_id = cell_definition.layer_id
+        self.layer_id = cell_definition.layer_id
         
         self.x_display_position = cell_definition.x_display_position
         self.y_display_position = cell_definition.y_display_position
+        self.x_layer_position = cell_definition.x_layer_position
+        self.y_layer_position = cell_definition.y_layer_position
         self._is_input_cell = cell_definition.is_input_cell
         self._x_input_position = cell_definition.x_input_position
         self._y_input_position = cell_definition.y_input_position
@@ -324,7 +326,7 @@ class Cell:
         self._fire_history = new_fire_history
 
         # Print information for one cell in the middle layer and one cell in the output layer.
-        if (self._layer_id == 'b' or self._layer_id == 'c') and self._output_id == 0:
+        if (self.layer_id == 'b' or self.layer_id == 'c') and self._output_id == 0:
             print(f"xcor {self.x_display_position} running_rate {running_fire_rate} " \
                   f"target_rate {target_fire_rate} fires {fires} "\
                   f"last_epoch_positive_input {self._last_epoch_positive_input_strength}")
@@ -354,7 +356,8 @@ class Cell:
                 
         self._apply_input_balance(target_positive_input_strength, target_negative_input_strength)
 
-    def _target_strength_reduction(self, rate_based_down_scale_factor, current_target_strength):
+    def _target_strength_reduction(self, rate_based_down_scale_factor,
+                                   current_target_strength):
         rate_based_target = current_target_strength * rate_based_down_scale_factor
         rate_based_change = current_target_strength - rate_based_target
         return self._fire_rate_balance_scalar * rate_based_change
@@ -433,10 +436,11 @@ class SimpleModel:
         self._dopamine = model_parameters.starting_dopamine
         self._dopamine_decay = model_parameters.dopamine_decay
         self._step_size = model_parameters.step_size
-        self._cells, self.synapses = self._build_network(model_parameters.cell_type_parameters,
-                                                        model_parameters.synapse_type_parameters,
-                                                        network_definition,
-                                                        self._step_size)
+        self._cells, self.synapses = self._build_network(
+            model_parameters.cell_type_parameters,
+            model_parameters.synapse_type_parameters,
+            network_definition,
+            self._step_size)
         self._warp = model_parameters.warp
         self._warping = False
         self._last_active = 0
@@ -537,12 +541,47 @@ class SimpleModel:
                 }
         return blob
 
-    def video_output(self):
+    def _average_layer_strengths(self):
+        target_strength_by_layer_id = defaultdict(int)
+        layer_size_by_layer_id = defaultdict(int)
+        for cell in self._cells:
+            layer_size_by_layer_id[cell.layer_id] += 1
+            target_strength_by_layer_id[cell.layer_id] += cell._target_positive_input_strength
+        average_strength_by_layer_id = defaultdict(float)
+        for layer_id, layer_size in layer_size_by_layer_id.items():
+            layer_strength = target_strength_by_layer_id[layer_id]
+            average_strength_by_layer_id[layer_id] = layer_strength/layer_size
+        return average_strength_by_layer_id
+
+    def cli_output(self):
+        pass
+
+    # should be in cell maybe
+    def _grid_output(self):
         drawables = []
         for cell in self._cells:
+            if cell.label == "b_1":
+                for synapse in cell.input_synapses:
+                    strength_text = str(round(synapse.strength, 3))
+                    drawable = {"text": strength_text,
+                                "x": synapse.pre_cell.x_layer_position,
+                                "y": synapse.pre_cell.y_layer_position,
+                                "matrix_label": "in"}
+                    drawables.append(drawable)
+                for synapse in cell.output_synapses:
+                    strength_text = str(round(synapse.strength, 3))
+                    drawable = {"text": strength_text,
+                                "x": synapse.post_cell.x_layer_position,
+                                "y": synapse.post_cell.y_layer_position,
+                                "matrix_label": "out"}
+                    drawables.append(drawable)
+        return drawables
+
+    def video_output(self):        
+        drawables = self._grid_output()
+        for cell in self._cells:
             # maybe make a class
-            drawable = {"id": cell.label,
-                        "x": cell.x_display_position, "y": cell.y_display_position,
+            drawable = {"x": cell.x_display_position, "y": cell.y_display_position,
                         "strength": cell.membrane_voltage()}
             drawables.append(drawable)
         texts = ["dopamine: " + str(round(self._dopamine, 4))]
