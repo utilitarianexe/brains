@@ -331,14 +331,14 @@ def mnist_network():
 #                          ("b", "c", 1, 0.006,)]
 #     return build_layer_based_network(layers, layer_connections)
 
-def easy_layer_simple_network():
-    layers = [LayerDefinition("a", 3, Layout.LINE, CellType.EXCITATORY, False, 0.0, True, False),
-              LayerDefinition("b", 3, Layout.LINE, CellType.INHIBITION, False, 0.0, True, False),
-              LayerDefinition("c", 2, Layout.LINE, CellType.EXCITATORY, False, 0.0, False, True)]
+# def easy_layer_network():
+#     layers = [LayerDefinition("a", 3, Layout.LINE, CellType.EXCITATORY, False, 0.0, True, False),
+#               LayerDefinition("b", 3, Layout.LINE, CellType.INHIBITORY, False, 0.0, True, False),
+#               LayerDefinition("c", 2, Layout.LINE, CellType.EXCITATORY, False, 0.0, False, True)]
     
-    layer_connections = [("a", "c", 1, 0.035),
-                         ("b", "c", 1, 0.035)]
-    return build_layer_based_network(layers, layer_connections)
+#     layer_connections = [("a", "c", 1, 0.035),
+#                          ("b", "c", 1, 0.035)]
+#     return build_layer_based_network(layers, layer_connections)
 
 # no mixed cells
 # def easy_layer_network():
@@ -364,11 +364,13 @@ def easy_layer_simple_network():
 
 
 def easy_layer_network():
-    layers = [LayerDefinition("a", 3, Layout.LINE, CellType.MIXED, False, 0.0, True, False),
+    layers = [LayerDefinition("a", 3, Layout.LINE, CellType.EXCITATORY, False, 0.0, True, False),
+              LayerDefinition("i", 3, Layout.LINE, CellType.INHIBITORY, False, 0.0, True, False),
               LayerDefinition("b", 4, Layout.LINE, CellType.EXCITATORY, True, 0.25, False, False),
               LayerDefinition("c", 2, Layout.LINE, CellType.EXCITATORY, True, 0.5, False, True)]
 
     layer_connections = [("a", "b", 1, 0.1),
+                         ("i", "b", 1, 0.1),
                          ("b", "c", 1, 0.05),]
     return build_layer_based_network(layers, layer_connections)
 

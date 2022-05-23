@@ -36,11 +36,12 @@ class ResultTracker:
 
         # I guess technically these could be wins and losses
         if len(found_output_ids) == 0:
+            self.indeterminate += 1
             self.none_fired += 1
-            self.indeterminate += 1
+
         if len(found_output_ids) == len(possible_outputs):
-            self.all_fired += 1
             self.indeterminate += 1
+            self.all_fired += 1
 
 class BaseEpochChallengeEnvironment:
     '''
@@ -86,10 +87,10 @@ class BaseEpochChallengeEnvironment:
                 self._success = False
                 
     def has_success(self, desired_output_id):
-        #return desired_output_id in self._found_output_ids
-        correct_cell_fired, incorrect_cell_fired = result_convert(self._found_output_ids,
-                                                                  desired_output_id)
-        return correct_cell_fired and not incorrect_cell_fired
+        return desired_output_id in self._found_output_ids
+        # correct_cell_fired, incorrect_cell_fired = result_convert(self._found_output_ids,
+        #                                                           desired_output_id)
+        # return correct_cell_fired and not incorrect_cell_fired
         
 
     def video_output(self, step):
