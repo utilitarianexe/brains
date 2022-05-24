@@ -20,36 +20,36 @@ def color_from_strength(strength):
         green = 255
     return red, green, blue
 
-def text_matrixes_from_drawables(drawables):
-    matrix_drawables_by_label = defaultdict(list)
-    for drawable in drawables:
-        if "text" not in drawable:
-            continue
-        matrix_drawables_by_label[drawable["matrix_label"]].append(drawable)
-    matrixes_by_label = {}
-    for label, drawables in matrix_drawables_by_label.items():
-        matrixes_by_label[label] = text_matrix_from_drawables(drawables)
-    return matrixes_by_label
+class TextGridDisplay:
+    def __init___(self, drawables):
+        matrix_drawables_by_label = defaultdict(list)
+        for drawable in drawables:
+            if "text" not in drawable:
+                continue
+            matrix_drawables_by_label[drawable["matrix_label"]].append(drawable)
+            
+        self.matrixes_by_label = {}
+        for label, drawables in matrix_drawables_by_label.items():
+            self.matrixes_by_label[label] = self.text_matrix_from_drawables(drawables)
 
-def text_matrix_from_drawables(drawables):
-    max_x = 1
-    max_y = 1
-    text_by_x_by_y = defaultdict(lambda: defaultdict(str))
-    for drawable in drawables:
-        if "text" not in drawable:
-            continue
-        if drawable["x"] > max_x:
-            max_x = drawable["x"]
-        if drawable["y"] > max_y:
-            max_y = drawable["y"]
-        text_by_x_by_y[drawable["x"]][drawable["y"]] = drawable["text"]
+    # not using self
+    def text_matrix_from_drawables(self, drawables):
+        max_x = 1
+        max_y = 1
+        text_by_x_by_y = defaultdict(lambda: defaultdict(str))
+        for drawable in drawables:
+            if drawable["x"] > max_x:
+                max_x = drawable["x"]
+            if drawable["y"] > max_y:
+                max_y = drawable["y"]
+            text_by_x_by_y[drawable["x"]][drawable["y"]] = drawable["text"]
 
-    cells = []
-    for i in range(max_y + 1):
-        row = []
-        for j in range(max_x + 1):
-            row.append(text_by_x_by_y[j][i])
-        cells.append(row)
+        cells = []
+        for i in range(max_y + 1):
+            row = []
+            for j in range(max_x + 1):
+                row.append(text_by_x_by_y[j][i])
+            cells.append(row)
     return cells
 
 class GameDisplay():
