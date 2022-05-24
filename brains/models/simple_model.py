@@ -390,6 +390,13 @@ class Cell:
                             "y": synapse.pre_cell.y_layer_position,
                             "matrix_label": "in excite"}
                 drawables.append(drawable)
+            elif synapse.pre_cell.cell_type == CellType.INHIBITORY:
+                strength_text = str(round(synapse.inhibitory_strength, 3))
+                drawable = {"text": strength_text,
+                            "x": synapse.pre_cell.x_layer_position,
+                            "y": synapse.pre_cell.y_layer_position,
+                            "matrix_label": "in inhibitory"}
+                drawables.append(drawable)
         for synapse in self.output_synapses:
             strength_text = str(round(synapse.strength, 3))
             drawable = {"text": strength_text,
