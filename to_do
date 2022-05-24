@@ -9,12 +9,11 @@ unsorted issues
   print what did fire to screen
   better way to handle running out of images
   accept fire should just record output_ids
-
   nmist and handwriting too much copy paste
   main file too big
   network definitions need sperated from network file
   layer based diagnostics like total input strength
-  model based error condition tracking like double fires or not resetting by the time of epoch
+  model based error condition tracking(double fires, not resetting by the time of epoch)
   remove warp fudge
   paramaterize warp
   paramaterize fire rate adaptation
@@ -84,7 +83,6 @@ new funcitonality
     in pygame display labels for input and wins
     accuracy graph
     red should be positive green negative
-    display synapse strengths
     pause button
     click on cells to see cell info
     adjust parameters without restarting

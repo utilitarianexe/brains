@@ -102,7 +102,6 @@ class Synapse:
         if self.inhibitory_strength < self._min_strength:
             self.inhibitory_strength = self._min_strength
 
-
     def post_fire(self, step):
         if self._pre_cell_type == CellType.INHIBITORY:
             return
@@ -243,7 +242,8 @@ class Cell:
             elif synapse.post_cell.uuid == self.uuid:
                 self.input_synapses.append(synapse)
             else:
-                raise Exception("Attempted to attach synapse to cell but neither of the synapses "\
+                raise Exception("Attempted to attach synapse to cell "\
+                                "but neither of the synapses "\
                                 "endpoints attach to the cell.")
         totals = self._current_total_input_strength()
         (self._last_epoch_positive_input_strength, self._last_epoch_negative_input_strength,) = totals
@@ -274,22 +274,28 @@ class Cell:
             return
         
         total_post_cell_strength = 0.0
+        num_cells = 0
         for synapse in self.output_synapses:
             # don't like using private members
             total_post_cell_strength += synapse.post_cell._last_epoch_positive_input_strength
+            if synapse.post_cell._last_epoch_positive_input_strength > 0:
+                num_cells += 1
 
-        average_post_cell_strength = total_post_cell_strength/len(self.output_synapses)
+        average_post_cell_strength = total_post_cell_strength/num_cells
         scale = average_post_cell_strength/self._current_total_positive_output_strength()
         for synapse in self.output_synapses:
             synapse.strength = (synapse.strength * scale * 0.1) + (synapse.strength * 0.9)
 
 
         n_total_post_cell_strength = 0.0
+        num_cells = 0
         for synapse in self.output_synapses:
             # don't like using private members
             n_total_post_cell_strength += synapse.post_cell._last_epoch_negative_input_strength
+            if synapse.post_cell._last_epoch_negative_input_strength > 0:
+                num_cells += 1
 
-        n_average_post_cell_strength = n_total_post_cell_strength/len(self.output_synapses)
+        n_average_post_cell_strength = n_total_post_cell_strength/num_cells
         n_scale = average_post_cell_strength/self._current_total_negative_output_strength()
         for synapse in self.output_synapses:
             synapse.inhibitory_strength = (synapse.inhibitory_strength * n_scale * 0.1) + (synapse.inhibitory_strength * 0.9)
@@ -562,12 +568,13 @@ class SimpleModel:
         for cell in self._cells:
             if cell.label == "b_1":
                 for synapse in cell.input_synapses:
-                    strength_text = str(round(synapse.strength, 3))
-                    drawable = {"text": strength_text,
-                                "x": synapse.pre_cell.x_layer_position,
-                                "y": synapse.pre_cell.y_layer_position,
-                                "matrix_label": "in"}
-                    drawables.append(drawable)
+                    if synapse.pre_cell.cell_type == CellType.EXCITATORY:
+                        strength_text = str(round(synapse.strength, 3))
+                        drawable = {"text": strength_text,
+                                    "x": synapse.pre_cell.x_layer_position,
+                                    "y": synapse.pre_cell.y_layer_position,
+                                    "matrix_label": "in"}
+                        drawables.append(drawable)
                 for synapse in cell.output_synapses:
                     strength_text = str(round(synapse.strength, 3))
                     drawable = {"text": strength_text,

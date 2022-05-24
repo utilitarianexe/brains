@@ -324,9 +324,9 @@ def mnist_network():
     
     # Something about connection probability rubs me wrong.
     # connections might be more complex
-    layer_connections = [("a", "b", 1, 0.01,),
-                         ("i", "b", 1, 0.01,),
-                         ("b", "c", 1, 0.006,)]
+    layer_connections = [("a", "b", 1, 0.005,),
+                         ("i", "b", 1, 0.005,),
+                         ("b", "c", 1, 0.003,)]
     return build_layer_based_network(layers, layer_connections)
 
 
