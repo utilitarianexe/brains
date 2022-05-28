@@ -404,6 +404,14 @@ class Cell:
                         "y": synapse.post_cell.y_layer_position,
                         "matrix_label": "out excite"}
             drawables.append(drawable)
+            if synapse.inhibitory_strength > 0.0:
+                strength_text = str(round(synapse.inhibitory_strength, 3))
+                drawable = {"text": strength_text,
+                            "x": synapse.post_cell.x_layer_position,
+                            "y": synapse.post_cell.y_layer_position,
+                            "matrix_label": "out inhibit"}
+                drawables.append(drawable)
+
 
         return drawables
 
