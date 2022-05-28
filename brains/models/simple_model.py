@@ -24,7 +24,7 @@ class CellTypeParameters:
 class SynapseTypeParameters:
     stdp_scalar: float = 0.01
     reward_scalar: float = 0.1
-    max_strength: float = 0.35
+    max_strength: float = 0.4
     min_strength: float = 0.0
     s_tag_decay_rate: float = 0.002
     starting_s_tag: float = 0.0
@@ -239,7 +239,7 @@ class Cell:
         self._fire_rate_balance_scalar = 0.01
         self._fire_history_length = 20
 
-        self._elf = False
+        self._elf = True
         self._elf_scalar = 1.0
 
     def attach_synapses(self, synapses):
@@ -653,7 +653,7 @@ class SimpleModel:
         total_positive_out = 0.0
         cell_to_print = None
         for cell in self._cells:
-            if cell.layer_id == 'c' and cell.x_layer_position == 0 and cell.y_layer_position == 0:
+            if cell.layer_id == 'b' and cell.x_layer_position == 0 and cell.y_layer_position == 0:
                 cell_to_print = cell
                 break
 
