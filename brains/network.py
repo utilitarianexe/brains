@@ -229,11 +229,20 @@ def network_from_layers(layers, layer_connections):
         for cell_definition_pre_layer in cell_definitions_by_layer[pre_layer]:
             for cell_definition_post_layer in cell_definitions_by_layer[post_layer]:
                 if probability >= random.random():
+                    if cell_definition_pre_layer.cell_type == CellType.MIXED:
+                        negative_synapse_strength = synapse_strength
+                        positive_synapse_strength = synapse_strength
+                    if cell_definition_pre_layer.cell_type == CellType.EXCITATORY:
+                        positive_synapse_strength = synapse_strength
+                        negative_synapse_strength = 0.0
+                    if cell_definition_pre_layer.cell_type == CellType.INHIBITORY:
+                        negative_synapse_strength = synapse_strength
+                        positive_synapse_strength = 0.0
                     label = f"{cell_definition_pre_layer.label}_to_{cell_definition_post_layer.label}"
                     synapse_definition = SynapseDefinition(cell_definition_pre_layer.uuid,
                                                            cell_definition_post_layer.uuid,
-                                                           synapse_strength,
-                                                           synapse_strength,
+                                                           positive_synapse_strength,
+                                                           negative_synapse_strength,
                                                            label)
                     synapse_definitions.append(synapse_definition)
     return NetworkDefinition(cell_definitions,
@@ -285,12 +294,14 @@ def stdp_test_network(input_balance=False):
                             x_input_position=0,
                             y_input_position=0,
                             is_input_cell=True,
-                            input_balance=input_balance, target_fire_rate_per_epoch=1.0),
+                            input_balance=input_balance,
+                            target_fire_rate_per_epoch=1.0),
              CellDefinition("b", 1, 0,
                             x_input_position=1,
                             y_input_position=0,
                             is_input_cell=True,
-                            input_balance=input_balance, target_fire_rate_per_epoch=1.0),
+                            input_balance=input_balance,
+                            target_fire_rate_per_epoch=1.0),
              CellDefinition("c", 2, 0, input_balance=input_balance, target_fire_rate_per_epoch=1.0),]
     synapses = [("a", "c", 0.05),
                 ("b", "c", 0.05),]
@@ -319,14 +330,14 @@ def mnist_network():
                               CellType.EXCITATORY, False, 0.0, True, False),
               LayerDefinition("i", image_size, Layout.SQUARE,
                               CellType.INHIBITORY, False, 0.0, True, False),
-              LayerDefinition("b", 6*6, Layout.SQUARE, CellType.EXCITATORY, True, 0.2, False, False),
+              LayerDefinition("b", 6*6, Layout.SQUARE, CellType.EXCITATORY, True, 0.3, False, False),
               LayerDefinition("c", 10, Layout.LINE, CellType.EXCITATORY, True, 0.1, False, True)]
     
     # Something about connection probability rubs me wrong.
     # connections might be more complex
-    layer_connections = [("a", "b", 1, 0.005,),
-                         ("i", "b", 1, 0.005,),
-                         ("b", "c", 1, 0.003,)]
+    layer_connections = [("a", "b", 1, 0.002,),
+                         ("i", "b", 1, 0.002,),
+                         ("b", "c", 1, 0.001,)]
     return build_layer_based_network(layers, layer_connections)
 
 
@@ -383,7 +394,7 @@ def easy_layer_network():
 
     layer_connections = [("a", "b", 1, 0.1),
                          ("i", "b", 1, 0.1),
-                         ("b", "c", 1, 0.05),]
+                         ("b", "c", 1, 0.45),]
     return build_layer_based_network(layers, layer_connections)
 
 

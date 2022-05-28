@@ -21,8 +21,11 @@ class ResultTracker:
     indeterminate: int = 0
     rewarded: int = 0
     epochs: int = 0
+    at_least_some_fired: int = 0
+    doubles: int = 0
+    zero_out_spikes: int = 0
 
-    def update(self, found_output_ids, desired_output_id, possible_outputs):
+    def update(self, found_output_ids, desired_output_id, possible_outputs, step):
         #print(f"found: {found_output_ids} desired: {desired_output_id}")
         self.epochs += 1
         if desired_output_id in found_output_ids:
@@ -31,16 +34,24 @@ class ResultTracker:
         correct_cell_fired, incorrect_cell_fired = result_convert(found_output_ids, desired_output_id)
         if correct_cell_fired and not incorrect_cell_fired:
             self.win += 1
-        if not correct_cell_fired and incorrect_cell_fired:
+        elif not correct_cell_fired and incorrect_cell_fired:
             self.loss += 1
+        else:
+            self.indeterminate += 1
 
-        # I guess technically these could be wins and losses
+        if 0 in found_output_ids and step > 400 * 90000:
+            self.zero_out_spikes += 1
+            
         if len(found_output_ids) == 0:
-            self.indeterminate += 1
             self.none_fired += 1
+            
+        if len(found_output_ids) > 0:
+            self.at_least_some_fired += 1
 
-        if len(found_output_ids) == len(possible_outputs):
-            self.indeterminate += 1
+        if len(set(found_output_ids)) < len(found_output_ids):
+            self.doubles += 1
+            
+        if len(set(found_output_ids)) == len(possible_outputs):
             self.all_fired += 1
 
 class BaseEpochChallengeEnvironment:
@@ -80,7 +91,7 @@ class BaseEpochChallengeEnvironment:
         elif real_step % self._epoch_length == self._epoch_length//2:
             desired_output_id = self.desired_output_id(step)
             self._result_tracker.update(self._found_output_ids, desired_output_id,
-                                        self._possible_outputs)
+                                        self._possible_outputs, step)
             if self.has_success(desired_output_id):
                 self._success = True
             else:

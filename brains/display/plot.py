@@ -6,10 +6,11 @@ class PlotDisplay():
         self._model = model
         self._lines_on_plot_by_label = collections.defaultdict(list)
 
-    def process_step(self, _):
-        model_output = self._model.outputs()
-        for label, value in model_output.items():
-            self._lines_on_plot_by_label[label].append(value)
+    def process_step(self, step):
+        if step % 400 == 0:
+            model_output = self._model.outputs()
+            for label, value in model_output.items():
+                self._lines_on_plot_by_label[label].append(value)
 
     def final_output(self):
         for label, values in self._lines_on_plot_by_label.items():
