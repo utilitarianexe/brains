@@ -484,6 +484,40 @@ class Cell:
     def fired(self):
         return self._cell_membrane.fired()
 
+    def drawable_synapses(self):
+        drawables = []
+        for synapse in self.input_synapses:
+            if synapse.pre_cell.cell_type == CellType.EXCITATORY:
+                strength_text = str(round(synapse.strength, 3))
+                drawable = {"text": strength_text,
+                            "x": synapse.pre_cell.x_layer_position,
+                            "y": synapse.pre_cell.y_layer_position,
+                            "matrix_label": "in excite"}
+                drawables.append(drawable)
+            elif synapse.pre_cell.cell_type == CellType.INHIBITORY:
+                strength_text = str(round(synapse.inhibitory_strength, 3))
+                drawable = {"text": strength_text,
+                            "x": synapse.pre_cell.x_layer_position,
+                            "y": synapse.pre_cell.y_layer_position,
+                            "matrix_label": "in inhibitory"}
+                drawables.append(drawable)
+        for synapse in self.output_synapses:
+            strength_text = str(round(synapse.strength, 3))
+            drawable = {"text": strength_text,
+                        "x": synapse.post_cell.x_layer_position,
+                        "y": synapse.post_cell.y_layer_position,
+                        "matrix_label": "out excite"}
+            drawables.append(drawable)
+            if synapse.inhibitory_strength > 0.0:
+                strength_text = str(round(synapse.inhibitory_strength, 3))
+                drawable = {"text": strength_text,
+                            "x": synapse.post_cell.x_layer_position,
+                            "y": synapse.post_cell.y_layer_position,
+                            "matrix_label": "out inhibit"}
+                drawables.append(drawable)
+
+
+        return drawables
 
 class SimpleModel:
     def __init__(self, network_definition, model_parameters):
@@ -615,26 +649,11 @@ class SimpleModel:
         pass
 
     # should be in cell maybe
-    def _grid_output(self):
+    def _grid_output(self, target_cell_label="b_0"):
         drawables = []
         for cell in self._cells:
-            if cell.layer_id == 'b' and cell.x_layer_position == 0 and cell.y_layer_position == 0:
-                for synapse in cell.input_synapses:
-                    if synapse.pre_cell.cell_type == CellType.EXCITATORY:
-                        strength_text = str(round(synapse.strength, 3))
-                        drawable = {"text": strength_text,
-                                    "x": synapse.pre_cell.x_layer_position,
-                                    "y": synapse.pre_cell.y_layer_position,
-                                    "matrix_label": "in"}
-                        drawables.append(drawable)
-                for synapse in cell.output_synapses:
-                    strength_text = str(round(synapse.strength, 3))
-                    drawable = {"text": strength_text,
-                                "x": synapse.post_cell.x_layer_position,
-                                "y": synapse.post_cell.y_layer_position,
-                                "matrix_label": "out"}
-                    drawables.append(drawable)
-        return drawables
+            if cell.label == target_cell_label:
+                return cell.drawable_synapses()
 
     def video_output(self):        
         drawables = self._grid_output()
