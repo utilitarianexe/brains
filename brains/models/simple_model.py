@@ -222,6 +222,7 @@ class Cell:
         
         self._cell_membrane = cell_membrane
         self.cell_type = cell_definition.cell_type
+        self.fire_trace = 0
 
         # I don't like the coupling causing these to be public
         # I don't like how we initialize these outside constructor
@@ -498,7 +499,11 @@ class SimpleModel:
 
         for cell in self._cells:
             if cell.fired():
+                cell.fire_trace = 100
                 cell.apply_fire(step, environment)
+            else:
+                if cell.fire_trace > 0:
+                    cell.fire_trace -= 1
 
     def update_dopamine(self, step, environment=None):
         self._dopamine = decay(self._dopamine, self._dopamine_decay, self._step_size)
@@ -551,9 +556,10 @@ class SimpleModel:
     def video_output(self):        
         drawables = self._grid_output()
         for cell in self._cells:
-            # maybe make a class
+            spike = cell.fire_trace > 0
             drawable = {"x": cell.x_display_position, "y": cell.y_display_position,
-                        "strength": cell.membrane_voltage()}
+                        "strength": cell.membrane_voltage(),
+                        "spike": spike}
             drawables.append(drawable)
         texts = ["dopamine: " + str(round(self._dopamine, 4))]
         return (drawables, texts)

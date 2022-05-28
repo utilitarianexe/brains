@@ -62,6 +62,7 @@ class GameDisplay():
         self._sleep_time = 0.01
         self._blue = (0, 0, 255)
         self._black = (0, 0, 0)
+        self._yellow = (255, 255, 0)
 
 
         pygame.init()
@@ -142,15 +143,30 @@ class GameDisplay():
             y_spacing = 3
             border = 10
             edge_length = 10
+            spike_denominator = 3
+            spike_height = edge_length // spike_denominator
+            voltage_height = edge_length - spike_height
             for drawable in drawables:
                 if "strength" in drawable:
                     x_position = drawable["x"] * (edge_length + x_spacing) + border
                     y_position = drawable["y"] * (edge_length + y_spacing) + border
-                    position = (x_position, y_position,)
-                    square = pygame.Surface((edge_length, edge_length,))
-                    color = color_from_strength(drawable["strength"])
-                    square.fill(color)
-                    self._screen.blit(square, position)
+                    
+                    voltage_position = (x_position, y_position + spike_height,)
+                    spike_position = (x_position, y_position,)
+                    
+                    voltage_surface = pygame.Surface((edge_length, voltage_height,))
+                    spike_surface = pygame.Surface((edge_length, spike_height,))
+                    
+                    voltage_color = color_from_strength(drawable["strength"])
+                    spike_color = voltage_color
+                    if "spike" in drawable and drawable["spike"]:
+                        spike_color = self._yellow
+                    
+                    voltage_surface.fill(voltage_color)
+                    spike_surface.fill(spike_color)
+                    
+                    self._screen.blit(voltage_surface, voltage_position)
+                    self._screen.blit(spike_surface, spike_position)
 
     def _display_text_matrix(self,
                              text_matrix, matrix_x_position , matrix_y_position,
