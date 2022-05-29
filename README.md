@@ -43,7 +43,9 @@ Or watch a more complex network and environment.
 
 Current input data for this mode is a small subset of https://www.kaggle.com/sachinpatel21/az-handwritten-alphabets-in-csv-format
 
-Clicking on the screen will cycle the modes (cells, weights, and none).
+Pressing space will cycle the modes (cells, weights, and none).
+
+Clicking a cell will select it to 
 
 None will allow the program to run much faster.
 

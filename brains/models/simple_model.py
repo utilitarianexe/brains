@@ -237,6 +237,16 @@ class Cell:
         self._fire_rate_balance_scalar = 0.01
         self._fire_history_length = 20
 
+    def weight_totals(self):
+        (positive_in, negative_in, positive_out, negative_out,) = (0.0, 0.0, 0.0, 0.0,)
+        for synapse in self.input_synapses:
+            positive_in += synapse.strength
+            negative_in += synapse.inhibitory_strength
+        for synapse in self.output_synapses:
+            positive_out += synapse.strength
+            negative_out += synapse.inhibitory_strength
+        return positive_in, negative_in, positive_out, negative_out
+
     def attach_synapses(self, synapses):
         for synapse in synapses:
             if synapse.pre_cell.uuid == self.uuid:
@@ -546,23 +556,28 @@ class SimpleModel:
     def cli_output(self):
         pass
 
-    # should be in cell maybe
-    def _grid_output(self, target_cell_label="b_1"):
+    def video_output(self, x, y, layer):
+        texts = ["dopamine: " + str(round(self._dopamine, 4))]
         drawables = []
         for cell in self._cells:
-            if cell.label == target_cell_label:
-                return cell.drawable_synapses()
-
-    def video_output(self):        
-        drawables = self._grid_output()
-        for cell in self._cells:
             spike = cell.fire_trace > 0
-            drawable = {"x": cell.x_display_position, "y": cell.y_display_position,
+            drawable = {"x": cell.x_display_position,
+                        "y": cell.y_display_position,
                         "strength": cell.membrane_voltage(),
-                        "spike": spike}
+                        "spike": spike,
+                        "layer_id": cell.layer_id,
+                        "layer_x": cell.x_layer_position,
+                        "layer_y": cell.y_layer_position}
             drawables.append(drawable)
-        texts = ["dopamine: " + str(round(self._dopamine, 4))]
-        return (drawables, texts)
+            wanted_position = cell.x_layer_position == x and cell.y_layer_position == y
+            wanted_layer = cell.layer_id == layer
+            if wanted_position and wanted_layer:
+                totals = cell.weight_totals()
+                (positive_in, negative_in, positive_out, negative_out,) = totals
+                texts.append(f"positive_in: {positive_in} negative_in: {negative_in} "\
+                             f"positive_out: {positive_out} negative_out: {negative_out}")
+                drawables += cell.drawable_synapses()
+        return drawables, texts
 
     def outputs(self):
         output = {}

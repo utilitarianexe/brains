@@ -2,6 +2,7 @@ import sys
 import time
 import pygame
 from collections import defaultdict
+from collections import namedtuple
 
 # should be called potential not strength
 def color_from_strength(strength):
@@ -53,6 +54,8 @@ def text_matrix_from_drawables(drawables):
         cells.append(row)
     return cells
 
+CellPosition = namedtuple('CellPosition',
+                          'layer_id layer_x layer_y left_x right_x top_y bottum_y ')
 class GameDisplay():
     def __init__(self, model, environment=None):
         self._model = model
@@ -63,7 +66,9 @@ class GameDisplay():
         self._blue = (0, 0, 255)
         self._black = (0, 0, 0)
         self._yellow = (255, 255, 0)
-
+        self._selected_layer = 'a'
+        self._selected_x = 0
+        self._selected_y = 0
 
         pygame.init()
         size = width, height = 1600, 950
@@ -75,29 +80,53 @@ class GameDisplay():
         self._modes = ["cells", "weights", "none"]
         self._change_mode = False
         self._anti_alias = True
+        self._cell_positions = []
 
     def _get_mode(self):
         index = self._mode % 3
         return self._modes[index]
 
+    def _in_cell(x, y, cell_position):
+        in_width = x >= cell_position.left_x and x <= cell_position.right_x
+        in_height = y >= cell_position.top_y and y <= cell_position.bottum_y
+        return in_width and in_height
+
+    def _select_cell(self, x, y):
+        for cell_position in self._cell_positions:
+            if GameDisplay._in_cell(x, y, cell_position):
+                self._selected_layer = cell_position.layer_id
+                self._selected_x = cell_position.layer_x
+                self._selected_y = cell_position.layer_y
+                break
+        
     # We don't need a display step every model step other options possible
     # 3 types of step pygame, video_output, and model
     def process_step(self, step):
         for event in pygame.event.get():
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.type == pygame.KEYDOWN:
                 self._mode = self._mode + 1
                 self._change_mode = True
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                (x, y, ) = pygame.mouse.get_pos()
+                self._select_cell(x, y)
             if event.type == pygame.QUIT:
                 sys.exit()
 
         mode = self._get_mode()
         if mode != "none":
-            drawables, texts = self._model.video_output()
+            texts = []
+            texts.append(f'step: {step}')
+            texts.append(f'selected_layer: {self._selected_layer}')
+            texts.append(f'selected_x: {self._selected_x}')
+            texts.append(f'selected_y: {self._selected_y}')
+            drawables, model_texts = self._model.video_output(self._selected_x,
+                                                              self._selected_y,
+                                                              self._selected_layer)
+            texts += model_texts
             if self._environment is not None:
                 enivronment_texts = self._environment.video_output(step)
-                texts = texts + enivronment_texts
+                texts += enivronment_texts
                 
-            texts.append(f'step: {step}')
             self._update_screen(drawables, texts)
             pygame.display.flip()
         
@@ -120,11 +149,15 @@ class GameDisplay():
         self._screen.fill(self._blue)
         self._display_drawables(drawables)
         x_text_pos = 0
+        y_text_pos = 850
         for text in texts:
             label = self._font.render(text, self._anti_alias,
                                       self._black)
-            self._screen.blit(label, (x_text_pos, 900))
-            x_text_pos += 300
+            self._screen.blit(label, (x_text_pos, y_text_pos))
+            x_text_pos += len(text) * 10
+            if x_text_pos > 500:
+                x_text_pos = 0
+                y_text_pos += 15
 
     def _display_drawables(self, drawables):
         mode = self._get_mode()
@@ -150,6 +183,13 @@ class GameDisplay():
                 if "strength" in drawable:
                     x_position = drawable["x"] * (edge_length + x_spacing) + border
                     y_position = drawable["y"] * (edge_length + y_spacing) + border
+                    cell_position = CellPosition(
+                        drawable["layer_id"],
+                        drawable["layer_x"],
+                        drawable["layer_y"],
+                        x_position, x_position + edge_length,
+                        y_position, y_position + edge_length)
+                    self._cell_positions.append(cell_position)
                     
                     voltage_position = (x_position, y_position + spike_height,)
                     spike_position = (x_position, y_position,)

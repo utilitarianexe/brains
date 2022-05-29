@@ -1,4 +1,6 @@
 unsorted issues
+  when exiting pygame save
+  get imports and exports working with elf style fire_rate_balancing
   porportion award
   track progress porportionally
   sort found list
