@@ -224,6 +224,7 @@ class Cell:
         
         self._cell_membrane = cell_membrane
         self.cell_type = cell_definition.cell_type
+        self.fire_trace = 0
 
         # I don't like the coupling causing these to be public
         # I don't like how we initialize these outside constructor
@@ -242,6 +243,16 @@ class Cell:
         self._elf = True
         self._elf_scalar = 1.0
 
+    def weight_totals(self):
+        (positive_in, negative_in, positive_out, negative_out,) = (0.0, 0.0, 0.0, 0.0,)
+        for synapse in self.input_synapses:
+            positive_in += synapse.strength
+            negative_in += synapse.inhibitory_strength
+        for synapse in self.output_synapses:
+            positive_out += synapse.strength
+            negative_out += synapse.inhibitory_strength
+        return positive_in, negative_in, positive_out, negative_out
+
     def attach_synapses(self, synapses):
         for synapse in synapses:
             if synapse.pre_cell.uuid == self.uuid:
@@ -259,7 +270,7 @@ class Cell:
         totals = self._current_total_input_strength()
         (current_positive_strength, current_negative_strength, ) = totals
         if current_negative_strength > 0.0:
-            negative_scale_factor = target_negative_input_strength / current_negative_strength
+            negative_scale_factor = target_negative_input_strength/current_negative_strength
         else:
             negative_scale_factor = 1.0
             
@@ -605,7 +616,11 @@ class SimpleModel:
 
         for cell in self._cells:
             if cell.fired():
+                cell.fire_trace = 100
                 cell.apply_fire(step, environment)
+            else:
+                if cell.fire_trace > 0:
+                    cell.fire_trace -= 1
 
     def update_dopamine(self, step, environment=None):
         self._dopamine = decay(self._dopamine, self._dopamine_decay, self._step_size)
@@ -648,22 +663,28 @@ class SimpleModel:
     def cli_output(self):
         pass
 
-    # should be in cell maybe
-    def _grid_output(self, target_cell_label="b_0"):
+    def video_output(self, x, y, layer):
+        texts = ["dopamine: " + str(round(self._dopamine, 4))]
         drawables = []
         for cell in self._cells:
-            if cell.label == target_cell_label:
-                return cell.drawable_synapses()
-
-    def video_output(self):        
-        drawables = self._grid_output()
-        for cell in self._cells:
-            # maybe make a class
-            drawable = {"x": cell.x_display_position, "y": cell.y_display_position,
-                        "strength": cell.membrane_voltage()}
+            spike = cell.fire_trace > 0
+            drawable = {"x": cell.x_display_position,
+                        "y": cell.y_display_position,
+                        "strength": cell.membrane_voltage(),
+                        "spike": spike,
+                        "layer_id": cell.layer_id,
+                        "layer_x": cell.x_layer_position,
+                        "layer_y": cell.y_layer_position}
             drawables.append(drawable)
-        texts = ["dopamine: " + str(round(self._dopamine, 4))]
-        return (drawables, texts)
+            wanted_position = cell.x_layer_position == x and cell.y_layer_position == y
+            wanted_layer = cell.layer_id == layer
+            if wanted_position and wanted_layer:
+                totals = cell.weight_totals()
+                (positive_in, negative_in, positive_out, negative_out,) = totals
+                texts.append(f"positive_in: {positive_in} negative_in: {negative_in} "\
+                             f"positive_out: {positive_out} negative_out: {negative_out}")
+                drawables += cell.drawable_synapses()
+        return drawables, texts
 
     def outputs(self):
         total_negative_in = 0.0
