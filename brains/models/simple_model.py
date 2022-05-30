@@ -399,31 +399,29 @@ class Cell:
                 drawable = {"text": strength_text,
                             "x": synapse.pre_cell.x_layer_position,
                             "y": synapse.pre_cell.y_layer_position,
-                            "matrix_label": "in excite"}
+                            "matrix_label": "in_excite"}
                 drawables.append(drawable)
             elif synapse.pre_cell.cell_type == CellType.INHIBITORY:
                 strength_text = str(round(synapse.inhibitory_strength, 3))
                 drawable = {"text": strength_text,
                             "x": synapse.pre_cell.x_layer_position,
                             "y": synapse.pre_cell.y_layer_position,
-                            "matrix_label": "in inhibitory"}
+                            "matrix_label": "in_inhibit"}
                 drawables.append(drawable)
         for synapse in self.output_synapses:
             strength_text = str(round(synapse.strength, 3))
             drawable = {"text": strength_text,
                         "x": synapse.post_cell.x_layer_position,
                         "y": synapse.post_cell.y_layer_position,
-                        "matrix_label": "out excite"}
+                        "matrix_label": "out_excite"}
             drawables.append(drawable)
             if synapse.inhibitory_strength > 0.0:
                 strength_text = str(round(synapse.inhibitory_strength, 3))
                 drawable = {"text": strength_text,
                             "x": synapse.post_cell.x_layer_position,
                             "y": synapse.post_cell.y_layer_position,
-                            "matrix_label": "out inhibit"}
+                            "matrix_label": "out_inhibit"}
                 drawables.append(drawable)
-
-
         return drawables
 
 class SimpleModel:
@@ -574,8 +572,10 @@ class SimpleModel:
             if wanted_position and wanted_layer:
                 totals = cell.weight_totals()
                 (positive_in, negative_in, positive_out, negative_out,) = totals
-                texts.append(f"positive_in: {positive_in} negative_in: {negative_in} "\
-                             f"positive_out: {positive_out} negative_out: {negative_out}")
+                texts.append(f"positive_in: {str(round(positive_in, 4))} "\
+                             f"negative_in: {str(round(negative_in, 4))} "\
+                             f"positive_out: {str(round(positive_out, 4))} "\
+                             f"negative_out: {str(round(negative_out, 4))}")
                 drawables += cell.drawable_synapses()
         return drawables, texts
 

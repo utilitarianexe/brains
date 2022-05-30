@@ -56,13 +56,54 @@ def text_matrix_from_drawables(drawables):
 
 CellPosition = namedtuple('CellPosition',
                           'layer_id layer_x layer_y left_x right_x top_y bottum_y ')
+
+class Button():
+    def __init__(self, x, y, label, function):
+        self.x = x
+        self.y = y
+        self.width = len(label) * 10
+        self.height = 20
+        self.label = label
+        self.function = function
+
+        self.left_x = self.x
+        self.right_x = self.x + self.width
+        self.top_y = self.y
+        self.bottum_y = self.y + self.height
+
+        self._black = (0, 0, 0)
+        self._grey = (150, 150, 150)
+        self._anti_alias = True
+        
+
+    def _in_button(self, x, y):
+        in_width = x >= self.left_x and x <= self.right_x
+        in_height = y >= self.top_y and y <= self.bottum_y
+        return in_width and in_height
+
+    def attempt_press(self, x, y):
+        if self._in_button(x, y):
+            self.function(self.label)
+
+    def display(self, screen, font):
+        surface = pygame.Surface((self.width, self.height,))
+        surface.fill(self._grey)
+        screen.blit(surface, (self.x, self.y))
+
+        x_text_pos = self.x + 2
+        y_text_pos = self.y + 2
+        glyfs = font.render(self.label, self._anti_alias,
+                            self._black)
+        screen.blit(glyfs, (x_text_pos, y_text_pos))
+        
+    
 class GameDisplay():
     def __init__(self, model, environment=None):
         self._model = model
         self._environment = environment
         self._update_ui = True
         self._font_size = 15
-        self._sleep_time = 0.01
+        self._sleep_time = 0.00
         self._blue = (0, 0, 255)
         self._black = (0, 0, 0)
         self._yellow = (255, 255, 0)
@@ -81,6 +122,15 @@ class GameDisplay():
         self._change_mode = False
         self._anti_alias = True
         self._cell_positions = []
+
+        self._buttons = [Button(0, 20, "in_excite", self.update_matrix_to_display),
+                         Button(150, 20, "in_inhibit", self.update_matrix_to_display),
+                         Button(300, 20, "out_excite", self.update_matrix_to_display),
+                         Button(450, 20, "out_inhibit", self.update_matrix_to_display),]
+        self._matrix_to_display = "in_excite"
+
+    def update_matrix_to_display(self, name):
+        self._matrix_to_display = name
 
     def _get_mode(self):
         index = self._mode % 3
@@ -102,17 +152,24 @@ class GameDisplay():
     # We don't need a display step every model step other options possible
     # 3 types of step pygame, video_output, and model
     def process_step(self, step):
+        '''
+        Returns if program should exit.
+        '''
+        mode = self._get_mode()
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 self._mode = self._mode + 1
                 self._change_mode = True
             if event.type == pygame.MOUSEBUTTONDOWN:
                 (x, y, ) = pygame.mouse.get_pos()
-                self._select_cell(x, y)
+                if mode == "cells":
+                    self._select_cell(x, y)
+                if mode == "weights":
+                    for button in self._buttons:
+                        button.attempt_press(x, y)
             if event.type == pygame.QUIT:
-                sys.exit()
+                return True
 
-        mode = self._get_mode()
         if mode != "none":
             texts = []
             texts.append(f'step: {step}')
@@ -144,6 +201,7 @@ class GameDisplay():
                 pygame.display.flip()
 
         self._change_mode = False
+        return False
 
     def _update_screen(self, drawables, texts):
         self._screen.fill(self._blue)
@@ -162,9 +220,13 @@ class GameDisplay():
     def _display_drawables(self, drawables):
         mode = self._get_mode()
         if mode == "weights":
+            for button in self._buttons:
+                button.display(self._screen, self._font)
             matrixes_by_label = text_matrixes_from_drawables(drawables)
-            x, y = (0, 0,)
+            x, y = (0, 50,)
             for label, matrix in matrixes_by_label.items():
+                if label != self._matrix_to_display:
+                    continue
                 text = self._font.render(label, self._anti_alias, self._black)
                 self._screen.blit(text, (x, y))
                 y += 20
