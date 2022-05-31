@@ -230,7 +230,6 @@ class Cell:
         # I don't like how we initialize these outside constructor
         self.input_synapses = []
         self.output_synapses = []
-        self._last_epoch_strength = 0.0
         self._target_input = 0.0
         
         self._fire_history = []
@@ -239,9 +238,7 @@ class Cell:
         
         self._fire_rate_balance_scalar = 0.01
         self._fire_history_length = 20
-
-        self._elf = True
-        self._elf_scalar = 1.0
+        self._input_balance_scalar = 1.0
 
     def weight_totals(self):
         (positive_in, negative_in, positive_out, negative_out,) = (0.0, 0.0, 0.0, 0.0,)
@@ -264,7 +261,6 @@ class Cell:
                                 "but neither of the synapses "\
                                 "endpoints attach to the cell.")
         totals = self._current_total_input_strength()
-        (self._last_epoch_strength, _,) = totals
         (self._target_input, _,) = totals
 
     def _apply_negative_input_balance(self, target_negative_input_strength,):
@@ -278,7 +274,7 @@ class Cell:
         real_negative_input_strength = 0.0
         for synapse in self.input_synapses:
             #synapse.inhibitory_strength = synapse.inhibitory_strength * negative_scale_factor
-            synapse.inhibitory_strength = (synapse.inhibitory_strength * negative_scale_factor * self._elf_scalar) + (synapse.inhibitory_strength * (1-self._elf_scalar))
+            synapse.inhibitory_strength = (synapse.inhibitory_strength * negative_scale_factor * self._input_balance_scalar) + (synapse.inhibitory_strength * (1-self._input_balance_scalar))
             synapse.cap()
             real_negative_input_strength += synapse.inhibitory_strength
 
@@ -295,7 +291,7 @@ class Cell:
         real_positive_input_strength = 0.0
         for synapse in self.input_synapses:
             # synapse.strength = synapse.strength * positive_scale_factor
-            synapse.strength = (synapse.strength * positive_scale_factor * self._elf_scalar) + (synapse.strength * (1-self._elf_scalar))
+            synapse.strength = (synapse.strength * positive_scale_factor * self._input_balance_scalar) + (synapse.strength * (1-self._input_balance_scalar))
             synapse.cap()
             real_positive_input_strength += synapse.strength
 
@@ -309,52 +305,38 @@ class Cell:
             total_post_cell_strength = 0.0
             num_cells = 0
             for synapse in self.output_synapses:
-                if not self._elf:
-                    total_post_cell_strength += synapse.post_cell._last_epoch_strength
-                    if synapse.post_cell._last_epoch_strength > 0:
-                        num_cells += 1
-                else:
-                    total_post_cell_strength += synapse.post_cell._target_input
-                    if synapse.post_cell._target_input > 0:
-                        num_cells += 1
+                total_post_cell_strength += synapse.post_cell._target_input
+                if synapse.post_cell._target_input > 0:
+                    num_cells += 1
 
             if num_cells > 0:
                 average_post_cell_strength = total_post_cell_strength/num_cells
-                if self._current_total_positive_output_strength() == 0:
-                    scale = average_post_cell_strength/len(self.output_synapses)
+                if self._positive_output_strenght() == 0:
+                    reset = average_post_cell_strength/len(self.output_synapses)
                     for synapse in self.output_synapses:
-                        synapse.strength = scale * 1.0
+                        synapse.strength = reset
                 else:
-                    scale = average_post_cell_strength/self._current_total_positive_output_strength()
-                for synapse in self.output_synapses:
-                    synapse.strength = (synapse.strength * scale * 1.0) + (synapse.strength * 0.0)
+                    scale = average_post_cell_strength/self._positive_output_strenght()
+                    for synapse in self.output_synapses:
+                        synapse.strength = synapse.strength * scale
 
         if self.cell_type == CellType.INHIBITORY or self.cell_type == CellType.MIXED:
             n_total_post_cell_strength = 0.0
             num_cells = 0
             for synapse in self.output_synapses:
-                if not self._elf:
-                    n_total_post_cell_strength += synapse.post_cell._last_epoch_strength
-                    if synapse.post_cell._last_epoch_strength > 0:
-                        num_cells += 1
-                else:
-                    n_total_post_cell_strength += synapse.post_cell._target_input
-                    if synapse.post_cell._target_input > 0:
-                        num_cells += 1
+                n_total_post_cell_strength += synapse.post_cell._target_input
+                if synapse.post_cell._target_input > 0:
+                    num_cells += 1
 
             if num_cells > 0:
                 n_average_post_cell_strength = n_total_post_cell_strength/num_cells
-                n_scale = n_average_post_cell_strength/self._current_total_negative_output_strength()
+                n_scale = n_average_post_cell_strength/self._negative_output_strength()
                 for synapse in self.output_synapses:
-                    synapse.inhibitory_strength = (synapse.inhibitory_strength * n_scale * 1.0) + (synapse.inhibitory_strength * 0.0)
+                    synapse.inhibitory_strength = synapse.inhibitory_strength * n_scale
 
     def fire_rate_balance(self, step, epoch_length):
         if not self._input_balance:
-            totals = self._current_total_input_strength()
-            (current_positive_strength, current_negative_strength, ) = totals
-            self._last_epoch_strength = current_positive_strength
             return
-
         target_fire_rate = self._target_fire_rate_per_epoch / epoch_length
 
         if target_fire_rate == 0:
@@ -381,45 +363,38 @@ class Cell:
         if (self.layer_id == 'b' or self.layer_id == 'c') and self._output_id == 0:
             print(f"layer_id {self.layer_id} running_rate {running_fire_rate} " \
                   f"target_rate {target_fire_rate} fires {fires} "\
-                  f"last_epoch_strength {self._last_epoch_strength} "\
                   f"target_input {self._target_input}")
 
-        if not self._elf:
-            target = self._last_epoch_strength
-        else:
-            target = self._target_input
-            
         if running_fire_rate > target_fire_rate:
             rate_based_down_scale_factor = target_fire_rate/running_fire_rate
-            target -= self._target_strength_reduction(rate_based_down_scale_factor,
-                                                      target)
+            self._target_input -= self._target_strength_reduction(
+                rate_based_down_scale_factor,
+                self._target_input)
         else:
             if running_fire_rate == 0:
                 rate_based_up_scale_factor = 2.0
             else:
                 rate_based_up_scale_factor = target_fire_rate/running_fire_rate
 
-            target += self._target_strength_increase(rate_based_up_scale_factor,
-                                                     target)
+            self._target_input += self._target_strength_increase(rate_based_up_scale_factor,
+                                                     self._target_input)
 
-        real_positive_strength = self._apply_positive_input_balance(target)
-        real_negative_strength = self._apply_negative_input_balance(target)
+        real_positive_strength = self._apply_positive_input_balance(self._target_input)
+        real_negative_strength = self._apply_negative_input_balance(self._target_input)
         
         if real_negative_strength == 0.0:
             pass
-
         elif real_positive_strength < real_negative_strength:
-            real_positive_strength = self._apply_positive_input_balance(real_positive_strength)
-            real_negative_strength = self._apply_negative_input_balance(real_positive_strength)
+            real_positive_strength = self._apply_positive_input_balance(
+                real_positive_strength)
+            real_negative_strength = self._apply_negative_input_balance(
+                real_positive_strength)
 
         else:
-            real_positive_strength = self._apply_positive_input_balance(real_negative_strength)
-            real_negative_strength = self._apply_negative_input_balance(real_negative_strength)
-
-        if self._elf:
-            self._target_input = target
-        else:
-            self._last_epoch_strength = real_positive_strength
+            real_positive_strength = self._apply_positive_input_balance(
+                real_negative_strength)
+            real_negative_strength = self._apply_negative_input_balance(
+                real_negative_strength)
 
     def _target_strength_reduction(self, rate_based_down_scale_factor,
                                    current_target_strength):
@@ -440,13 +415,13 @@ class Cell:
             negative_total += synapse.inhibitory_strength
         return positive_total, negative_total
 
-    def _current_total_positive_output_strength(self):
+    def _positive_output_strenght(self):
         total = 0.0
         for synapse in self.output_synapses:
             total += synapse.strength
         return total
 
-    def _current_total_negative_output_strength(self):
+    def _negative_output_strength(self):
         total = 0.0
         for synapse in self.output_synapses:
             total += synapse.inhibitory_strength
@@ -471,7 +446,9 @@ class Cell:
         if stimuli is not None:
             if self._is_input_cell:
                 for stimulus in stimuli:
-                    if stimulus[0] == self._x_input_position and stimulus[1] == self._y_input_position:
+                    correct_x_position = stimulus[0] == self._x_input_position
+                    correct_y_position = stimulus[1] == self._y_input_position
+                    if correct_x_position and correct_y_position:
                         outside_current = stimulus[2]
                         self._cell_membrane.receive_input(outside_current)
                         break

@@ -1,6 +1,6 @@
 unsorted issues
   smaller mnist problem(3 digits, and cycle images forever)
-  faster UI/check memory leaks
+  faster UI
   negative images
   combine pyplot and pygame
   clean out output balance(parameterize, test, ect)
