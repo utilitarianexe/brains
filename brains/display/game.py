@@ -241,6 +241,7 @@ class GameDisplay():
             spike_denominator = 3
             spike_height = edge_length // spike_denominator
             voltage_height = edge_length - spike_height
+            new_cell_positions = []
             for drawable in drawables:
                 if "strength" in drawable:
                     x_position = drawable["x"] * (edge_length + x_spacing) + border
@@ -251,7 +252,7 @@ class GameDisplay():
                         drawable["layer_y"],
                         x_position, x_position + edge_length,
                         y_position, y_position + edge_length)
-                    self._cell_positions.append(cell_position)
+                    new_cell_positions.append(cell_position)
                     
                     voltage_position = (x_position, y_position + spike_height,)
                     spike_position = (x_position, y_position,)
@@ -269,6 +270,7 @@ class GameDisplay():
                     
                     self._screen.blit(voltage_surface, voltage_position)
                     self._screen.blit(spike_surface, spike_position)
+            self._cell_positions = new_cell_positions
 
     def _display_text_matrix(self,
                              text_matrix, matrix_x_position , matrix_y_position,
