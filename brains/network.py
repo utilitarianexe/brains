@@ -314,8 +314,10 @@ def layer_based_default_network():
                               CellType.EXCITATORY, False, 0.0, True, False),
               LayerDefinition("i", image_size, Layout.SQUARE,
                               CellType.INHIBITORY, False, 0.0, True, False),
-              LayerDefinition("b", 6*6, Layout.SQUARE, CellType.EXCITATORY, True, 0.2, False, False),
-              LayerDefinition("c", 2, Layout.LINE, CellType.EXCITATORY, True, 0.5, False, True)]
+              LayerDefinition("b", 6*6, Layout.SQUARE, CellType.EXCITATORY,
+                              True, 0.2, False, False),
+              LayerDefinition("c", 2, Layout.LINE, CellType.EXCITATORY,
+                              True, 0.5, False, True)]
     
     # Something about connection probability rubs me wrong.
     # connections might be more complex
@@ -330,8 +332,10 @@ def mnist_network():
                               CellType.EXCITATORY, False, 0.0, True, False),
               LayerDefinition("i", image_size, Layout.SQUARE,
                               CellType.INHIBITORY, False, 0.0, True, False),
-              LayerDefinition("b", 6*6, Layout.SQUARE, CellType.EXCITATORY, True, 0.3, False, False),
-              LayerDefinition("c", 10, Layout.LINE, CellType.EXCITATORY, True, 0.1, False, True)]
+              LayerDefinition("b", 6*6, Layout.SQUARE, CellType.EXCITATORY,
+                              True, 0.3, False, False),
+              LayerDefinition("c", 10, Layout.LINE, CellType.EXCITATORY,
+                              True, 0.1, False, True)]
     
     # Something about connection probability rubs me wrong.
     # connections might be more complex

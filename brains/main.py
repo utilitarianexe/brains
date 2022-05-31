@@ -207,7 +207,12 @@ def main(steps, epoch_length,
         stimuli = environment.stimuli(i)
         brain.step(i, environment, stimuli)
         if display is not None:
-            display.process_step(i)
+            should_exit = display.process_step(i)
+            if should_exit:
+                if export_name:
+                    export(brain, export_name)
+                exit(1)
+                
     if display is not None:
         display.final_output()
 

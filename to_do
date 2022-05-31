@@ -1,10 +1,10 @@
 unsorted issues
+  smaller mnist problem(3 digits, and cycle images forever)
+  faster UI/check memory leaks
+  negative images
   combine pyplot and pygame
-  syapse mode display overlap when large
   clean out output balance(parameterize, test, ect)
   display win and rewarded and which output_ids fired 
-  when exiting pygame save
-  get imports and exports working with elf style fire_rate_balancing
   porportion award
   track progress porportionally
   sort found list

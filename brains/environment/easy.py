@@ -37,7 +37,8 @@ class EasyEnvironment(base.BaseEpochChallengeEnvironment):
         real_step = step - self._input_delay
         if real_step % self._epoch_length == 0:
             self._fire_the_random_input_cell = random.random() > 0.5
-            if random.random() > 0.5:
+            my_random = random.random()
+            if my_random > 0.5:
                 self._one_stage = False
                 self._zero_stage = True
             else:

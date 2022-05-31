@@ -16,6 +16,7 @@ def result_convert(found_output_ids, desired_output_id):
 class ResultTracker:
     win: int = 0
     loss: int = 0
+    fail: int = 0
     none_fired: int = 0
     all_fired: int = 0
     indeterminate: int = 0
@@ -39,6 +40,9 @@ class ResultTracker:
         else:
             self.indeterminate += 1
 
+        if incorrect_cell_fired and len(set(found_output_ids)) == 1:
+            self.fail += 1
+
         if 0 in found_output_ids and step > 400 * 90000:
             self.zero_out_spikes += 1
             
@@ -58,7 +62,7 @@ class BaseEpochChallengeEnvironment:
     '''
     User is expected to implement:
     stimuli to act as input from the environment to the brain.
-    desired_output expected output from brain to determine if the brain has fired the right cell
+    desired_output_id expected output from brain to determine if the brain has fired the right cell
     _possible_outputs variable
     See FakeEnvironment for examples
 
@@ -89,10 +93,10 @@ class BaseEpochChallengeEnvironment:
             self._reward_provided = False
             self._success = False
         elif real_step % self._epoch_length == self._epoch_length//2:
-            desired_output_id = self.desired_output_id(step)
-            self._result_tracker.update(self._found_output_ids, desired_output_id,
+            desired_output = self.desired_output_id(step)
+            self._result_tracker.update(self._found_output_ids, desired_output,
                                         self._possible_outputs, step)
-            if self.has_success(desired_output_id):
+            if self.has_success(desired_output):
                 self._success = True
             else:
                 self._success = False

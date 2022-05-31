@@ -231,11 +231,11 @@ class Cell:
         self.input_synapses = []
         self.output_synapses = []
         self._last_epoch_strength = 0.0
+        self._target_input = 0.0
+        
         self._fire_history = []
-
         self._target_fire_rate_per_epoch = cell_definition.target_fire_rate_per_epoch
         self._input_balance = cell_definition.input_balance
-        self._target_input = 10
         
         self._fire_rate_balance_scalar = 0.01
         self._fire_history_length = 20
@@ -265,6 +265,7 @@ class Cell:
                                 "endpoints attach to the cell.")
         totals = self._current_total_input_strength()
         (self._last_epoch_strength, _,) = totals
+        (self._target_input, _,) = totals
 
     def _apply_negative_input_balance(self, target_negative_input_strength,):
         totals = self._current_total_input_strength()
@@ -317,19 +318,16 @@ class Cell:
                     if synapse.post_cell._target_input > 0:
                         num_cells += 1
 
-            average_post_cell_strength = total_post_cell_strength/num_cells
-            if self._current_total_positive_output_strength() == 0:
-                scale = average_post_cell_strength/len(self.output_synapses)
-                for synapse in self.output_synapses:
-                    synapse.strength = scale * 1.0
-            else:
-                scale = average_post_cell_strength/self._current_total_positive_output_strength()
+            if num_cells > 0:
+                average_post_cell_strength = total_post_cell_strength/num_cells
+                if self._current_total_positive_output_strength() == 0:
+                    scale = average_post_cell_strength/len(self.output_synapses)
+                    for synapse in self.output_synapses:
+                        synapse.strength = scale * 1.0
+                else:
+                    scale = average_post_cell_strength/self._current_total_positive_output_strength()
                 for synapse in self.output_synapses:
                     synapse.strength = (synapse.strength * scale * 1.0) + (synapse.strength * 0.0)
-
-            new_total = 0
-            for synapse in self.output_synapses:
-                new_total += synapse.strength
 
         if self.cell_type == CellType.INHIBITORY or self.cell_type == CellType.MIXED:
             n_total_post_cell_strength = 0.0
@@ -344,10 +342,11 @@ class Cell:
                     if synapse.post_cell._target_input > 0:
                         num_cells += 1
 
-            n_average_post_cell_strength = n_total_post_cell_strength/num_cells
-            n_scale = n_average_post_cell_strength/self._current_total_negative_output_strength()
-            for synapse in self.output_synapses:
-                synapse.inhibitory_strength = (synapse.inhibitory_strength * n_scale * 1.0) + (synapse.inhibitory_strength * 0.0)
+            if num_cells > 0:
+                n_average_post_cell_strength = n_total_post_cell_strength/num_cells
+                n_scale = n_average_post_cell_strength/self._current_total_negative_output_strength()
+                for synapse in self.output_synapses:
+                    synapse.inhibitory_strength = (synapse.inhibitory_strength * n_scale * 1.0) + (synapse.inhibitory_strength * 0.0)
 
     def fire_rate_balance(self, step, epoch_length):
         if not self._input_balance:
@@ -382,7 +381,8 @@ class Cell:
         if (self.layer_id == 'b' or self.layer_id == 'c') and self._output_id == 0:
             print(f"layer_id {self.layer_id} running_rate {running_fire_rate} " \
                   f"target_rate {target_fire_rate} fires {fires} "\
-                  f"last_epoch_strength {self._last_epoch_strength}")
+                  f"last_epoch_strength {self._last_epoch_strength} "\
+                  f"target_input {self._target_input}")
 
         if not self._elf:
             target = self._last_epoch_strength
@@ -401,9 +401,6 @@ class Cell:
 
             target += self._target_strength_increase(rate_based_up_scale_factor,
                                                      target)
-
-        if self.layer_id == 'c' and self.x_layer_position == 0 and self.y_layer_position == 0:
-            print("target", self._target_input)
 
         real_positive_strength = self._apply_positive_input_balance(target)
         real_negative_strength = self._apply_negative_input_balance(target)
@@ -503,31 +500,29 @@ class Cell:
                 drawable = {"text": strength_text,
                             "x": synapse.pre_cell.x_layer_position,
                             "y": synapse.pre_cell.y_layer_position,
-                            "matrix_label": "in excite"}
+                            "matrix_label": "in_excite"}
                 drawables.append(drawable)
             elif synapse.pre_cell.cell_type == CellType.INHIBITORY:
                 strength_text = str(round(synapse.inhibitory_strength, 3))
                 drawable = {"text": strength_text,
                             "x": synapse.pre_cell.x_layer_position,
                             "y": synapse.pre_cell.y_layer_position,
-                            "matrix_label": "in inhibitory"}
+                            "matrix_label": "in_inhibit"}
                 drawables.append(drawable)
         for synapse in self.output_synapses:
             strength_text = str(round(synapse.strength, 3))
             drawable = {"text": strength_text,
                         "x": synapse.post_cell.x_layer_position,
                         "y": synapse.post_cell.y_layer_position,
-                        "matrix_label": "out excite"}
+                        "matrix_label": "out_excite"}
             drawables.append(drawable)
             if synapse.inhibitory_strength > 0.0:
                 strength_text = str(round(synapse.inhibitory_strength, 3))
                 drawable = {"text": strength_text,
                             "x": synapse.post_cell.x_layer_position,
                             "y": synapse.post_cell.y_layer_position,
-                            "matrix_label": "out inhibit"}
+                            "matrix_label": "out_inhibit"}
                 drawables.append(drawable)
-
-
         return drawables
 
 class SimpleModel:
@@ -664,7 +659,7 @@ class SimpleModel:
         pass
 
     def video_output(self, x, y, layer):
-        texts = ["dopamine: " + str(round(self._dopamine, 4))]
+        texts = ["dopamine: " + str(round(self._dopamine, 5))]
         drawables = []
         for cell in self._cells:
             spike = cell.fire_trace > 0
@@ -681,8 +676,11 @@ class SimpleModel:
             if wanted_position and wanted_layer:
                 totals = cell.weight_totals()
                 (positive_in, negative_in, positive_out, negative_out,) = totals
-                texts.append(f"positive_in: {positive_in} negative_in: {negative_in} "\
-                             f"positive_out: {positive_out} negative_out: {negative_out}")
+                texts.append(f"positive_in: {str(round(positive_in, 5))} "\
+                             f"negative_in: {str(round(negative_in, 5))} "\
+                             f"positive_out: {str(round(positive_out, 5))} "\
+                             f"negative_out: {str(round(negative_out, 5))} "\
+                             f"target: {str(round(cell._target_input, 5))} ")
                 drawables += cell.drawable_synapses()
         return drawables, texts
 
