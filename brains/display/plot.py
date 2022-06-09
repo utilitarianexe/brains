@@ -10,10 +10,10 @@ class PlotDisplay():
         '''
         returns if program should exit
         '''
-        if step % 400 == 0:
-            model_output = self._model.outputs()
-            for label, value in model_output.items():
-                self._lines_on_plot_by_label[label].append(value)
+        #if step % 400 == 0:
+        model_output = self._model.test_outputs()
+        for label, value in model_output.items():
+            self._lines_on_plot_by_label[label].append(value)
         return False
 
     def final_output(self):

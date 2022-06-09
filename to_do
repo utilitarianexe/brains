@@ -1,7 +1,12 @@
 unsorted issues
   smaller mnist problem(3 digits, and cycle images forever)
+  display fire rate on selected cells
+  show a grid of cells by input totals ect rather than each synapse or clicking each cell
+
   faster UI
   negative images
+  constant inhibition
+  should stdp be scaled by strength
   combine pyplot and pygame
   clean out output balance(parameterize, test, ect)
   display win and rewarded and which output_ids fired 

@@ -27,6 +27,7 @@ class MnistEnvironment(base.BaseEpochChallengeEnvironment):
             return set()
 
         image_index = real_step//self._epoch_length
+        image_index = image_index % 9000
         if image_index >= len(self._digits_and_images):
             #print("ran out of images to show network will continue running with no inputs")
             return set()
@@ -49,9 +50,17 @@ class MnistEnvironment(base.BaseEpochChallengeEnvironment):
             return None
 
         image_index = real_step//self._epoch_length
+        image_index = image_index % 9000
         (digit, image) = self._digits_and_images[image_index]
         return digit
 
+
+def mirror(image):
+    new_image = []
+    for pixel in image:
+        new_pixel = abs(pixel - 255)
+        new_image.append(new_pixel)
+    return new_image
 
 def read(image_file_name, label_file_name, number_of_images_to_read):
     label_file = open(utils.data_dir_file_path(label_file_name), "rb")
@@ -69,6 +78,7 @@ def read(image_file_name, label_file_name, number_of_images_to_read):
             value = ord(image_file.read(1))
             image.append(value)
         images_by_label[label].append(image)
+        # images_by_label["10"].append(mirror(image))
     image_file.close()
     label_file.close()
     return images_by_label

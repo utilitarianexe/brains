@@ -23,7 +23,7 @@ class CellTypeParameters:
 @dataclass
 class SynapseTypeParameters:
     stdp_scalar: float = 0.01
-    reward_scalar: float = 0.1
+    reward_scalar: float = 0.03
     max_strength: float = 0.4
     min_strength: float = 0.0
     s_tag_decay_rate: float = 0.002
@@ -235,6 +235,7 @@ class Cell:
         self._fire_history = []
         self._target_fire_rate_per_epoch = cell_definition.target_fire_rate_per_epoch
         self._input_balance = cell_definition.input_balance
+        self._output_balance = cell_definition.output_balance
         
         self._fire_rate_balance_scalar = 0.01
         self._fire_history_length = 20
@@ -298,6 +299,9 @@ class Cell:
         return real_positive_input_strength
 
     def output_balance(self):
+        if not self._output_balance:
+            return
+
         if len(self.output_synapses) == 0:
             return
 
@@ -337,6 +341,7 @@ class Cell:
     def fire_rate_balance(self, step, epoch_length):
         if not self._input_balance:
             return
+
         target_fire_rate = self._target_fire_rate_per_epoch / epoch_length
 
         if target_fire_rate == 0:
@@ -378,6 +383,9 @@ class Cell:
 
             self._target_input += self._target_strength_increase(rate_based_up_scale_factor,
                                                      self._target_input)
+
+        if self._target_input > 10:
+            self._target_input = 10
 
         real_positive_strength = self._apply_positive_input_balance(self._target_input)
         real_negative_strength = self._apply_negative_input_balance(self._target_input)
@@ -558,6 +566,10 @@ class SimpleModel:
 
         for cell in self._cells:
             cell.fire_rate_balance(step, self.epoch_length)
+
+        # for cell in self._cells:
+        #     cell._cell_membrane._voltage = 0.0
+        #     cell._cell_membrane._input_current = 0.0
         
     def step(self, step, environment=None, stimuli=None):
         self.update_dopamine(step, environment)
@@ -620,21 +632,6 @@ class SimpleModel:
                 }
         return blob
 
-    def _average_layer_strengths(self):
-        target_strength_by_layer_id = defaultdict(int)
-        layer_size_by_layer_id = defaultdict(int)
-        for cell in self._cells:
-            layer_size_by_layer_id[cell.layer_id] += 1
-            target_strength_by_layer_id[cell.layer_id] += cell._target_positive_input_strength
-        average_strength_by_layer_id = defaultdict(float)
-        for layer_id, layer_size in layer_size_by_layer_id.items():
-            layer_strength = target_strength_by_layer_id[layer_id]
-            average_strength_by_layer_id[layer_id] = layer_strength/layer_size
-        return average_strength_by_layer_id
-
-    def cli_output(self):
-        pass
-
     def video_output(self, x, y, layer):
         texts = ["dopamine: " + str(round(self._dopamine, 5))]
         drawables = []
@@ -661,6 +658,16 @@ class SimpleModel:
                 drawables += cell.drawable_synapses()
         return drawables, texts
 
+    def test_outputs(self):
+        outputs = {}
+        for cell in self._cells:
+            outputs[cell.label] = cell.membrane_voltage()
+
+        for synapse in self.synapses:
+            label = f"{synapse.pre_cell.label}_to_{synapse.post_cell.label}"
+            outputs[label] = synapse.strength
+        return outputs
+
     def outputs(self):
         total_negative_in = 0.0
         total_positive_in = 0.0
@@ -668,9 +675,12 @@ class SimpleModel:
         total_positive_out = 0.0
         cell_to_print = None
         for cell in self._cells:
-            if cell.layer_id == 'b' and cell.x_layer_position == 0 and cell.y_layer_position == 0:
+            correct_position = cell.x_layer_position == 0 and cell.y_layer_position == 0
+            if cell.layer_id == 'b' and correct_position:
                 cell_to_print = cell
                 break
+        if cell_to_print is None:
+            return {}
 
         for synapse in cell_to_print.input_synapses:
             total_positive_in += synapse.strength

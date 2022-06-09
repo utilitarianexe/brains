@@ -74,7 +74,7 @@ class TestModel(unittest.TestCase):
             model.step(i, test_environment, stimuli)
 
             # clearly we need a nicer output system
-            outputs = model.outputs()
+            outputs = model.test_outputs()
             if outputs["a"] > 1:
                 fire_history.append("a")
             if outputs["b"] > 1:
@@ -160,13 +160,15 @@ class TestModel(unittest.TestCase):
 
     def test_stdp_auto_input_selection(self):
         '''
-        Initializes a network of two input cells connected to an output cell. The input cells fire in
-        close sequence. And both are required to trigger the output cell.
+        Initializes a network of two input cells connected to an output cell.
+        The input cells fire in close sequence. And both are required to trigger
+        the output cell.
 
-        Both synapses should get stronger at first. But eventually the first cell to fire should be
-        strong enough to trigger the output cell on its own before the second input cell fires. After
-        this point the synapse of the first input will continue to get stronger while the second will
-        get weaker because it fires after the output cell.
+        Both synapses should get stronger at first. But eventually the first cell to
+        fire should be strong enough to trigger the output cell on its own before the
+        second input cell fires. After this point the synapse of the first input will
+        continue to get stronger while the second will get weaker because it fires after
+        the output cell.
         '''
         model_parameters = simple_model.ModelParameters(warp=False)
         network_definition = network.stdp_test_network()
@@ -180,7 +182,7 @@ class TestModel(unittest.TestCase):
         synapse_late_input = synapses_by_pre_cell["b"]
         starting_strength = synapse_early_input.strength
             
-        for i in range(2000):
+        for i in range(20000):
             test_environment.step(i)
             stimuli = test_environment.stimuli(i)
             model.step(i, test_environment, stimuli)
@@ -191,16 +193,18 @@ class TestModel(unittest.TestCase):
 
     def test_input_balancing(self):
         '''
-        Initializes a network of two input cells connected to an output cell. The input cells fire in
-        close sequence. And both are required to trigger the output cell.
+        Initializes a network of two input cells connected to an output cell. The input
+        cells fire in close sequence. And both are required to trigger the output cell.
 
-        Overtime time the connection with the input cell that fires later should increase compared
-        to the connection that fires earlier. Both have positive stdp but one has closer timing so it
-        will increase faster and because of input balancing it will drive the other down comparatively.
+        Overtime time the connection with the input cell that fires later should increase
+        compared to the connection that fires earlier. Both have positive stdp but one has
+        closer timing so it will increase faster and because of input balancing it will
+        drive the other down comparatively.
 
-        Unlike the auto_input_selection input balancing will keep the early connection at too low a
-        strength to fire the output on its own. So it will never have a chance to overtake the late
-        connection by causing the output cell to fire before the late connection.
+        Unlike the auto_input_selection input balancing will keep the early connection
+        at too low a strength to fire the output on its own. So it will never have a
+        chance to overtake the late connection by causing the output cell to fire before
+        the late connection.
         '''
         model_parameters = simple_model.ModelParameters()
         network_definition = network.stdp_test_network(input_balance=True)
