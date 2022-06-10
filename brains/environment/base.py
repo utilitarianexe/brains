@@ -102,6 +102,8 @@ class BaseEpochChallengeEnvironment:
                 self._success = False
                 
     def has_success(self, desired_output_id):
+        if desired_output_id == 10:
+            return False
         return desired_output_id in self._found_output_ids
         # correct_cell_fired, incorrect_cell_fired = result_convert(self._found_output_ids,
         #                                                           desired_output_id)

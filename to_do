@@ -1,11 +1,15 @@
 unsorted issues
-  smaller mnist problem(3 digits, and cycle images forever)
+  memory leak
+  try constant inhibition with easy
+  why don't we just totaly artificially normalize fire rates for input
+    give them a target fire rate
+    apply env input to one synapse
+    apply a random input to another
+    use input balancing on those
+  smaller mnist problem 3 digits
   display fire rate on selected cells
   show a grid of cells by input totals ect rather than each synapse or clicking each cell
-
   faster UI
-  negative images
-  constant inhibition
   should stdp be scaled by strength
   combine pyplot and pygame
   clean out output balance(parameterize, test, ect)
@@ -13,6 +17,11 @@ unsorted issues
   porportion award
   track progress porportionally
   sort found list
+  network.py needs refactored
+    too much ui
+    too long of parameter lists
+    too hard to define networks while knowing what the parameters mean
+    layer should be a dataclass and LayerDefinition removed
   
   print what did fire to screen
   better way to handle running out of images

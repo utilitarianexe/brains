@@ -236,6 +236,7 @@ class Cell:
         self._target_fire_rate_per_epoch = cell_definition.target_fire_rate_per_epoch
         self._input_balance = cell_definition.input_balance
         self._output_balance = cell_definition.output_balance
+        self._lock_inhibition_strength = cell_definition.lock_inhibition_strength
         
         self._fire_rate_balance_scalar = 0.01
         self._fire_history_length = 20
@@ -325,6 +326,8 @@ class Cell:
                         synapse.strength = synapse.strength * scale
 
         if self.cell_type == CellType.INHIBITORY or self.cell_type == CellType.MIXED:
+            if self._lock_inhibition_strength:
+                return
             n_total_post_cell_strength = 0.0
             num_cells = 0
             for synapse in self.output_synapses:
@@ -388,7 +391,11 @@ class Cell:
             self._target_input = 10
 
         real_positive_strength = self._apply_positive_input_balance(self._target_input)
-        real_negative_strength = self._apply_negative_input_balance(self._target_input)
+
+        if not self._lock_inhibition_strength:
+            real_negative_strength = self._apply_negative_input_balance(self._target_input)
+        else:
+            real_negative_strength = 0.0
         
         if real_negative_strength == 0.0:
             pass
@@ -481,28 +488,28 @@ class Cell:
         drawables = []
         for synapse in self.input_synapses:
             if synapse.pre_cell.cell_type == CellType.EXCITATORY:
-                strength_text = str(round(synapse.strength, 3))
+                strength_text = str(round(synapse.strength, 5))
                 drawable = {"text": strength_text,
                             "x": synapse.pre_cell.x_layer_position,
                             "y": synapse.pre_cell.y_layer_position,
                             "matrix_label": "in_excite"}
                 drawables.append(drawable)
             elif synapse.pre_cell.cell_type == CellType.INHIBITORY:
-                strength_text = str(round(synapse.inhibitory_strength, 3))
+                strength_text = str(round(synapse.inhibitory_strength, 5))
                 drawable = {"text": strength_text,
                             "x": synapse.pre_cell.x_layer_position,
                             "y": synapse.pre_cell.y_layer_position,
                             "matrix_label": "in_inhibit"}
                 drawables.append(drawable)
         for synapse in self.output_synapses:
-            strength_text = str(round(synapse.strength, 3))
+            strength_text = str(round(synapse.strength, 5))
             drawable = {"text": strength_text,
                         "x": synapse.post_cell.x_layer_position,
                         "y": synapse.post_cell.y_layer_position,
                         "matrix_label": "out_excite"}
             drawables.append(drawable)
             if synapse.inhibitory_strength > 0.0:
-                strength_text = str(round(synapse.inhibitory_strength, 3))
+                strength_text = str(round(synapse.inhibitory_strength, 5))
                 drawable = {"text": strength_text,
                             "x": synapse.post_cell.x_layer_position,
                             "y": synapse.post_cell.y_layer_position,

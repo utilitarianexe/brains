@@ -103,7 +103,7 @@ class GameDisplay():
         self._environment = environment
         self._update_ui = True
         self._font_size = 15
-        self._sleep_time = 0.01
+        self._sleep_time = 0.00
         self._blue = (0, 0, 255)
         self._black = (0, 0, 0)
         self._yellow = (255, 255, 0)

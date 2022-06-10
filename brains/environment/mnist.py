@@ -9,7 +9,7 @@ import random
 class MnistEnvironment(base.BaseEpochChallengeEnvironment):
     def __init__(self, epoch_length, input_delay=0, shuffle=True):
         super().__init__(epoch_length, input_delay)
-        self._possible_outputs = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        self._possible_outputs = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         images_by_label = read_mnist()
         self._image_width = 28
         self._digits_and_images = []
@@ -50,16 +50,18 @@ class MnistEnvironment(base.BaseEpochChallengeEnvironment):
             return None
 
         image_index = real_step//self._epoch_length
-        image_index = image_index % 9000
+        image_index = image_index % 18000
         (digit, image) = self._digits_and_images[image_index]
         return digit
 
-
-def mirror(image):
+def negate(image):
     new_image = []
     for pixel in image:
         new_pixel = abs(pixel - 255)
-        new_image.append(new_pixel)
+        if 0.2 >= random.random():
+            new_image.append(new_pixel)
+        else:
+            new_image.append(0.0)
     return new_image
 
 def read(image_file_name, label_file_name, number_of_images_to_read):
@@ -78,7 +80,7 @@ def read(image_file_name, label_file_name, number_of_images_to_read):
             value = ord(image_file.read(1))
             image.append(value)
         images_by_label[label].append(image)
-        # images_by_label["10"].append(mirror(image))
+        images_by_label["10"].append(negate(image))
     image_file.close()
     label_file.close()
     return images_by_label
