@@ -1,4 +1,7 @@
 unsorted issues
+  clean up mess of magic numbers with negative images
+  record results
+  fix fails
   memory leak
   try constant inhibition with easy
   why don't we just totaly artificially normalize fire rates for input

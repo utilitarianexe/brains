@@ -23,7 +23,7 @@ class CellTypeParameters:
 @dataclass
 class SynapseTypeParameters:
     stdp_scalar: float = 0.01
-    reward_scalar: float = 0.03
+    reward_scalar: float = 0.06
     max_strength: float = 0.4
     min_strength: float = 0.0
     s_tag_decay_rate: float = 0.002
