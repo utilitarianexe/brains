@@ -1,30 +1,36 @@
 unsorted issues
+  record results to file
+  network.py needs refactored
+    too much ui
+    too long of parameter lists
+    too hard to define networks while knowing what the parameters mean
+    layer should be a dataclass and LayerDefinition removed
+
+  flat reward stdp easy set up by layer
+  easy set up 1 to some(define on number of inputs per cell post side)
+  
+
   clean up mess of magic numbers with negative images
-  record results
-  fix fails
   memory leak
-  try constant inhibition with easy
+  smaller mnist problem 3 digits
+
+
   why don't we just totaly artificially normalize fire rates for input
     give them a target fire rate
     apply env input to one synapse
     apply a random input to another
     use input balancing on those
-  smaller mnist problem 3 digits
+
+
   display fire rate on selected cells
   show a grid of cells by input totals ect rather than each synapse or clicking each cell
   faster UI
   should stdp be scaled by strength
   combine pyplot and pygame
   clean out output balance(parameterize, test, ect)
-  display win and rewarded and which output_ids fired 
   porportion award
   track progress porportionally
   sort found list
-  network.py needs refactored
-    too much ui
-    too long of parameter lists
-    too hard to define networks while knowing what the parameters mean
-    layer should be a dataclass and LayerDefinition removed
   
   print what did fire to screen
   better way to handle running out of images

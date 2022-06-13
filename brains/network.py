@@ -113,30 +113,23 @@ LayerDefinition = namedtuple('LayerDefinition',
                              'is_input_layer is_output_layer output_balance '\
                              'lock_inhibition_strength')
 
+@dataclass
 class Layer:
     '''
-    Convenience class not exported to files.
+    Not exported to files.
     '''
-    def __init__(self, id, size,
-                 starting_x_position, starting_y_position,
-                 target_fire_rate_per_epoch=0.0,
-                 layout=Layout.LINE, cell_type=CellType.EXCITATORY,
-                 input_balance=False,
-                 is_input_layer=False, is_output_layer=False,
-                 output_balance=False,
-                 lock_inhibition_strength=False):
-        self.id = id
-        self.size = size
-        self.layout = layout
-        self.starting_x_position = starting_x_position
-        self.starting_y_position = starting_y_position
-        self.cell_type = cell_type
-        self.target_fire_rate_per_epoch = target_fire_rate_per_epoch
-        self.input_balance = input_balance
-        self.is_input_layer = is_input_layer
-        self.is_output_layer = is_output_layer
-        self.output_balance = output_balance
-        self.lock_inhibition_strength = lock_inhibition_strength
+    id: str
+    size: int
+    starting_x_position: int
+    starting_y_position: int
+    target_fire_rate_per_epoch: float = 0.0
+    layout: int = Layout.LINE
+    cell_type: int = CellType.EXCITATORY
+    input_balance: bool = False
+    is_input_layer: bool = False
+    is_output_layer: bool = False
+    output_balance: bool = False
+    lock_inhibition_strength: bool = False
 
     def cell_layer_position(self, cell_number):
         if self.layout == Layout.LINE:
