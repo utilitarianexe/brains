@@ -14,49 +14,62 @@ def result_convert(found_output_ids, desired_output_id):
 
 @dataclass
 class ResultTracker:
-    win: int = 0
-    loss: int = 0
-    fail: int = 0
-    none_fired: int = 0
-    all_fired: int = 0
-    indeterminate: int = 0
-    rewarded: int = 0
     epochs: int = 0
+    one_cell_fired: int = 0
+    none_fired: int = 0
     at_least_some_fired: int = 0
-    doubles: int = 0
-    zero_out_spikes: int = 0
+    total_fires: int = 0
+    double_spike: int = 0
+    all_fired: int = 0
+    null_desired_output: int = 0
+    
+
+    one_cell_fired_not_null: int = 0
+    rewarded: int = 0
+    win: int = 0
+    fail: int = 0
+    accuracy: float = 0.0
+
 
     def update(self, found_output_ids, desired_output_id, possible_outputs, step):
-        #print(f"found: {found_output_ids} desired: {desired_output_id}")
+        print(f"found: {found_output_ids} desired: {desired_output_id}")
         self.epochs += 1
+
+        number_cells_fired = len(set(found_output_ids))
+        if number_cells_fired == 1:
+            self.one_cell_fired += 1
+        if number_cells_fired == 0:
+            self.none_fired += 1
+        if number_cells_fired > 0:
+            self.at_least_some_fired += 1
+
+        self.total_fires += len(found_output_ids)
+
+        # ehh 10 hack
+        if number_cells_fired < len(found_output_ids) - 1:
+            self.double_spike += 1
+            
+        if number_cells_fired == len(possible_outputs) - 1:
+            self.all_fired += 1
+
+        if desired_output_id == "10":
+            self.null_desired_output += 1
+            return
+
+        if number_cells_fired == 1:
+            self.one_cell_fired_not_null += 1
+
         if desired_output_id in found_output_ids:
-            self.rewarded += 1
-        
+            self.rewarded += 1    
         correct_cell_fired, incorrect_cell_fired = result_convert(found_output_ids, desired_output_id)
         if correct_cell_fired and not incorrect_cell_fired:
             self.win += 1
-        elif not correct_cell_fired and incorrect_cell_fired:
-            self.loss += 1
-        else:
-            self.indeterminate += 1
-
-        if incorrect_cell_fired and len(set(found_output_ids)) == 1:
+        if incorrect_cell_fired and number_cells_fired == 1:
             self.fail += 1
 
-        if 0 in found_output_ids and step > 400 * 90000:
-            self.zero_out_spikes += 1
-            
-        if len(found_output_ids) == 0:
-            self.none_fired += 1
-            
-        if len(found_output_ids) > 0:
-            self.at_least_some_fired += 1
+        if self.win + self.fail > 0:
+            accuracy = float(self.win) / float(self.win + self.fail)
 
-        if len(set(found_output_ids)) < len(found_output_ids):
-            self.doubles += 1
-            
-        if len(set(found_output_ids)) == len(possible_outputs):
-            self.all_fired += 1
 
 class BaseEpochChallengeEnvironment:
     '''
@@ -102,7 +115,7 @@ class BaseEpochChallengeEnvironment:
                 self._success = False
                 
     def has_success(self, desired_output_id):
-        if desired_output_id == 10:
+        if desired_output_id == "10":
             return False
         return desired_output_id in self._found_output_ids
         # correct_cell_fired, incorrect_cell_fired = result_convert(self._found_output_ids,

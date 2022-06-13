@@ -27,7 +27,6 @@ class MnistEnvironment(base.BaseEpochChallengeEnvironment):
             return set()
 
         image_index = real_step//self._epoch_length
-        image_index = image_index % 9000
         if image_index >= len(self._digits_and_images):
             #print("ran out of images to show network will continue running with no inputs")
             return set()
@@ -50,7 +49,6 @@ class MnistEnvironment(base.BaseEpochChallengeEnvironment):
             return None
 
         image_index = real_step//self._epoch_length
-        image_index = image_index % 18000
         (digit, image) = self._digits_and_images[image_index]
         return digit
 
