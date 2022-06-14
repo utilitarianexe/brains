@@ -4,15 +4,12 @@
 
 unsorted issues
   record results to file
+  flat reward stdp easy set up by layer
+  easy set up 1 to some(define on number of inputs per cell post side)
 
   network.py needs refactored
     too much ui
     lock_inhibition_strength probably uneeded
-    definitions could have their own file
-
-  flat reward stdp easy set up by layer
-  easy set up 1 to some(define on number of inputs per cell post side)
-  
 
   clean up mess of magic numbers with negative images
   memory leak
