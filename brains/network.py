@@ -119,8 +119,8 @@ class Layer:
     '''
     id: str
     size: int
-    starting_x_position: int = 0
-    starting_y_position: int = 0
+    display_x_position: int = 0
+    display_y_position: int = 0
     target_fire_rate_per_epoch: float = 0.0
     layout: int = Layout.LINE
     cell_type: int = CellType.EXCITATORY
@@ -161,9 +161,9 @@ class Layer:
 
     def cell_display_position(self, cell_number):
         (layer_position_x, layer_position_y, ) = self.cell_layer_position(cell_number)
-        display_x_position = self.starting_x_position + layer_position_x
-        display_y_position = layer_position_y + self.starting_y_position
-        return display_x_position, display_y_position
+        cell_display_x_position = self.display_x_position + layer_position_x
+        cell_display_y_position = layer_position_y + self.display_y_position
+        return cell_display_x_position, cell_display_y_position
 
 def add_display_position_to_layers(layers):
     previous_height = 0
@@ -172,20 +172,20 @@ def add_display_position_to_layers(layers):
     first = True
     for layer in layers:
         if first:
-            starting_x_position = 0
-            starting_y_position = 0
+            display_x_position = 0
+            display_y_position = 0
             first = False
         elif layer.cell_type == CellType.INHIBITORY:
-            starting_x_position = previous_x_position
-            starting_y_position = previous_height + 2
+            display_x_position = previous_x_position
+            display_y_position = previous_height + 2
         else:
-            starting_x_position = previous_width + previous_x_position + 2
-            starting_y_position = 0            
+            display_x_position = previous_width + previous_x_position + 2
+            display_y_position = 0            
 
-        layer.starting_x_position = starting_x_position
-        layer.starting_y_position = starting_y_position
+        layer.display_x_position = display_x_position
+        layer.display_y_position = display_y_position
         previous_height = layer.height()
-        previous_x_position = starting_x_position
+        previous_x_position = display_x_position
         previous_width =  layer.width()
 
 def network_from_layers(layers, layer_connections):
