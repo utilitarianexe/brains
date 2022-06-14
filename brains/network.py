@@ -105,14 +105,6 @@ class NetworkDefinition:
             synapse_infos.append(synapse_info)
         return cell_infos, synapse_infos
 
-# convenience tuple
-# output and input balance might make more sense as model level
-LayerDefinition = namedtuple('LayerDefinition',
-                             'label size layout cell_type '\
-                             'input_balance target_fire_rate_per_epoch '\
-                             'is_input_layer is_output_layer output_balance '\
-                             'lock_inhibition_strength')
-
 @dataclass
 class Layer:
     '''
@@ -120,8 +112,8 @@ class Layer:
     '''
     id: str
     size: int
-    starting_x_position: int
-    starting_y_position: int
+    starting_x_position: int = 0
+    starting_y_position: int = 0
     target_fire_rate_per_epoch: float = 0.0
     layout: int = Layout.LINE
     cell_type: int = CellType.EXCITATORY
@@ -166,43 +158,28 @@ class Layer:
         display_y_position = layer_position_y + self.starting_y_position
         return display_x_position, display_y_position
 
-def build_layer_based_network(layer_definitions, layer_connections):
-    layers = layers_from_definitons(layer_definitions)
-    return network_from_layers(layers, layer_connections)
-
-def layers_from_definitons(layer_definitions):
-    layers = []
+def add_display_position_to_layers(layers):
     previous_height = 0
     previous_width = 0
     previous_x_position = 0
     first = True
-    for definition in layer_definitions:
+    for layer in layers:
         if first:
             starting_x_position = 0
             starting_y_position = 0
             first = False
-        elif definition.cell_type == CellType.INHIBITORY:
+        elif layer.cell_type == CellType.INHIBITORY:
             starting_x_position = previous_x_position
             starting_y_position = previous_height + 2
         else:
             starting_x_position = previous_width + previous_x_position + 2
             starting_y_position = 0            
 
-        layer = Layer(definition.label, definition.size,
-                      starting_x_position, starting_y_position,
-                      target_fire_rate_per_epoch=definition.target_fire_rate_per_epoch,
-                      layout=definition.layout, cell_type=definition.cell_type,
-                      input_balance=definition.input_balance,
-                      is_input_layer=definition.is_input_layer,
-                      is_output_layer=definition.is_output_layer,
-                      output_balance=definition.output_balance,
-                      lock_inhibition_strength=definition.lock_inhibition_strength)
-        layers.append(layer)
+        layer.starting_x_position = starting_x_position
+        layer.starting_y_position = starting_y_position
         previous_height = layer.height()
         previous_x_position = starting_x_position
         previous_width =  layer.width()
-
-    return layers
 
 def network_from_layers(layers, layer_connections):
     cell_definitions = []
@@ -316,55 +293,142 @@ def stdp_test_network(input_balance=False):
                                synapses)
 
 def layer_based_default_network():
+    '''
+      Used for the x o world
+    '''
     image_size = 28*28
-    layers = [LayerDefinition("a", image_size, Layout.SQUARE, CellType.EXCITATORY,
-                              False, 0.0, True, False, True, False),
-              LayerDefinition("i", image_size, Layout.SQUARE, CellType.INHIBITORY,
-                              False, 0.0, True, False, True, False),
-              LayerDefinition("b", 6*6, Layout.SQUARE, CellType.EXCITATORY,
-                              True, 0.2, False, False, True, False),
-              LayerDefinition("c", 2, Layout.LINE, CellType.EXCITATORY,
-                              True, 0.5, False, True, True, False)]
+    layers = [Layer("a", image_size,
+                    layout = Layout.SQUARE,
+                    cell_type = CellType.EXCITATORY,
+                    input_balance = False,
+                    target_fire_rate_per_epoch = 0.0,
+                    is_input_layer = True,
+                    is_output_layer = False,
+                    output_balance = True,
+                    lock_inhibition_strength = False),
+              Layer("i", image_size,
+                    layout = Layout.SQUARE,
+                    cell_type = CellType.INHIBITORY,
+                    input_balance = False,
+                    target_fire_rate_per_epoch = 0.0,
+                    is_input_layer = True,
+                    is_output_layer = False,
+                    output_balance = True,
+                    lock_inhibition_strength = False),
+              Layer("b", 6*6,
+                    layout = Layout.SQUARE,
+                    cell_type = CellType.EXCITATORY,
+                    input_balance = True,
+                    target_fire_rate_per_epoch = 0.2,
+                    is_input_layer = False,
+                    is_output_layer = False,
+                    output_balance = True,
+                    lock_inhibition_strength = False),
+              Layer("c", 2,
+                    layout = Layout.LINE,
+                    cell_type = CellType.EXCITATORY,
+                    input_balance = True,
+                    target_fire_rate_per_epoch = 0.5,
+                    is_input_layer = False,
+                    is_output_layer = True,
+                    output_balance = True,
+                    lock_inhibition_strength = False)
+              ]
     
     # Something about connection probability rubs me wrong.
     # connections might be more complex
     layer_connections = [("a", "b", 1, 0.01,),
                          ("i", "b", 1, 0.01,),
                          ("b", "c", 1, 0.006,)]
-    return build_layer_based_network(layers, layer_connections)
+    add_display_position_to_layers(layers)    
+    return network_from_layers(layers, layer_connections)
 
 def mnist_network():
     image_size = 28*28
-    layers = [LayerDefinition("a", image_size, Layout.SQUARE, CellType.EXCITATORY,
-                              False, 0.0, True, False, True, False),
-              LayerDefinition("i", image_size, Layout.SQUARE, CellType.INHIBITORY,
-                              False, 0.0, True, False, True, True),
-              LayerDefinition("b", 6*6, Layout.SQUARE, CellType.EXCITATORY,
-                              True, 0.1, False, False, True, True),
-              LayerDefinition("c", 10, Layout.LINE, CellType.EXCITATORY,
-                              True, 0.1, False, True, True, False)]
+    layers = [Layer("a", image_size,
+                    layout = Layout.SQUARE,
+                    cell_type = CellType.EXCITATORY,
+                    input_balance = False,
+                    target_fire_rate_per_epoch = 0.0,
+                    is_input_layer = True,
+                    is_output_layer = False,
+                    output_balance = True,
+                    lock_inhibition_strength = False),
+              Layer("i", image_size,
+                    layout = Layout.SQUARE,
+                    cell_type = CellType.INHIBITORY,
+                    input_balance = False,
+                    target_fire_rate_per_epoch = 0.0,
+                    is_input_layer = True,
+                    is_output_layer = False,
+                    output_balance = True,
+                    lock_inhibition_strength = True),
+              Layer("b", 6*6,
+                    layout = Layout.SQUARE,
+                    cell_type = CellType.EXCITATORY,
+                    input_balance = True,
+                    target_fire_rate_per_epoch = 0.1,
+                    is_input_layer = False,
+                    is_output_layer = False,
+                    output_balance = True,
+                    lock_inhibition_strength = True),
+              Layer("c", 10,
+                    layout = Layout.LINE,
+                    cell_type = CellType.EXCITATORY,
+                    input_balance = True,
+                    target_fire_rate_per_epoch = 0.1,
+                    is_input_layer = False,
+                    is_output_layer = True,
+                    output_balance = True,
+                    lock_inhibition_strength = False)]
     
     # Something about connection probability rubs me wrong.
     # connections might be more complex
     layer_connections = [("a", "b", 1, 0.00035,),
                          ("i", "b", 1, 0.00035,),
                          ("b", "c", 1, 0.001,)]
-    return build_layer_based_network(layers, layer_connections)
+    add_display_position_to_layers(layers)
+    return network_from_layers(layers, layer_connections)
 
 def easy_layer_network():
-    layers = [LayerDefinition("a", 3, Layout.LINE, CellType.EXCITATORY,
-                              False, 0.0, True, False, True, False),
-              LayerDefinition("i", 3, Layout.LINE, CellType.INHIBITORY,
-                              False, 0.0, True, False, True, False),
-              LayerDefinition("b", 4, Layout.LINE, CellType.EXCITATORY,
-                              True, 0.25, False, False, True, False),
-              LayerDefinition("c", 2, Layout.LINE, CellType.EXCITATORY,
-                              True, 0.5, False, True, True, False)]
-
+    layers = [Layer("a", 3,
+                    layout = Layout.LINE,
+                    cell_type = CellType.EXCITATORY,
+                    input_balance = False,
+                    target_fire_rate_per_epoch = 0.0,
+                    is_input_layer = True,
+                    is_output_layer = False,
+                    output_balance = True,
+                    lock_inhibition_strength = False),
+              Layer("i", 3,
+                    layout = Layout.LINE,
+                    cell_type = CellType.INHIBITORY,
+                    input_balance = False,
+                    target_fire_rate_per_epoch = 0.0,
+                    is_input_layer = True,
+                    is_output_layer = False,
+                    output_balance = True,
+                    lock_inhibition_strength = False),
+              Layer("b", 4,
+                    layout = Layout.LINE,
+                    cell_type = CellType.EXCITATORY,
+                    input_balance = True,
+                    target_fire_rate_per_epoch = 0.25,
+                    is_input_layer = False,
+                    is_output_layer = False,
+                    output_balance = True,
+                    lock_inhibition_strength = False),
+              Layer("c", 2,
+                    layout = Layout.LINE,
+                    cell_type = CellType.EXCITATORY,
+                    input_balance = True,
+                    target_fire_rate_per_epoch = 0.5,
+                    is_input_layer = False,
+                    is_output_layer = True,
+                    output_balance = True,
+                    lock_inhibition_strength = False)]
     layer_connections = [("a", "b", 1, 0.1),
                          ("i", "b", 1, 0.1),
                          ("b", "c", 1, 0.45),]
-    return build_layer_based_network(layers, layer_connections)
-
-
-
+    add_display_position_to_layers(layers)
+    return network_from_layers(layers, layer_connections)

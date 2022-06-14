@@ -1,3 +1,7 @@
+juli_anna
+
+
+
 unsorted issues
   record results to file
   network.py needs refactored
@@ -5,6 +9,8 @@ unsorted issues
     too long of parameter lists
     too hard to define networks while knowing what the parameters mean
     layer should be a dataclass and LayerDefinition removed
+    lack_inhibition_strength probably uneeded
+    definitions could have their own file
 
   flat reward stdp easy set up by layer
   easy set up 1 to some(define on number of inputs per cell post side)
