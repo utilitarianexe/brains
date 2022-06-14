@@ -2,6 +2,7 @@ import brains.models.simple_model as simple_model
 from brains.environment.base import FakeEnvironment
 from brains.environment.stdp import STDPTestEnvironment
 import brains.network as network
+import brains.network_definitions as network_definitions
 from brains.network import CellType, CellDefinition
 
 import unittest
@@ -171,7 +172,7 @@ class TestModel(unittest.TestCase):
         the output cell.
         '''
         model_parameters = simple_model.ModelParameters(warp=False)
-        network_definition = network.stdp_test_network()
+        network_definition = network_definitions.stdp_test_network()
         test_environment = STDPTestEnvironment()
         model =  simple_model.SimpleModel(network_definition,
                                           model_parameters)
@@ -207,7 +208,7 @@ class TestModel(unittest.TestCase):
         the late connection.
         '''
         model_parameters = simple_model.ModelParameters()
-        network_definition = network.stdp_test_network(input_balance=True)
+        network_definition = network_definitions.stdp_test_network(input_balance=True)
         test_environment = STDPTestEnvironment()
         model =  simple_model.SimpleModel(network_definition,
                                           model_parameters)

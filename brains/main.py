@@ -1,7 +1,7 @@
 import brains.models.spirit_model as spirit_model
 import brains.models.example_model as example_model
 import brains.models.simple_model as simple_model
-import brains.network as network
+import brains.network_definitions as network_definitions
 from brains.environment.easy import EasyEnvironment
 from brains.environment.handwriting import HandwritingEnvironment
 from brains.environment.mnist import MnistEnvironment
@@ -17,7 +17,7 @@ World = namedtuple('World', 'model environment')
 
 def stdp_world(epoch_length, warp=True):
     model_parameters = simple_model.ModelParameters(epoch_length=epoch_length, warp=warp)
-    network_definition = network.stdp_test_network()
+    network_definition = network_definitions.stdp_test_network()
     model = simple_model.SimpleModel(network_definition, model_parameters)
     return model, STDPTestEnvironment()
 
@@ -27,7 +27,7 @@ def handwriting_world(file_name, epoch_length, input_delay=50, epoch_delay=50, w
                                                                  warp=warp)
 
     # need like some kind of average starting connection strength thing
-    network_definition = network.layer_based_default_network()
+    network_definition = network_definitions.layer_based_default_network()
     environment = HandwritingEnvironment(
         epoch_length, input_delay, {'o': 0, 'x': 1},
         image_lines=None, shuffle=True,
@@ -42,7 +42,7 @@ def mnist_world(epoch_length, input_delay=50, epoch_delay=50, warp=True):
                                                                  warp=warp)
 
     # need like some kind of average starting connection strength thing
-    network_definition = network.mnist_network()
+    network_definition = network_definitions.mnist_network()
     environment = MnistEnvironment(epoch_length, input_delay)
 
     model = simple_model.SimpleModel(network_definition, model_parameters)
@@ -55,7 +55,7 @@ def easy_world(epoch_length, input_delay=50, epoch_delay=50, warp=True):
                                                                  warp=warp)
 
     # need like some kind of average starting connection strength thing
-    network_definition = network.easy_layer_network()
+    network_definition = network_definitions.easy_layer_network()
     easy_environment = EasyEnvironment(epoch_length, input_delay)
     model = simple_model.SimpleModel(network_definition, model_parameters)
     return model, easy_environment
