@@ -1,10 +1,11 @@
-from brains.network import network_from_layers, network_from_tuples, Layer, CellType, CellDefinition
+from brains.network import LayerConnection, Layer, CellType, CellDefinition
+from brains.network import network_from_layers, network_from_cells
 import unittest
 
 
 class TestBuildingNetwork(unittest.TestCase):
 
-    def test_network_from_tuples(self):
+    def test_network_from_cells(self):
         cells = [CellDefinition("a", 0, 0),
                  CellDefinition("b", 1, 0),
                  CellDefinition("c", 2, 0), CellDefinition("d", 2, 1),
@@ -14,7 +15,7 @@ class TestBuildingNetwork(unittest.TestCase):
                     ("b", "d", 0.15),
                     ("c", "e", 0.15),
                     ("d", "e", 0.15),]
-        network_definition = network_from_tuples(cells, synapses)
+        network_definition = network_from_cells(cells, synapses)
         (cell_definitions, synapse_definitions, ) = network_definition.export_as_tuples()
 
         expected_cell_definitions = [("a", 0, 0),
@@ -36,7 +37,8 @@ class TestBuildingNetwork(unittest.TestCase):
                   Layer("b", 2, 1, 0),
                   Layer("c", 1, 2, 0, is_output_layer=True),
                   ]
-        layer_connections = [("a", "b", 1, 0.1), ("b", "c", 1, 0.1)]
+        layer_connections = [LayerConnection("a", "b", 0.1, 1),
+                             LayerConnection("b", "c", 0.1, 1)]
         network_definition = network_from_layers(layers,
                                                  layer_connections)
         (cells, synapses,) = network_definition.export_as_tuples()

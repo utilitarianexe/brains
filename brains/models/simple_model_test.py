@@ -52,8 +52,8 @@ class TestModel(unittest.TestCase):
                                 is_input_cell=True,
                                 is_output_cell=True)]
         synapses = [("a", "b", starting_synapse_strength)]
-        return network.network_from_tuples(cells,
-                                           synapses)
+        return network.network_from_cells(cells,
+                                          synapses)
 
     def two_cell_model(self, starting_synapse_strength):
         model_parameters = simple_model.ModelParameters()

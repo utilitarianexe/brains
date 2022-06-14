@@ -622,11 +622,12 @@ class SimpleModel:
     def export(self):
         updated_synapse_definitions = []
         for synapse in self.synapses:
-            definition = SynapseDefinition(synapse.pre_cell.uuid,
-                                           synapse.post_cell.uuid,
-                                           synapse.strength,
-                                           synapse.inhibitory_strength,
-                                           synapse.label)
+            definition = SynapseDefinition(
+                synapse.label,
+                synapse.pre_cell.uuid,
+                synapse.post_cell.uuid,
+                synapse.strength,
+                synapse.inhibitory_strength)
             updated_synapse_definitions.append(definition)
         
         updated_network_definition = NetworkDefinition(
