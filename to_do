@@ -1,19 +1,17 @@
-
-
-
-
 unsorted issues
-  record results to file
   flat reward stdp easy set up by layer
-  easy set up 1 to some(define on number of inputs per cell post side)
-
-  network.py needs refactored
-    too much ui
-    lock_inhibition_strength probably uneeded
+  caps(one cell does not spike 2 cells does cap)
+  optimization
+  record results to file
+  import full mnist set
 
   clean up mess of magic numbers with negative images
   memory leak
   smaller mnist problem 3 digits
+  network.py needs refactored
+    too much ui
+    lock_inhibition_strength probably uneeded
+
 
 
   why don't we just totaly artificially normalize fire rates for input
@@ -32,7 +30,6 @@ unsorted issues
   porportion award
   track progress porportionally
   sort found list
-  
   print what did fire to screen
   better way to handle running out of images
   accept fire should just record output_ids

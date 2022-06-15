@@ -111,6 +111,8 @@ class LayerConnection:
     post_layer: str
     synapse_strength: float = 0.0
     probability: float = 1.0
+    define_by_inputs_per_cell: bool = False
+    inputs_per_cell: int = 0
 
 @dataclass
 class Layer:
@@ -215,28 +217,72 @@ def network_from_layers(layers, layer_connections):
 
     synapse_definitions = []
     for layer_connection in layer_connections:
-        for cell_definition_pre_layer in cell_definitions_by_layer[layer_connection.pre_layer]:
-            for cell_definition_post_layer in cell_definitions_by_layer[layer_connection.post_layer]:
-                if layer_connection.probability >= random.random():
-                    if cell_definition_pre_layer.cell_type == CellType.MIXED:
-                        negative_synapse_strength = layer_connection.synapse_strength
-                        positive_synapse_strength = layer_connection.synapse_strength
-                    if cell_definition_pre_layer.cell_type == CellType.EXCITATORY:
-                        positive_synapse_strength = layer_connection.synapse_strength
-                        negative_synapse_strength = 0.0
-                    if cell_definition_pre_layer.cell_type == CellType.INHIBITORY:
-                        negative_synapse_strength = layer_connection.synapse_strength
-                        positive_synapse_strength = 0.0
-                    label = f"{cell_definition_pre_layer.label}_to_{cell_definition_post_layer.label}"
-                    synapse_definition = SynapseDefinition(
-                        label,
-                        cell_definition_pre_layer.uuid,
-                        cell_definition_post_layer.uuid,
-                        positive_synapse_strength,
-                        negative_synapse_strength)
-                    synapse_definitions.append(synapse_definition)
+        synapse_definitions += connect_layers(layer_connection, cell_definitions_by_layer)
+
     return NetworkDefinition(cell_definitions,
                              synapse_definitions)
+
+def connect_layers(layer_connection, cell_definitions_by_layer):
+    if layer_connection.define_by_inputs_per_cell:
+        return connect_layers_with_random_selection(layer_connection, cell_definitions_by_layer)
+    else:
+        return connect_layers_by_cell(layer_connection, cell_definitions_by_layer)
+
+def connect_cells(layer_connection, cell_definition_pre_layer, cell_definition_post_layer):
+    if cell_definition_pre_layer.cell_type == CellType.MIXED:
+        negative_synapse_strength = layer_connection.synapse_strength
+        positive_synapse_strength = layer_connection.synapse_strength
+    if cell_definition_pre_layer.cell_type == CellType.EXCITATORY:
+        positive_synapse_strength = layer_connection.synapse_strength
+        negative_synapse_strength = 0.0
+    if cell_definition_pre_layer.cell_type == CellType.INHIBITORY:
+        negative_synapse_strength = layer_connection.synapse_strength
+        positive_synapse_strength = 0.0
+    label = f"{cell_definition_pre_layer.label}_to_{cell_definition_post_layer.label}"
+    return SynapseDefinition(
+        label,
+        cell_definition_pre_layer.uuid,
+        cell_definition_post_layer.uuid,
+        positive_synapse_strength,
+        negative_synapse_strength)
+
+
+def connect_layers_by_cell(layer_connection, cell_definitions_by_layer):
+    synapse_definitions = []
+    for cell_definition_pre_layer in cell_definitions_by_layer[layer_connection.pre_layer]:
+        for cell_definition_post_layer in cell_definitions_by_layer[layer_connection.post_layer]:
+            if layer_connection.probability >= random.random():
+                synapse_definition = connect_cells(layer_connection,
+                                                   cell_definition_pre_layer,
+                                                   cell_definition_post_layer)
+                synapse_definitions.append(synapse_definition)
+    return synapse_definitions
+
+def connect_layers_with_random_selection(layer_connection, cell_definitions_by_layer):
+    synapse_definitions = []
+    pre_layer_cells = cell_definitions_by_layer[layer_connection.pre_layer]
+    pre_layer_cell_by_id = {}
+    for pre_layer_cell in pre_layer_cells:
+        pre_layer_cell_by_id[pre_layer_cell.uuid] = pre_layer_cell
+
+    pre_layer_cell_ids = set(pre_layer_cell_by_id.keys())
+    
+    for post_layer_cell in cell_definitions_by_layer[layer_connection.post_layer]:
+        print("sampling", len(pre_layer_cell_ids),layer_connection.inputs_per_cell)
+        pre_layer_cell_ids_to_connect = random.sample(pre_layer_cell_ids,
+                                                      layer_connection.inputs_per_cell)
+        for pre_layer_cell_id in pre_layer_cell_ids_to_connect:
+            synapse_definition = connect_cells(layer_connection,
+                                               pre_layer_cell_by_id[pre_layer_cell_id],
+                                               post_layer_cell)
+            synapse_definitions.append(synapse_definition)
+        pre_layer_cell_ids = pre_layer_cell_ids - set(pre_layer_cell_ids_to_connect)
+        if len(pre_layer_cell_ids) < layer_connection.inputs_per_cell:
+            pre_layer_cell_ids = set(pre_layer_cell_by_id.keys())
+            print("reset", len(pre_layer_cell_ids))
+        
+    return synapse_definitions
+
 
 def network_from_cells(cell_definitions,
                        synapses):

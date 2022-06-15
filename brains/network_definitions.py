@@ -35,6 +35,40 @@ def stdp_test_network(input_balance=False):
     return network_from_cells(cells,
                               synapses)
 
+def easy_layer_network():
+    layers = [Layer("a", 3,
+                    layout = Layout.LINE,
+                    is_input_layer = True,
+                    input_balance = False,
+                    output_balance = True,
+                    lock_inhibition_strength = False),
+              Layer("i", 3,
+                    layout = Layout.LINE,
+                    is_input_layer = True,
+                    cell_type = CellType.INHIBITORY,
+                    input_balance = False,
+                    output_balance = True,
+                    lock_inhibition_strength = False),
+              Layer("b", 4,
+                    layout = Layout.LINE,
+                    target_fire_rate_per_epoch = 0.25,
+                    input_balance = True,
+                    output_balance = True,
+                    lock_inhibition_strength = False),
+              Layer("c", 2,
+                    layout = Layout.LINE,
+                    is_output_layer = True,
+                    target_fire_rate_per_epoch = 0.5,
+                    input_balance = True,
+                    output_balance = True,
+                    lock_inhibition_strength = False)]
+    layer_connections = [LayerConnection("a", "b", 0.1),
+                         LayerConnection("i", "b", 0.1),
+                         LayerConnection("b", "c", 0.45),]
+    add_display_position_to_layers(layers)
+    return network_from_layers(layers, layer_connections)
+
+
 def layer_based_default_network():
     '''
       Used for the x o world
@@ -89,7 +123,7 @@ def mnist_network():
                     input_balance = False,
                     output_balance = True,
                     lock_inhibition_strength = True),
-              Layer("b", 6*6,
+              Layer("b", 30*30,
                     layout = Layout.SQUARE,
                     target_fire_rate_per_epoch = 0.1,
                     input_balance = True,
@@ -103,41 +137,11 @@ def mnist_network():
                     output_balance = True,
                     lock_inhibition_strength = False)]
 
-    layer_connections = [LayerConnection("a", "b", 0.00035),
+    layer_connections = [LayerConnection("a", "b", 0.046,
+                                         define_by_inputs_per_cell=True,
+                                         inputs_per_cell = 6),
                          LayerConnection("i", "b", 0.00035),
-                         LayerConnection("b", "c", 0.001)]
+                         LayerConnection("b", "c", 0.00004)]
     add_display_position_to_layers(layers)
     return network_from_layers(layers, layer_connections)
 
-def easy_layer_network():
-    layers = [Layer("a", 3,
-                    layout = Layout.LINE,
-                    is_input_layer = True,
-                    input_balance = False,
-                    output_balance = True,
-                    lock_inhibition_strength = False),
-              Layer("i", 3,
-                    layout = Layout.LINE,
-                    is_input_layer = True,
-                    cell_type = CellType.INHIBITORY,
-                    input_balance = False,
-                    output_balance = True,
-                    lock_inhibition_strength = False),
-              Layer("b", 4,
-                    layout = Layout.LINE,
-                    target_fire_rate_per_epoch = 0.25,
-                    input_balance = True,
-                    output_balance = True,
-                    lock_inhibition_strength = False),
-              Layer("c", 2,
-                    layout = Layout.LINE,
-                    is_output_layer = True,
-                    target_fire_rate_per_epoch = 0.5,
-                    input_balance = True,
-                    output_balance = True,
-                    lock_inhibition_strength = False)]
-    layer_connections = [LayerConnection("a", "b", 0.1),
-                         LayerConnection("i", "b", 0.1),
-                         LayerConnection("b", "c", 0.45),]
-    add_display_position_to_layers(layers)
-    return network_from_layers(layers, layer_connections)

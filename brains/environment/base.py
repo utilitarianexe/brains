@@ -32,7 +32,7 @@ class ResultTracker:
 
 
     def update(self, found_output_ids, desired_output_id, possible_outputs, step):
-        print(f"found: {found_output_ids} desired: {desired_output_id}")
+        print(f"found: {sorted(found_output_ids)} desired: {desired_output_id}")
         self.epochs += 1
 
         number_cells_fired = len(set(found_output_ids))

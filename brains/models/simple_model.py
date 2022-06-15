@@ -537,6 +537,12 @@ class SimpleModel:
         self.epoch_length = model_parameters.epoch_length
         self._epoch_delay = model_parameters.epoch_delay
 
+        self.rewarded_synapses = []
+        for synapse in self.synapses:
+            if synapse._pre_cell_type != CellType.INHIBITORY:
+                self.rewarded_synapses.append(synapse)
+
+
     def _maybe_start_warp(self, step, environment):
         if not self._warp:
             return
@@ -598,7 +604,7 @@ class SimpleModel:
                 return
             
         if self._dopamine > 0.0001:
-            for synapse in self.synapses:
+            for synapse in self.rewarded_synapses:
                 synapse.update(self._dopamine)
         
         self._last_active = step

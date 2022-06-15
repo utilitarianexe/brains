@@ -56,7 +56,7 @@ def negate(image):
     new_image = []
     for pixel in image:
         new_pixel = abs(pixel - 255)
-        if 0.2 >= random.random():
+        if 0.15 >= random.random():
             new_image.append(new_pixel)
         else:
             new_image.append(0.0)
