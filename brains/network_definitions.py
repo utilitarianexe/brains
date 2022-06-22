@@ -108,7 +108,7 @@ def layer_based_default_network():
     add_display_position_to_layers(layers)    
     return network_from_layers(layers, layer_connections)
 
-def mnist_network():
+def mnist_network(number_of_outputs=10):
     image_size = 28*28
     layers = [Layer("a", image_size,
                     layout = Layout.SQUARE,
@@ -129,10 +129,10 @@ def mnist_network():
                     input_balance = True,
                     output_balance = True,
                     lock_inhibition_strength = True),
-              Layer("c", 10,
+              Layer("c", number_of_outputs,
                     layout = Layout.LINE,
                     is_output_layer = True,
-                    target_fire_rate_per_epoch = 0.1,
+                    target_fire_rate_per_epoch = 1.0/number_of_outputs,
                     input_balance = True,
                     output_balance = True,
                     lock_inhibition_strength = False)]
@@ -141,7 +141,7 @@ def mnist_network():
                                          define_by_inputs_per_cell=True,
                                          inputs_per_cell = 6),
                          LayerConnection("i", "b", 0.00035),
-                         LayerConnection("b", "c", 0.00004)]
+                         LayerConnection("b", "c", 0.0008/number_of_outputs)]
     add_display_position_to_layers(layers)
     return network_from_layers(layers, layer_connections)
 
