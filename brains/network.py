@@ -60,6 +60,7 @@ class SynapseDefinition:
     post_cell_id: str
     starting_strength: float = 0.0
     starting_inhibitory_strength: float = 0.0
+    unrewarded_stdp: bool = False
 
 @dataclass
 class NetworkDefinition:

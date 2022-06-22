@@ -1,4 +1,5 @@
 unsorted issues
+  put up nmist data and readme
   flat reward stdp easy set up by layer
   caps(one cell does not spike 2 cells does cap)
   optimization
@@ -21,6 +22,7 @@ unsorted issues
     use input balancing on those
 
 
+  should the inhibition property be on Layer or LayerConection
   display fire rate on selected cells
   show a grid of cells by input totals ect rather than each synapse or clicking each cell
   faster UI
