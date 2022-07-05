@@ -1,4 +1,5 @@
 unsorted issues
+  multiple simultanious runs
   fix warping(not running at all with pygame?)
   check importing and exporting
   optimization

@@ -2,4 +2,3 @@
 pygame
 matplotlib
 pytest
-pyqt5

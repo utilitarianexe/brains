@@ -85,7 +85,7 @@ def user_specified_world(import_name, environment_type, handwritten_file_name,
     elif environment_type == 'mnist':
         model_environment = MnistEnvironment(
             model.epoch_length, input_delay,
-            number_of_outputs=mnist_number_of_outputs)
+            number_of_possible_outputs=mnist_number_of_outputs)
     elif environment_type == 'easy':
         model_environment = EasyEnvironment(model.epoch_length, input_delay)
     elif environment_type == 'stdp':
@@ -104,10 +104,12 @@ def create_world(world_type, epoch_length, import_name,
 
     if import_name and environment_type:
         return user_specified_world(import_name, environment_type,
-                                    handwritten_file_name, epoch_length, warp=warp)
+                                    handwritten_file_name, epoch_length, warp=warp,
+                                    mnist_number_of_outputs=mnist_number_of_outputs)
     if import_name and world_type:
         return user_specified_world(import_name, world_type,
-                                    handwritten_file_name, epoch_length, warp=warp)
+                                    handwritten_file_name, epoch_length, warp=warp,
+                                    mnist_number_of_outputs=mnist_number_of_outputs)
     
     if world_type:
         if world_type == "parameter":
