@@ -43,6 +43,8 @@ class TestCellMembrane(unittest.TestCase):
 
 class TestModel(unittest.TestCase):
     def two_cell_network(self, starting_synapse_strength):
+
+        # Cell c is also an input cell because we induce spikes in it artificially.
         cells = [CellDefinition("a", 0, 0,
                                 x_input_position=0,
                                 y_input_position=0,
@@ -60,13 +62,41 @@ class TestModel(unittest.TestCase):
         model_parameters = simple_model.ModelParameters()
         return simple_model.SimpleModel(self.two_cell_network(starting_synapse_strength),
                                         model_parameters)
+
+    def three_cell_network(self, starting_synapse_strength):
+
+        # Cell c is also an input cell because we induce spikes in it artificially.
+        cells = [CellDefinition("a", 0, 0,
+                                x_input_position=0,
+                                y_input_position=0,
+                                is_input_cell=True),
+                 CellDefinition("b", 0, 1,
+                                x_input_position=0,
+                                y_input_position=1,
+                                is_input_cell=True),
+                 CellDefinition("c", 1, 0,
+                                x_input_position=1,
+                                y_input_position=0,
+                                is_input_cell=True,
+                                is_output_cell=True)]
+        synapses = [("a", "c", starting_synapse_strength), ("b", "c", starting_synapse_strength)]
+        return network.network_from_cells(cells,
+                                          synapses)
+
+    def three_cell_model(self, starting_synapse_strength):
+        model_parameters = simple_model.ModelParameters()
+        return simple_model.SimpleModel(self.three_cell_network(starting_synapse_strength),
+                                        model_parameters)
         
     def test_spike_propogation(self):
         '''
-        Causing one cell to spike should cause the next to spike
+        Causing two input cells to spike should cause a postsynaptic cell they are connected to
+        to spike.
         '''
-        model = self.two_cell_model(0.1)
-        test_environment = FakeEnvironment([(1, 0, 0, 0.15)], [None], 1000)
+        model = self.three_cell_model(0.03)
+        test_environment = FakeEnvironment([(1, 0, 0, 0.15),
+                                            (20, 0, 1, 0.15)],
+                                           [None], 1000)
 
         fire_history = []
         for i in range(100):
@@ -80,8 +110,10 @@ class TestModel(unittest.TestCase):
                 fire_history.append("a")
             if outputs["b"] > 1:
                 fire_history.append("b")
+            if outputs["c"] > 1:
+                fire_history.append("c")
 
-        expected_fire_history = ["a", "b"]
+        expected_fire_history = ["a", "b", "c"]
         self.assertEqual(fire_history, expected_fire_history)
 
     def test_stdp_pre_post(self):
@@ -170,8 +202,11 @@ class TestModel(unittest.TestCase):
         second input cell fires. After this point the synapse of the first input will
         continue to get stronger while the second will get weaker because it fires after
         the output cell.
+
+        Note we need to change the max allowed connection strength for this to work.
         '''
         model_parameters = simple_model.ModelParameters(warp=False)
+        model_parameters.synapse_type_parameters.max_strength = 0.4
         network_definition = network_definitions.stdp_test_network()
         test_environment = STDPTestEnvironment()
         model =  simple_model.SimpleModel(network_definition,
@@ -187,9 +222,11 @@ class TestModel(unittest.TestCase):
             test_environment.step(i)
             stimuli = test_environment.stimuli(i)
             model.step(i, test_environment, stimuli)
+            outputs = model.test_outputs()
             if i == 750:
                 self.assertTrue(synapse_early_input.strength > starting_strength)
                 self.assertTrue(synapse_late_input.strength > synapse_early_input.strength)
+
         self.assertTrue(synapse_early_input.strength > synapse_late_input.strength)
 
     def test_input_balancing(self):
@@ -219,10 +256,11 @@ class TestModel(unittest.TestCase):
         synapse_late_input = synapses_by_pre_cell["b"]
         starting_strength = synapse_early_input.strength 
             
-        for i in range(15000):
+        for i in range(800):
             test_environment.step(i)
             stimuli = test_environment.stimuli(i)
             model.step(i, test_environment, stimuli)
+            outputs = model.test_outputs()
 
         self.assertTrue(synapse_late_input.strength > synapse_early_input.strength)
 

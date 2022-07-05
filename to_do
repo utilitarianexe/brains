@@ -1,26 +1,24 @@
 unsorted issues
-  put up nmist data and readme
-  flat reward stdp easy set up by layer
-  caps(one cell does not spike 2 cells does cap)
+  fix warping(not running at all with pygame?)
+  check importing and exporting
   optimization
   record results to file
   import full mnist set
-
+  put up nmist data and readme
+  need to way to loop inputs or an option to run all inputs
   clean up mess of magic numbers with negative images
-  memory leak
-  smaller mnist problem 3 digits
+  memory leak in UI
+  use parser object instead of variable passing main
   network.py needs refactored
     too much ui
     lock_inhibition_strength probably uneeded
 
-
-
+  display prameters for a cell when you clikc particularly(s_tag_decay, last update amount)
   why don't we just totaly artificially normalize fire rates for input
     give them a target fire rate
     apply env input to one synapse
     apply a random input to another
     use input balancing on those
-
 
   should the inhibition property be on Layer or LayerConection
   display fire rate on selected cells

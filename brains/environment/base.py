@@ -7,8 +7,8 @@ def result_convert(found_output_ids, desired_output_id):
     if desired_output_id in found_output_ids:
         correct_cell_fired = True
 
-    for out_id in found_output_ids:
-        if out_id != desired_output_id:
+    for output_id in found_output_ids:
+        if output_id != desired_output_id:
             incorrect_cell_fired = True
     return correct_cell_fired, incorrect_cell_fired
 
@@ -52,7 +52,7 @@ class ResultTracker:
         if number_cells_fired == len(possible_outputs) - 1:
             self.all_fired += 1
 
-        if desired_output_id == "10":
+        if desired_output_id is None:
             self.null_desired_output += 1
             return
 
@@ -68,7 +68,7 @@ class ResultTracker:
             self.fail += 1
 
         if self.win + self.fail > 0:
-            accuracy = float(self.win) / float(self.win + self.fail)
+            self.accuracy = float(self.win) / float(self.win + self.fail)
 
 
 class BaseEpochChallengeEnvironment:
@@ -106,22 +106,18 @@ class BaseEpochChallengeEnvironment:
             self._reward_provided = False
             self._success = False
         elif real_step % self._epoch_length == self._epoch_length//2:
-            desired_output = self.desired_output_id(step)
-            self._result_tracker.update(self._found_output_ids, desired_output,
+            desired_output_id = self.desired_output_id(step)
+            self._result_tracker.update(self._found_output_ids, desired_output_id,
                                         self._possible_outputs, step)
-            if self.has_success(desired_output):
+            if self.has_success(desired_output_id):
                 self._success = True
             else:
                 self._success = False
                 
     def has_success(self, desired_output_id):
-        if desired_output_id == "10":
+        if desired_output_id is None:
             return False
         return desired_output_id in self._found_output_ids
-        # correct_cell_fired, incorrect_cell_fired = result_convert(self._found_output_ids,
-        #                                                           desired_output_id)
-        # return correct_cell_fired and not incorrect_cell_fired
-        
 
     def video_output(self, step):
         output_id = self.desired_output_id(step)

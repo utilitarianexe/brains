@@ -23,10 +23,8 @@ class CellTypeParameters:
 @dataclass
 class SynapseTypeParameters:
     stdp_scalar: float = 0.01
-    reward_scalar: float = 0.06
-    max_strength: float = 0.4
+    max_strength: float = 0.03
     min_strength: float = 0.0
-    s_tag_decay_rate: float = 0.002
     starting_s_tag: float = 0.0
     noise_factor: float = 0.0
 
@@ -37,7 +35,7 @@ class ModelParameters:
     dopamine_decay: float = 0.0
     cell_type_parameters: CellTypeParameters = field(default_factory=CellTypeParameters)
     synapse_type_parameters: SynapseTypeParameters = field(default_factory=SynapseTypeParameters)
-    warp: bool = True
+    warp: bool = False
     epoch_length: int = 400
     epoch_delay: int = 50
     
@@ -51,7 +49,7 @@ class ModelParameters:
             self.synapse_type_parameters = SynapseTypeParameters(**self.synapse_type_parameters)
 
 
-def handwriting_model_parameters(warp=True,
+def handwriting_model_parameters(warp=False,
                                  epoch_length=400,
                                  epoch_delay=50):
     synapse_type_paramenters = SynapseTypeParameters(noise_factor=0.5)
@@ -69,23 +67,27 @@ class Synapse:
     def __init__(self, pre_cell, post_cell,
                  synapse_definition, step_size,
                  synapse_type_parameters):
+        
+        self._step_size = step_size
         self.pre_cell = pre_cell
         self._pre_cell_type = pre_cell.cell_type
         self.post_cell = post_cell
+        
+        self._unsupervised_stdp = synapse_definition.unsupervised_stdp
+        self._reward_scalar = synapse_definition.reward_scalar
         self.strength = synapse_definition.starting_strength
         self.inhibitory_strength = synapse_definition.starting_inhibitory_strength
         self.label = synapse_definition.label
-        self._step_size = step_size
+        self._s_tag_decay_rate = synapse_definition.s_tag_decay_rate
 
         # can be though of as recording the firing pattern correlation
         self._s_tag = synapse_type_parameters.starting_s_tag
         
         self._stdp_scalar = synapse_type_parameters.stdp_scalar
-        self._reward_scalar = synapse_type_parameters.reward_scalar
         self._max_strength = synapse_type_parameters.max_strength
         self._min_strength = synapse_type_parameters.min_strength
-        self._s_tag_decay_rate = synapse_type_parameters.s_tag_decay_rate
         self._noise_factor = synapse_type_parameters.noise_factor
+        
         self._pre_cell_fired = False
         self._post_cell_fired = False
         self._last_fire_step = 0
@@ -102,7 +104,10 @@ class Synapse:
             self.inhibitory_strength = self._min_strength
 
     def update(self, dopamine):
-        self.strength += self._s_tag * dopamine * self._reward_scalar
+        if self._unsupervised_stdp:
+            self.strength += self._s_tag * self._reward_scalar
+        else:
+            self.strength += self._s_tag * dopamine * self._reward_scalar
         self.cap()
 
     def post_fire(self, step):
@@ -739,7 +744,7 @@ class SimpleModel:
 
         return cells, synapses
 
-def import_model(blob, warp=True):
+def import_model(blob, warp=False):
     network_definition = NetworkDefinition(**blob["network_definition"])
     model_parameters = ModelParameters(**blob["model_parameters"])
     model_parameters.warp = warp

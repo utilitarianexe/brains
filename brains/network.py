@@ -60,7 +60,9 @@ class SynapseDefinition:
     post_cell_id: str
     starting_strength: float = 0.0
     starting_inhibitory_strength: float = 0.0
-    unrewarded_stdp: bool = False
+    unsupervised_stdp: bool = False
+    reward_scalar: float = 0.06
+    s_tag_decay_rate: float = 0.002
 
 @dataclass
 class NetworkDefinition:
@@ -102,7 +104,10 @@ class NetworkDefinition:
             post_cell = cells_by_uuid[synapse.post_cell_id]
             synapse_info = (pre_cell.label,
                             post_cell.label,
-                            synapse.starting_strength)
+                            synapse.starting_strength,
+                            synapse.unsupervised_stdp,
+                            synapse.reward_scalar,
+                            synapse.s_tag_decay_rate)
             synapse_infos.append(synapse_info)
         return cell_infos, synapse_infos
 
@@ -114,6 +119,9 @@ class LayerConnection:
     probability: float = 1.0
     define_by_inputs_per_cell: bool = False
     inputs_per_cell: int = 0
+    unsupervised_stdp: bool = False
+    reward_scalar: float = 0.06
+    s_tag_decay_rate: float = 0.002
 
 @dataclass
 class Layer:
@@ -245,7 +253,10 @@ def connect_cells(layer_connection, cell_definition_pre_layer, cell_definition_p
         cell_definition_pre_layer.uuid,
         cell_definition_post_layer.uuid,
         positive_synapse_strength,
-        negative_synapse_strength)
+        negative_synapse_strength,
+        layer_connection.unsupervised_stdp,
+        layer_connection.reward_scalar,
+        layer_connection.s_tag_decay_rate)
 
 
 def connect_layers_by_cell(layer_connection, cell_definitions_by_layer):
@@ -269,7 +280,6 @@ def connect_layers_with_random_selection(layer_connection, cell_definitions_by_l
     pre_layer_cell_ids = set(pre_layer_cell_by_id.keys())
     
     for post_layer_cell in cell_definitions_by_layer[layer_connection.post_layer]:
-        print("sampling", len(pre_layer_cell_ids),layer_connection.inputs_per_cell)
         pre_layer_cell_ids_to_connect = random.sample(pre_layer_cell_ids,
                                                       layer_connection.inputs_per_cell)
         for pre_layer_cell_id in pre_layer_cell_ids_to_connect:
@@ -280,7 +290,6 @@ def connect_layers_with_random_selection(layer_connection, cell_definitions_by_l
         pre_layer_cell_ids = pre_layer_cell_ids - set(pre_layer_cell_ids_to_connect)
         if len(pre_layer_cell_ids) < layer_connection.inputs_per_cell:
             pre_layer_cell_ids = set(pre_layer_cell_by_id.keys())
-            print("reset", len(pre_layer_cell_ids))
         
     return synapse_definitions
 
@@ -292,7 +301,7 @@ def network_from_cells(cell_definitions,
         cell_definitions_by_label[definition.label] = definition
 
     synapse_definitions = []
-    for (pre_cell_label, post_cell_label, strength) in  synapses:
+    for (pre_cell_label, post_cell_label, strength) in synapses:
         pre_cell_definition = cell_definitions_by_label[pre_cell_label]
         post_cell_definition = cell_definitions_by_label[post_cell_label]
         label = f"{pre_cell_definition.label}_to_{post_cell_definition.label}"
