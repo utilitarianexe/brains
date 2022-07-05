@@ -1,4 +1,8 @@
 unsorted issues
+  should be clear what the non display screen is
+  display epochs
+  too much  repeated code in main
+  is it ok to include mnist data in our repo
   multiple simultanious runs
   fix warping(not running at all with pygame?)
   check importing and exporting

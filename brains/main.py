@@ -2,6 +2,7 @@ import brains.models.spirit_model as spirit_model
 import brains.models.example_model as example_model
 import brains.models.simple_model as simple_model
 import brains.network_definitions as network_definitions
+import brains.utils as utils
 from brains.environment.easy import EasyEnvironment
 from brains.environment.handwriting import HandwritingEnvironment
 from brains.environment.mnist import MnistEnvironment
@@ -22,111 +23,100 @@ def parameter_test_world():
     model = simple_model.SimpleModel(network_definition, model_parameters)
     return model, ParameterTestEnvironment()
 
-
-def stdp_world(epoch_length, warp=False):
-    model_parameters = simple_model.ModelParameters(epoch_length=epoch_length, warp=warp)
+def stdp_world(parameters):
+    model_parameters = simple_model.ModelParameters(epoch_length=parameters.epoch_length,
+                                                    warp=parameters.warp)
+    model_parameters.synapse_type_parameters.max_strength = 0.4
     network_definition = network_definitions.stdp_test_network()
     model = simple_model.SimpleModel(network_definition, model_parameters)
     return model, STDPTestEnvironment()
 
-def handwriting_world(file_name, epoch_length, input_delay=50, epoch_delay=50, warp=False):
-    model_parameters = simple_model.handwriting_model_parameters(epoch_length=epoch_length,
-                                                                 epoch_delay=epoch_delay,
-                                                                 warp=warp)
-
-    # need like some kind of average starting connection strength thing
+def handwriting_world(parameters):
+    model_parameters = simple_model.handwriting_model_parameters(epoch_length=parameters.epoch_length,
+                                                                 epoch_delay=parameters.epoch_delay,
+                                                                 warp=parameters.warp)
     network_definition = network_definitions.layer_based_default_network()
     environment = HandwritingEnvironment(
-        epoch_length, input_delay, {'o': 0, 'x': 1},
+        parameters.epoch_length, parameters.input_delay, {'o': 0, 'x': 1},
         image_lines=None, shuffle=True,
-        file_name=file_name)
+        file_name=parameters.handwritten_file_name)
 
     model = simple_model.SimpleModel(network_definition, model_parameters)
     return model, environment
 
-def mnist_world(epoch_length, input_delay=50, epoch_delay=50, warp=False, number_of_outputs=10):
-    model_parameters = simple_model.handwriting_model_parameters(epoch_length=epoch_length,
-                                                                 epoch_delay=epoch_delay,
-                                                                 warp=warp)
-
-    # need like some kind of average starting connection strength thing
-    network_definition = network_definitions.mnist_network(number_of_outputs=number_of_outputs)
-    environment = MnistEnvironment(epoch_length, input_delay,
-                                   number_of_possible_outputs=number_of_outputs)
-
+def mnist_world(parameters):
+    model_parameters = simple_model.handwriting_model_parameters(epoch_length=parameters.epoch_length,
+                                                                 epoch_delay=parameters.epoch_delay,
+                                                                 warp=parameters.warp)
+    network_definition = network_definitions.mnist_network(
+        number_of_outputs=parameters.mnist_number_of_outputs)
+    environment = MnistEnvironment(parameters.epoch_length, parameters.input_delay,
+                                   number_of_possible_outputs=parameters.mnist_number_of_outputs)
     model = simple_model.SimpleModel(network_definition, model_parameters)
     return model, environment
 
 
-def easy_world(epoch_length, input_delay=50, epoch_delay=50, warp=False):
-    model_parameters = simple_model.handwriting_model_parameters(epoch_length=epoch_length,
-                                                                 epoch_delay=epoch_delay,
-                                                                 warp=warp)
+def easy_world(parameters):
+    model_parameters = simple_model.handwriting_model_parameters(epoch_length=parameters.epoch_length,
+                                                                 epoch_delay=parameters.epoch_delay,
+                                                                 warp=parameters.warp)
+    model_parameters.synapse_type_parameters.max_strength = 0.4
 
     # need like some kind of average starting connection strength thing
     network_definition = network_definitions.easy_layer_network()
-    easy_environment = EasyEnvironment(epoch_length, input_delay)
+    easy_environment = EasyEnvironment(parameters.epoch_length, parameters.input_delay)
     model = simple_model.SimpleModel(network_definition, model_parameters)
     return model, easy_environment
 
-
-def user_specified_world(import_name, environment_type, handwritten_file_name,
-                         input_delay=50, warp=False, mnist_number_of_outputs=10):
-    base_path = Path(__file__).parent / "data"
-    file_path = (base_path / import_name).resolve()
+def user_specified_world(parameters):
+    file_path = utils.data_dir_file_path(parameters.import_name)
     model_file = open(file_path)
     blob = json.load(model_file)
-    model = simple_model.import_model(blob, warp=warp)
-    if environment_type == 'handwriting':
+    model = simple_model.import_model(blob, warp=parameters.warp)
+    if parameters.environment_type == 'handwriting':
         model_environment = HandwritingEnvironment(
-            model.epoch_length, input_delay, {'o': 0, 'x': 1},
+            model.epoch_length, parameters.input_delay, {'o': 0, 'x': 1},
             image_lines=None, shuffle=True,
-            file_name=handwritten_file_name)
-    elif environment_type == 'mnist':
+            file_name=parameters.handwritten_file_name)
+    elif parameters.environment_type == 'mnist':
         model_environment = MnistEnvironment(
-            model.epoch_length, input_delay,
-            number_of_possible_outputs=mnist_number_of_outputs)
-    elif environment_type == 'easy':
-        model_environment = EasyEnvironment(model.epoch_length, input_delay)
-    elif environment_type == 'stdp':
+            model.epoch_length, parameters.input_delay,
+            number_of_possible_outputs=parameters.mnist_number_of_outputs)
+    elif parameters.environment_type == 'easy':
+        model_environment = EasyEnvironment(model.epoch_length, parameters.input_delay)
+    elif parameters.environment_type == 'stdp':
         model_environment = STDPTestEnvironment(model.epoch_length)
-    elif environment_type == 'parameter':
+    elif parameters.environment_type == 'parameter':
         model_environment = STDPTestEnvironment(model.epoch_length)
     return model, model_environment
 
-def create_world(world_type, epoch_length, import_name,
-                 environment_type, handwritten_file_name,
-                 warp=False,
-                 mnist_number_of_outputs=10):
-    if world_type and environment_type:
+def create_world(parameters):
+    
+    if parameters.world_type and parameters.environment_type:
         raise Exception("User should either create world with(import_name and environment) or " \
                         "provide world_type")
 
-    if import_name and environment_type:
-        return user_specified_world(import_name, environment_type,
-                                    handwritten_file_name, epoch_length, warp=warp,
-                                    mnist_number_of_outputs=mnist_number_of_outputs)
-    if import_name and world_type:
-        return user_specified_world(import_name, world_type,
-                                    handwritten_file_name, epoch_length, warp=warp,
-                                    mnist_number_of_outputs=mnist_number_of_outputs)
+    if parameters.import_name and parameters.environment_type:
+        return user_specified_world(parameters)
+    elif parameters.import_name and parameters.world_type:
+        parameters.environment_type = parameters.world_type
+        return user_specified_world(parameters)
     
-    if world_type:
-        if world_type == "parameter":
+    if parameters.world_type:
+        if parameters.world_type == "parameter":
             return parameter_test_world()
-        elif world_type == "stdp":
-            return stdp_world(epoch_length, warp=warp)
-        elif world_type == "easy":
-            return easy_world(epoch_length, warp=warp)
-        elif world_type == "spirit":
+        elif parameters.world_type == "stdp":
+            return stdp_world(parameters)
+        elif parameters.world_type == "easy":
+            return easy_world(parameters)
+        elif parameters.world_type == "spirit":
             return World(spirit_model.default_model(), None)
-        elif world_type == "example":
+        elif parameters.world_type == "example":
             return World(example_model.ExampleModel(), None)
-        elif world_type == "handwriting":
-            return handwriting_world(handwritten_file_name, epoch_length, warp=warp)
-        elif world_type == "mnist":
-            return mnist_world(epoch_length, warp=warp,
-                               number_of_outputs=mnist_number_of_outputs)
+        elif parameters.world_type == "handwriting":
+            return handwriting_world(parameters)
+        elif parameters.world_type == "mnist":
+            return mnist_world(parameters)
 
     print("Not enough information provided. Either supply a world argument or both a import_name and an environment to run it in")
     quit()
@@ -152,13 +142,13 @@ def export(brain, export_name):
 
 def create_args():
     my_parser = argparse.ArgumentParser(description='Run brains')
-    my_parser.add_argument('--display',
+    my_parser.add_argument('--display_type', '--display',
                            type=str,
-                           choices=["pygame", "pyplot"],
-                           required=False,
+                           choices=["pygame", "pyplot", ""],
+                           required=True,
                            help='How to display the model.')
     my_parser.add_argument(
-        '--world',
+        '--world_type', '--world',
         type=str,
         choices=["spirit", "stdp", "example", "handwriting", "easy", "mnist", "parameter"],
         required=False,
@@ -174,6 +164,16 @@ def create_args():
                            default=400,
                            required=False,
                            help='Number of steps per epoch.')
+    my_parser.add_argument('--input_delay',
+                           type=int,
+                           default=50,
+                           required=False,
+                           help='Number of steps per epoch.')
+    my_parser.add_argument('--epoch_delay',
+                           type=int,
+                           default=50,
+                           required=False,
+                           help='Number of steps per epoch.')
     my_parser.add_argument('--export_name',
                            type=str,
                            required=False,
@@ -186,7 +186,7 @@ def create_args():
                            type=str,
                            required=False,
                            help='Import model. Should be the name of a file in the data directory.')
-    my_parser.add_argument('--environment',
+    my_parser.add_argument('--environment_type', '--environment',
                            choices=["stdp", "handwriting", "easy", "mnist", "parameter"],
                            type=str,
                            required=False,
@@ -209,64 +209,45 @@ def create_args():
     return my_parser.parse_args()
 
 
-def main(steps, epoch_length,
-         world_type="", import_name="",
-         environment_type="", handwritten_file_name="",
-         display_type="", export_name="",
-         mnist_number_of_outputs=10):
-    warp = False
-    brain, environment = create_world(world_type, epoch_length,
-                                      import_name, environment_type,
-                                      handwritten_file_name, warp=warp,
-                                      mnist_number_of_outputs=mnist_number_of_outputs)
+def main(parameters):
+    brain, environment = create_world(parameters)
     def handler(signum, frame):
-        if export_name:
-            export(brain, export_name)
+        if parameters.export_name:
+            export(brain, parameters.export_name)
         exit(1)
 
     signal.signal(signal.SIGINT, handler)
 
-    display = create_display(display_type, brain, environment=environment)
-    for i in range(steps):
+    display = create_display(parameters.display_type, brain, environment=environment)
+    for i in range(parameters.steps):
         environment.step(i)
         stimuli = environment.stimuli(i)
         brain.step(i, environment, stimuli)
         if display is not None:
             should_exit = display.process_step(i)
             if should_exit:
-                if export_name:
-                    export(brain, export_name)
+                if parameters.export_name:
+                    export(brain, parameters.export_name)
                 exit(1)
                 
     if display is not None:
         display.final_output()
 
-    if export_name:
-        export(brain, export_name)
+    if parameters.export_name:
+        export(brain, parameters.export_name)
   
 
 if __name__ == "__main__" :
-    args = create_args()
-    epochs = args.epochs
-    world_type = args.world
-    import_name = args.import_name
-    environment_type = args.environment
-    handwritten_file_name = args.handwritten_file_name
-    display_type = args.display
-    export_name = args.export_name
-    profile = args.profile
-    epoch_length = args.epoch_length
-    mnist_number_of_outputs = args.mnist_number_of_outputs
-    steps =  epochs * epoch_length
+    parameters = create_args()
+    parameters.warp = False
+    parameters.steps = parameters.epoch_length * parameters.epochs
 
-    if profile:
+    if parameters.profile:
         import cProfile, pstats, io
         from pstats import SortKey
         pr = cProfile.Profile()
         pr.enable()
-        main(steps, epoch_length,
-             world_type, import_name, environment_type, handwritten_file_name,
-             display_type, export_name, mnist_number_of_outputs)
+        main(parameters)
 
         pr.disable()
         s = io.StringIO()
@@ -275,6 +256,4 @@ if __name__ == "__main__" :
         ps.print_stats()
         print(s.getvalue())
     else:
-        main(steps, epoch_length,
-             world_type, import_name, environment_type, handwritten_file_name,
-             display_type, export_name, mnist_number_of_outputs)
+        main(parameters)
