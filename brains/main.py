@@ -220,11 +220,12 @@ def main(parameters):
 
     display = create_display(parameters.display_type, brain, environment=environment)
     for i in range(parameters.steps):
+        epoch = (i - parameters.input_delay) // parameters.epoch_length
         environment.step(i)
         stimuli = environment.stimuli(i)
         brain.step(i, environment, stimuli)
         if display is not None:
-            should_exit = display.process_step(i)
+            should_exit = display.process_step(i, epoch=epoch)
             if should_exit:
                 if parameters.export_name:
                     export(brain, parameters.export_name)

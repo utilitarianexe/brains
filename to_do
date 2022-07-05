@@ -1,19 +1,14 @@
 unsorted issues
-  should be clear what the non display screen is
-  display epochs
   too much  repeated code in main
   is it ok to include mnist data in our repo
   multiple simultanious runs
   fix warping(not running at all with pygame?)
-  check importing and exporting
   optimization
   record results to file
   import full mnist set
   put up nmist data and readme
   need to way to loop inputs or an option to run all inputs
-  clean up mess of magic numbers with negative images
   memory leak in UI
-  use parser object instead of variable passing main
   network.py needs refactored
     too much ui
     lock_inhibition_strength probably uneeded
@@ -39,8 +34,6 @@ unsorted issues
   better way to handle running out of images
   accept fire should just record output_ids
   nmist and handwriting too much copy paste
-  main file too big
-  network definitions need sperated from network file
   layer based diagnostics like total input strength
   model based error condition tracking(double fires, not resetting by the time of epoch)
   remove warp fudge
@@ -67,7 +60,6 @@ unsorted issues
   need a seperate epoch length/delay for envs
   get profile working again
   prints inside model should instead be an output things like average layer input strength
-  network.py now has too much display info in it
   use pattern matching and type hints
 
 refactoring

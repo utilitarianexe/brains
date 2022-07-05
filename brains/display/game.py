@@ -151,7 +151,7 @@ class GameDisplay():
         
     # We don't need a display step every model step other options possible
     # 3 types of step pygame, video_output, and model
-    def process_step(self, step):
+    def process_step(self, step, epoch=None):
         '''
         Returns if program should exit.
         '''
@@ -170,9 +170,13 @@ class GameDisplay():
             if event.type == pygame.QUIT:
                 return True
 
+        mode = self._get_mode()
         if mode != "none":
             texts = []
-            texts.append(f'step: {step}')
+            if epoch is not None:
+                texts.append(f'epoch: {epoch}')
+            else:
+                texts.append(f'step: {step}')
             texts.append(f'selected_layer: {self._selected_layer}')
             texts.append(f'selected_x: {self._selected_x}')
             texts.append(f'selected_y: {self._selected_y}')
@@ -193,7 +197,8 @@ class GameDisplay():
         if mode == "none":
             if self._change_mode:
                 self._screen.fill(self._black)
-                text = "display off(runs faster) click anywhere to turn on"
+                text = "display off(runs program faster) press any keyboard key while window " \
+                    "selected to turn on. "
                 label = self._font.render(text,
                                           self._anti_alias,
                                           self._blue)
