@@ -1,9 +1,11 @@
 unsorted issues
+  warp might breaks unsupervised
+  does inhibition mean we need higher max strengths
   too much  repeated code in main
   is it ok to include mnist data in our repo
   multiple simultanious runs
-  fix warping(not running at all with pygame?)
-  optimization
+  on brain step return info for display and environment rather than holding these
+
   record results to file
   import full mnist set
   put up nmist data and readme
@@ -44,7 +46,6 @@ unsorted issues
   delays make sense in env
   cell_definition.x_input_position don't like the default 0
   need a world class to avoid simple_model repeating the step loop in every function
-  stimuli return on env step, response return on brain step
   should not be sending simuli to all cells to filter themselves
   stop passing env to model in model.step
   abstract base class for env
@@ -58,7 +59,6 @@ unsorted issues
   dont run longer than we have images
   unit test for learning on simple network
   need a seperate epoch length/delay for envs
-  get profile working again
   prints inside model should instead be an output things like average layer input strength
   use pattern matching and type hints
 

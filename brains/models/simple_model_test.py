@@ -28,18 +28,18 @@ class TestCellMembrane(unittest.TestCase):
         cell_type_parameters = simple_model.CellTypeParameters()
         step_size = 1
         membrane = simple_model.CellMembrane(cell_type_parameters, step_size)        
-        self.assertFalse(membrane.fired())
+        self.assertFalse(membrane.fired)
         membrane.receive_input(0.8)
         membrane.update()
-        self.assertFalse(membrane.fired())
+        self.assertFalse(membrane.fired)
         membrane.update()
-        self.assertFalse(membrane.fired())
+        self.assertFalse(membrane.fired)
         membrane.update()
-        self.assertTrue(membrane.fired())
+        self.assertTrue(membrane.fired)
         membrane.update()
-        self.assertFalse(membrane.fired())
+        self.assertFalse(membrane.fired)
         membrane.update()
-        self.assertFalse(membrane.fired())
+        self.assertFalse(membrane.fired)
 
 class TestModel(unittest.TestCase):
     def two_cell_network(self, starting_synapse_strength):
@@ -172,7 +172,7 @@ class TestModel(unittest.TestCase):
                        ]
         reward_points =  [None, None, 0, None, None, None]
         test_environment = FakeEnvironment(fire_points, reward_points, 100)
-        model_parameters = simple_model.handwriting_model_parameters(False)
+        model_parameters = simple_model.handwriting_model_parameters()
         
         # Strength is set very low to prevent spike propagation. Spikes are created artificially.
         starting_synapse_strength = 0.0
@@ -205,7 +205,7 @@ class TestModel(unittest.TestCase):
 
         Note we need to change the max allowed connection strength for this to work.
         '''
-        model_parameters = simple_model.ModelParameters(warp=False)
+        model_parameters = simple_model.ModelParameters()
         model_parameters.synapse_type_parameters.max_strength = 0.4
         network_definition = network_definitions.stdp_test_network()
         test_environment = STDPTestEnvironment()

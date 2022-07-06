@@ -24,8 +24,7 @@ def parameter_test_world():
     return model, ParameterTestEnvironment()
 
 def stdp_world(parameters):
-    model_parameters = simple_model.ModelParameters(epoch_length=parameters.epoch_length,
-                                                    warp=parameters.warp)
+    model_parameters = simple_model.ModelParameters(epoch_length=parameters.epoch_length)
     model_parameters.synapse_type_parameters.max_strength = 0.4
     network_definition = network_definitions.stdp_test_network()
     model = simple_model.SimpleModel(network_definition, model_parameters)
@@ -33,8 +32,7 @@ def stdp_world(parameters):
 
 def handwriting_world(parameters):
     model_parameters = simple_model.handwriting_model_parameters(epoch_length=parameters.epoch_length,
-                                                                 epoch_delay=parameters.epoch_delay,
-                                                                 warp=parameters.warp)
+                                                                 epoch_delay=parameters.epoch_delay)
     network_definition = network_definitions.layer_based_default_network()
     environment = HandwritingEnvironment(
         parameters.epoch_length, parameters.input_delay, {'o': 0, 'x': 1},
@@ -46,8 +44,7 @@ def handwriting_world(parameters):
 
 def mnist_world(parameters):
     model_parameters = simple_model.handwriting_model_parameters(epoch_length=parameters.epoch_length,
-                                                                 epoch_delay=parameters.epoch_delay,
-                                                                 warp=parameters.warp)
+                                                                 epoch_delay=parameters.epoch_delay)
     network_definition = network_definitions.mnist_network(
         number_of_outputs=parameters.mnist_number_of_outputs)
     environment = MnistEnvironment(parameters.epoch_length, parameters.input_delay,
@@ -58,8 +55,7 @@ def mnist_world(parameters):
 
 def easy_world(parameters):
     model_parameters = simple_model.handwriting_model_parameters(epoch_length=parameters.epoch_length,
-                                                                 epoch_delay=parameters.epoch_delay,
-                                                                 warp=parameters.warp)
+                                                                 epoch_delay=parameters.epoch_delay)
     model_parameters.synapse_type_parameters.max_strength = 0.4
 
     # need like some kind of average starting connection strength thing
@@ -72,7 +68,7 @@ def user_specified_world(parameters):
     file_path = utils.data_dir_file_path(parameters.import_name)
     model_file = open(file_path)
     blob = json.load(model_file)
-    model = simple_model.import_model(blob, warp=parameters.warp)
+    model = simple_model.import_model(blob)
     if parameters.environment_type == 'handwriting':
         model_environment = HandwritingEnvironment(
             model.epoch_length, parameters.input_delay, {'o': 0, 'x': 1},
@@ -206,6 +202,12 @@ def create_args():
                            type=int,
                            required=False,
                            help='Number of outputs of mnist network.')
+    my_parser.add_argument('--attempt_warp',
+                           default=False,
+                           type=bool,
+                           required=False,
+                           help="Warp to speed up code when possible may contain errors " \
+                           "with unsupervised learning")
     return my_parser.parse_args()
 
 
@@ -218,19 +220,25 @@ def main(parameters):
 
     signal.signal(signal.SIGINT, handler)
 
+    warp_allowed = False
     display = create_display(parameters.display_type, brain, environment=environment)
     for i in range(parameters.steps):
         epoch = (i - parameters.input_delay) // parameters.epoch_length
         environment.step(i)
         stimuli = environment.stimuli(i)
-        brain.step(i, environment, stimuli)
-        if display is not None:
-            should_exit = display.process_step(i, epoch=epoch)
-            if should_exit:
-                if parameters.export_name:
-                    export(brain, parameters.export_name)
+        warp = warp_allowed and parameters.attempt_warp
+        brain.step(i, environment, stimuli, warp)
+        if display is None:
+            warp_allowed = True
+            continue
+
+        warp_allowed = display._get_mode() == "none"
+        should_exit = display.process_step(i, epoch=epoch)
+        if should_exit:
+            if parameters.export_name:
+                export(brain, parameters.export_name)
                 exit(1)
-                
+
     if display is not None:
         display.final_output()
 
@@ -240,7 +248,6 @@ def main(parameters):
 
 if __name__ == "__main__" :
     parameters = create_args()
-    parameters.warp = False
     parameters.steps = parameters.epoch_length * parameters.epochs
 
     if parameters.profile:

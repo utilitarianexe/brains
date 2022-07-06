@@ -23,7 +23,7 @@ class CellTypeParameters:
 @dataclass
 class SynapseTypeParameters:
     stdp_scalar: float = 0.01
-    max_strength: float = 0.03
+    max_strength: float = 0.06
     min_strength: float = 0.0
     starting_s_tag: float = 0.0
     noise_factor: float = 0.0
@@ -35,7 +35,6 @@ class ModelParameters:
     dopamine_decay: float = 0.0
     cell_type_parameters: CellTypeParameters = field(default_factory=CellTypeParameters)
     synapse_type_parameters: SynapseTypeParameters = field(default_factory=SynapseTypeParameters)
-    warp: bool = False
     epoch_length: int = 400
     epoch_delay: int = 50
     
@@ -49,14 +48,12 @@ class ModelParameters:
             self.synapse_type_parameters = SynapseTypeParameters(**self.synapse_type_parameters)
 
 
-def handwriting_model_parameters(warp=False,
-                                 epoch_length=400,
+def handwriting_model_parameters(epoch_length=400,
                                  epoch_delay=50):
     synapse_type_paramenters = SynapseTypeParameters(noise_factor=0.5)
     return ModelParameters(starting_dopamine=0.0,
                            dopamine_decay=0.1,
                            synapse_type_parameters=synapse_type_paramenters,
-                           warp=warp,
                            epoch_length=epoch_length,
                            epoch_delay=epoch_delay)
 
@@ -95,11 +92,13 @@ class Synapse:
     def cap(self):
         if self.strength >= self._max_strength:
             self.strength = self._max_strength
+        
         if self.strength < self._min_strength:
             self.strength = self._min_strength
 
         if self.inhibitory_strength >= self._max_strength:
             self.inhibitory_strength = self._max_strength
+            
         if self.inhibitory_strength < self._min_strength:
             self.inhibitory_strength = self._min_strength
 
@@ -137,6 +136,7 @@ class Synapse:
 
 class CellMembrane:
     def __init__(self, cell_type_parameters, step_size):
+        self.fired = False
         self._voltage_decay = cell_type_parameters.voltage_decay
         self._current_decay = cell_type_parameters.current_decay
         self._calcium_decay = cell_type_parameters.calcium_decay
@@ -150,7 +150,6 @@ class CellMembrane:
         self._reset_input_current = cell_type_parameters.reset_input_current
         
         self._step_size = step_size
-        self._fired = False # why not just check voltage
         self.active = True
         self.real_active = True
         self.active_timer = 0
@@ -160,9 +159,6 @@ class CellMembrane:
         
     def voltage(self):
         return self._voltage
-
-    def fired(self):
-        return self._fired
 
     def input_current(self):
         return self._input_current
@@ -189,13 +185,13 @@ class CellMembrane:
 
            Calcium increases after firing as a sort of history of recent firing.
         '''
-        self._fired = False
+        self.fired = False
 
         voltage_before_update = self._voltage
 
         if self._voltage > self._max_voltage:
             self._voltage = self._voltage_reset
-            self._fired = True
+            self.fired = True
             self._calcium += self._calcium_increment
             if self._reset_input_current:
                 self._input_current = self._input_current_reset
@@ -267,41 +263,45 @@ class Cell:
                 raise Exception("Attempted to attach synapse to cell "\
                                 "but neither of the synapses "\
                                 "endpoints attach to the cell.")
-        totals = self._current_total_input_strength()
-        (self._target_input, _,) = totals
+        current_positive_strength = self._positive_input_strength()
+        self._target_input = current_positive_strength
 
     def _apply_negative_input_balance(self, target_negative_input_strength,):
-        totals = self._current_total_input_strength()
-        (current_positive_strength, current_negative_strength, ) = totals
+        current_negative_strength = self._negative_input_strength()
         if current_negative_strength > 0.0:
             negative_scale_factor = target_negative_input_strength/current_negative_strength
         else:
             negative_scale_factor = 1.0
             
         real_negative_input_strength = 0.0
+        change_factor = negative_scale_factor * self._input_balance_scalar
+        keep_factor = 1 - self._input_balance_scalar
         for synapse in self.input_synapses:
-            #synapse.inhibitory_strength = synapse.inhibitory_strength * negative_scale_factor
-            synapse.inhibitory_strength = (synapse.inhibitory_strength * negative_scale_factor * self._input_balance_scalar) + (synapse.inhibitory_strength * (1-self._input_balance_scalar))
+            synapse.inhibitory_strength = (synapse.inhibitory_strength * change_factor) + (synapse.inhibitory_strength * keep_factor)
             synapse.cap()
             real_negative_input_strength += synapse.inhibitory_strength
-
         return real_negative_input_strength
 
     def _apply_positive_input_balance(self, target_positive_input_strength,):
-        totals = self._current_total_input_strength()
-        (current_positive_strength, current_negative_strength, ) = totals
+        current_positive_strength = self._positive_input_strength()
         if current_positive_strength > 0.0:
             positive_scale_factor = target_positive_input_strength / current_positive_strength
         else:
             positive_scale_factor = 1.0
 
         real_positive_input_strength = 0.0
+        change_factor = positive_scale_factor * self._input_balance_scalar
+        keep_factor = 1 - self._input_balance_scalar
         for synapse in self.input_synapses:
-            # synapse.strength = synapse.strength * positive_scale_factor
-            synapse.strength = (synapse.strength * positive_scale_factor * self._input_balance_scalar) + (synapse.strength * (1-self._input_balance_scalar))
-            synapse.cap()
-            real_positive_input_strength += synapse.strength
+            synapse.strength = (synapse.strength * change_factor) + (synapse.strength * keep_factor)
 
+            # avoid expensive cap call
+            if synapse.strength >= synapse._max_strength:
+                synapse.strength = synapse._max_strength
+            elif synapse.strength < synapse._min_strength:
+                synapse.strength = synapse._min_strength
+
+            real_positive_input_strength += synapse.strength
         return real_positive_input_strength
 
     def output_balance(self):
@@ -435,6 +435,18 @@ class Cell:
             negative_total += synapse.inhibitory_strength
         return positive_total, negative_total
 
+    def _positive_input_strength(self):
+        positive_total = 0.0
+        for synapse in self.input_synapses:
+            positive_total += synapse.strength
+        return positive_total
+
+    def _negative_input_strength(self):
+        negative_total = 0.0
+        for synapse in self.input_synapses:
+            negative_total += synapse.inhibitory_strength
+        return negative_total
+
     def _positive_output_strenght(self):
         total = 0.0
         for synapse in self.output_synapses:
@@ -463,15 +475,6 @@ class Cell:
         self._cell_membrane.warp(time_steps)
 
     def update(self, step, stimuli=None):
-        if stimuli is not None:
-            if self._is_input_cell:
-                for stimulus in stimuli:
-                    correct_x_position = stimulus[0] == self._x_input_position
-                    correct_y_position = stimulus[1] == self._y_input_position
-                    if correct_x_position and correct_y_position:
-                        outside_current = stimulus[2]
-                        self._cell_membrane.receive_input(outside_current)
-                        break
         self._cell_membrane.update()
 
     def active(self):
@@ -487,7 +490,7 @@ class Cell:
         return self._cell_membrane.input_current()
 
     def fired(self):
-        return self._cell_membrane.fired()
+        return self._cell_membrane.fired
 
     def drawable_synapses(self):
         drawables = []
@@ -535,9 +538,9 @@ class SimpleModel:
             model_parameters.synapse_type_parameters,
             network_definition,
             self._step_size)
-        self._warp = model_parameters.warp
         self._warping = False
         self._last_active = 0
+        self._warp_timer = 0
 
         self.epoch_length = model_parameters.epoch_length
         self._epoch_delay = model_parameters.epoch_delay
@@ -547,9 +550,29 @@ class SimpleModel:
             if synapse._pre_cell_type != CellType.INHIBITORY:
                 self.rewarded_synapses.append(synapse)
 
+        self.cells_by_input_position = self._cells_by_input_position()
 
-    def _maybe_start_warp(self, step, environment):
-        if not self._warp:
+    def _cells_by_input_position(self):
+        cells_by_input_position = defaultdict(lambda: defaultdict(list))
+        for cell in self._cells:
+            if cell._is_input_cell:
+                cells_by_input_position[cell._x_input_position][cell._y_input_position].append(cell)
+        return cells_by_input_position
+
+    def _apply_stimuli(self, stimuli):
+        if stimuli is None:
+            return
+        
+        for stimulus in stimuli:
+            x_input_position = stimulus[0]
+            y_input_position = stimulus[1]
+            outside_current = stimulus[2]
+            cells = self.cells_by_input_position[x_input_position][y_input_position]
+            for cell in cells:
+                cell._cell_membrane.receive_input(outside_current)
+
+    def _maybe_start_warp(self, step, environment, warp_allowed):
+        if not warp_allowed:
             return
         
         active = False
@@ -585,11 +608,7 @@ class SimpleModel:
         for cell in self._cells:
             cell.fire_rate_balance(step, self.epoch_length)
 
-        # for cell in self._cells:
-        #     cell._cell_membrane._voltage = 0.0
-        #     cell._cell_membrane._input_current = 0.0
-        
-    def step(self, step, environment=None, stimuli=None):
+    def step(self, step, environment=None, stimuli=None, warp_allowed=False):
         self.update_dopamine(step, environment)
 
         # We need a seperate epoch variable for the model
@@ -598,13 +617,16 @@ class SimpleModel:
             self._epoch_updates(step)
 
         if self._warping:
-            if not environment.active(step) and self._dopamine <= 0.0001:
+            if not environment.active(step) and self._dopamine <= 0.0001 and warp_allowed:
+                # continue warping
                 return
+
+            #come out of warp
             for cell in self._cells:
                 cell.warp(step - self._last_active)
             self._warping = False
         else:
-            self._maybe_start_warp(step, environment)
+            self._maybe_start_warp(step, environment, warp_allowed)
             if self._warping:
                 return
             
@@ -613,8 +635,9 @@ class SimpleModel:
                 synapse.update(self._dopamine)
         
         self._last_active = step
+        self._apply_stimuli(stimuli)
         for cell in self._cells:
-            cell.update(step, stimuli=stimuli)
+            cell.update(step)
 
         for cell in self._cells:
             if cell.fired():
@@ -744,8 +767,7 @@ class SimpleModel:
 
         return cells, synapses
 
-def import_model(blob, warp=False):
+def import_model(blob):
     network_definition = NetworkDefinition(**blob["network_definition"])
     model_parameters = ModelParameters(**blob["model_parameters"])
-    model_parameters.warp = warp
     return SimpleModel(network_definition, model_parameters)

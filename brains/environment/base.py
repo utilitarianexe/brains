@@ -23,7 +23,6 @@ class ResultTracker:
     all_fired: int = 0
     null_desired_output: int = 0
     
-
     one_cell_fired_not_null: int = 0
     rewarded: int = 0
     win: int = 0
