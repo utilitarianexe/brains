@@ -1,7 +1,6 @@
 unsorted issues
   decuple brain and env from display
-  remove handwrinting from brain
-  should help us move to rust
+  still have some magic numbers in simple_model.py
 
   warp might breaks unsupervised need to renenable
   does inhibition mean we need higher max strengths
@@ -35,24 +34,16 @@ unsorted issues
   clean out output balance(parameterize, test, ect)
   porportion award
   track progress porportionally
-  sort found list
   print what did fire to screen
   better way to handle running out of images
-  accept fire should just record output_ids
   nmist and handwriting too much copy paste
   layer based diagnostics like total input strength
   model based error condition tracking(double fires, not resetting by the time of epoch)
   remove warp fudge
-  paramaterize warp
   paramaterize fire rate adaptation
-  print in fire rate balance
-  new insturctions
   delays make sense in env
   cell_definition.x_input_position don't like the default 0
   need a world class to avoid simple_model repeating the step loop in every function
-  should not be sending simuli to all cells to filter themselves
-  stop passing env to model in model.step
-  abstract base class for env
   strength of stimuli is a magic number in env
   manual cell definition is ugly again
   stop with the real step check repeated everywhere
@@ -63,7 +54,6 @@ unsorted issues
   dont run longer than we have images
   unit test for learning on simple network
   need a seperate epoch length/delay for envs
-  prints inside model should instead be an output things like average layer input strength
   use pattern matching and type hints
 
 refactoring

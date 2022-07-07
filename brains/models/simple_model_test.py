@@ -1,4 +1,5 @@
 import brains.models.simple_model as simple_model
+import brains.models.simple_model_builder as simple_model_builder
 from brains.environment.base import FakeEnvironment
 from brains.environment.stdp import STDPTestEnvironment
 import brains.network as network
@@ -13,7 +14,7 @@ class TestCellMembrane(unittest.TestCase):
         '''
         Ensure potential falls with time.
         '''
-        cell_type_parameters = simple_model.CellTypeParameters(starting_membrane_voltage = 0.5)
+        cell_type_parameters = simple_model_builder.CellTypeParameters(starting_membrane_voltage = 0.5)
         step_size = 1
         membrane = simple_model.CellMembrane(cell_type_parameters, step_size)
         membrane.update()
@@ -25,7 +26,7 @@ class TestCellMembrane(unittest.TestCase):
         Cell should not fire until after voltage builds up from input. It should fire once
         and then not fire again as input decays or is reset.
         '''
-        cell_type_parameters = simple_model.CellTypeParameters()
+        cell_type_parameters = simple_model_builder.CellTypeParameters()
         step_size = 1
         membrane = simple_model.CellMembrane(cell_type_parameters, step_size)        
         self.assertFalse(membrane.fired)
@@ -59,7 +60,7 @@ class TestModel(unittest.TestCase):
                                           synapses)
 
     def two_cell_model(self, starting_synapse_strength):
-        model_parameters = simple_model.ModelParameters()
+        model_parameters = simple_model_builder.ModelParameters()
         return simple_model.SimpleModel(self.two_cell_network(starting_synapse_strength),
                                         model_parameters)
 
@@ -84,7 +85,7 @@ class TestModel(unittest.TestCase):
                                           synapses)
 
     def three_cell_model(self, starting_synapse_strength):
-        model_parameters = simple_model.ModelParameters()
+        model_parameters = simple_model_builder.ModelParameters()
         return simple_model.SimpleModel(self.three_cell_network(starting_synapse_strength),
                                         model_parameters)
         
@@ -172,7 +173,7 @@ class TestModel(unittest.TestCase):
                        ]
         reward_points =  [None, None, 0, None, None, None]
         test_environment = FakeEnvironment(fire_points, reward_points, 100)
-        model_parameters = simple_model.handwriting_model_parameters()
+        model_parameters = simple_model_builder.handwriting_model_parameters()
         
         # Strength is set very low to prevent spike propagation. Spikes are created artificially.
         starting_synapse_strength = 0.0
@@ -207,7 +208,7 @@ class TestModel(unittest.TestCase):
 
         Note we need to change the max allowed connection strength for this to work.
         '''
-        model_parameters = simple_model.ModelParameters()
+        model_parameters = simple_model_builder.ModelParameters()
         model_parameters.synapse_type_parameters.max_strength = 0.4
         network_definition = network_definitions.stdp_test_network()
         test_environment = STDPTestEnvironment()
@@ -246,7 +247,7 @@ class TestModel(unittest.TestCase):
         chance to overtake the late connection by causing the output cell to fire before
         the late connection.
         '''
-        model_parameters = simple_model.ModelParameters()
+        model_parameters = simple_model_builder.ModelParameters()
         network_definition = network_definitions.stdp_test_network(input_balance=True)
         test_environment = STDPTestEnvironment()
         model =  simple_model.SimpleModel(network_definition,
@@ -272,7 +273,7 @@ class TestModel(unittest.TestCase):
         '''
         old_model = self.two_cell_model(0.1)
         blob = old_model.export()
-        new_model = simple_model.import_model(blob)
+        new_model = simple_model_builder.import_model(blob)
         self.assertEqual(old_model.synapses[0].pre_cell.uuid,
                          new_model.synapses[0].pre_cell.uuid)
 

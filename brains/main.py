@@ -1,6 +1,7 @@
 import brains.models.spirit_model as spirit_model
 import brains.models.example_model as example_model
 import brains.models.simple_model as simple_model
+import brains.models.simple_model_builder as simple_model_builder
 import brains.network_definitions as network_definitions
 import brains.utils as utils
 from brains.environment.easy import EasyEnvironment
@@ -14,25 +15,27 @@ from collections import namedtuple
 import argparse
 import json
 import signal
+import sys
 
 World = namedtuple('World', 'model environment')
 
 def parameter_test_world():
-    model_parameters = simple_model.ModelParameters(starting_dopamine=0.0)
+    model_parameters = simple_model_builder.ModelParameters(starting_dopamine=0.0)
     network_definition = network_definitions.parameter_test_network()
     model = simple_model.SimpleModel(network_definition, model_parameters)
     return model, ParameterTestEnvironment()
 
 def stdp_world(parameters):
-    model_parameters = simple_model.ModelParameters(epoch_length=parameters.epoch_length)
+    model_parameters = simple_model_builder.ModelParameters(epoch_length=parameters.epoch_length)
     model_parameters.synapse_type_parameters.max_strength = 0.4
     network_definition = network_definitions.stdp_test_network()
     model = simple_model.SimpleModel(network_definition, model_parameters)
     return model, STDPTestEnvironment()
 
 def handwriting_world(parameters):
-    model_parameters = simple_model.handwriting_model_parameters(epoch_length=parameters.epoch_length,
-                                                                 epoch_delay=parameters.epoch_delay)
+    model_parameters = simple_model_builder.handwriting_model_parameters(
+        epoch_length=parameters.epoch_length,
+        epoch_delay=parameters.epoch_delay)
     network_definition = network_definitions.layer_based_default_network()
     environment = HandwritingEnvironment(
         parameters.epoch_length, parameters.input_delay, {'o': 0, 'x': 1},
@@ -43,8 +46,9 @@ def handwriting_world(parameters):
     return model, environment
 
 def mnist_world(parameters):
-    model_parameters = simple_model.handwriting_model_parameters(epoch_length=parameters.epoch_length,
-                                                                 epoch_delay=parameters.epoch_delay)
+    model_parameters = simple_model_builder.handwriting_model_parameters(
+        epoch_length=parameters.epoch_length,
+        epoch_delay=parameters.epoch_delay)
     network_definition = network_definitions.mnist_network(
         number_of_outputs=parameters.mnist_number_of_outputs)
     environment = MnistEnvironment(parameters.epoch_length, parameters.input_delay,
@@ -54,8 +58,9 @@ def mnist_world(parameters):
 
 
 def easy_world(parameters):
-    model_parameters = simple_model.handwriting_model_parameters(epoch_length=parameters.epoch_length,
-                                                                 epoch_delay=parameters.epoch_delay)
+    model_parameters = simple_model_builder.handwriting_model_parameters(
+        epoch_length=parameters.epoch_length,
+        epoch_delay=parameters.epoch_delay)
     model_parameters.synapse_type_parameters.max_strength = 0.4
 
     # need like some kind of average starting connection strength thing
@@ -68,7 +73,7 @@ def user_specified_world(parameters):
     file_path = utils.data_dir_file_path(parameters.import_name)
     model_file = open(file_path)
     blob = json.load(model_file)
-    model = simple_model.import_model(blob)
+    model = simple_model_builder.import_model(blob)
     if parameters.environment_type == 'handwriting':
         model_environment = HandwritingEnvironment(
             model.epoch_length, parameters.input_delay, {'o': 0, 'x': 1},
@@ -114,8 +119,9 @@ def create_world(parameters):
         elif parameters.world_type == "mnist":
             return mnist_world(parameters)
 
-    print("Not enough information provided. Either supply a world argument or both a import_name and an environment to run it in")
-    quit()
+    print("Not enough information provided. Either supply a world argument or both " \
+          "a import_name and an environment to run it in")
+    sys.exit(0)
 
 def create_display(display_type, model, environment=None):
     if display_type == "pygame":
@@ -214,11 +220,11 @@ def create_args():
 def main(parameters):
     brain, environment = create_world(parameters)
     
-    def handler(signum, frame):
+    def exit_handler(signum, frame):
         if parameters.export_name:
             export(brain, parameters.export_name)
-        exit(1)
-    signal.signal(signal.SIGINT, handler)
+        sys.exit(0)
+    signal.signal(signal.SIGINT, exit_handler)
 
     # display really should not take brain and environment as parameters either
     display = create_display(parameters.display_type, brain, environment=environment)
@@ -245,7 +251,7 @@ def main(parameters):
             if should_exit:
                 if parameters.export_name:
                     export(brain, parameters.export_name)
-                exit(1)
+                sys.exit(0)
 
     if display is not None:
         display.final_output()
@@ -258,18 +264,20 @@ if __name__ == "__main__" :
     parameters = create_args()
     parameters.steps = parameters.epoch_length * parameters.epochs
 
-    if parameters.profile:
-        import cProfile, pstats, io
-        from pstats import SortKey
-        pr = cProfile.Profile()
-        pr.enable()
+    if not parameters.profile:
         main(parameters)
+        sys.exit(0)
+    
+    import cProfile, pstats, io
+    from pstats import SortKey
+    pr = cProfile.Profile()
+    pr.enable()
+    main(parameters)
 
-        pr.disable()
-        s = io.StringIO()
-        sortby = SortKey.CUMULATIVE
-        ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-        ps.print_stats()
-        print(s.getvalue())
-    else:
-        main(parameters)
+    pr.disable()
+    s = io.StringIO()
+    sortby = SortKey.CUMULATIVE
+    ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+    ps.print_stats()
+    print(s.getvalue())
+
