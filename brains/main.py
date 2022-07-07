@@ -232,6 +232,10 @@ def main(parameters):
                                       environment.stimuli(i),
                                       environment.has_reward(), environment.active(i))
 
+        if (i - parameters.input_delay) % parameters.epoch_length == 0:
+            for text in brain.text_output():
+                print(text)
+
         if display is not None:
             epoch = (i - parameters.input_delay) // parameters.epoch_length
             should_exit = display.process_step(i, epoch=epoch)

@@ -1,6 +1,5 @@
 unsorted issues
   decuple brain and env from display
-  remove prints from brain
   remove handwrinting from brain
   should help us move to rust
 

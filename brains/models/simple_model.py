@@ -372,12 +372,6 @@ class Cell:
             
         self._fire_history = new_fire_history
 
-        # Print information for one cell in the middle layer and one cell in the output layer.
-        if (self.layer_id == 'b' or self.layer_id == 'c') and self.output_id == 0:
-            print(f"layer_id {self.layer_id} running_rate {running_fire_rate} " \
-                  f"target_rate {target_fire_rate} fires {fires} "\
-                  f"target_input {self._target_input}")
-
         if running_fire_rate > target_fire_rate:
             rate_based_down_scale_factor = target_fire_rate/running_fire_rate
             self._target_input -= self._target_strength_reduction(
@@ -675,6 +669,9 @@ class SimpleModel:
         return blob
 
     def video_output(self, x, y, layer):
+        '''
+        Used by pygame
+        '''
         texts = ["dopamine: " + str(round(self._dopamine, 5))]
         drawables = []
         for cell in self._cells:
@@ -700,6 +697,21 @@ class SimpleModel:
                 drawables += cell.drawable_synapses()
         return drawables, texts
 
+    def text_output(self):
+        '''
+        Used for command line prints once an epoch
+        '''
+        texts = []
+        for cell in self._cells:
+            # Print information for one cell in the middle layer and one cell in the output layer.
+            if (cell.layer_id == 'b' or cell.layer_id == 'c') and cell.output_id == 0:
+                texts.append(f"layer_id {cell.layer_id} " \
+                    f"running_rate {len(cell._fire_history) / cell._fire_history_length} " \
+                    f"target_rate {cell._target_fire_rate_per_epoch} " \
+                    f"fires {len(cell._fire_history)} " \
+                    f"target_input {cell._target_input}")
+        return texts
+
     def test_outputs(self):
         outputs = {}
         for cell in self._cells:
@@ -711,6 +723,9 @@ class SimpleModel:
         return outputs
 
     def outputs(self):
+        '''
+        Used by pyplot
+        '''
         total_negative_in = 0.0
         total_positive_in = 0.0
         total_negative_out = 0.0
