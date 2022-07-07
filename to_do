@@ -1,15 +1,17 @@
 unsorted issues
-  decuple brain and env from display
-  still have some magic numbers in simple_model.py
-  warp might breaks unsupervised need to renenable
-  does inhibition mean we need higher max strengths
-  too much  repeated code in main
-  is it ok to include mnist data in our repo
-  multiple simultanious runs
   record results to file
   import full mnist set
-  put up nmist data and readme
+  put nmist in readme with learned model
   need to way to loop inputs or an option to run all inputs
+  is it ok to include mnist data in our repo
+
+  make things faster
+  warp might breaks unsupervised need to renenable
+  decuple brain and env from display
+  still have some magic numbers in simple_model.py
+  does inhibition mean we need higher max strengths
+  too much  repeated code in main
+  multiple simultanious runs
   memory leak in UI
   wtf step size
 
