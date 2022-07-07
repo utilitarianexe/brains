@@ -1,7 +1,6 @@
 unsorted issues
   decuple brain and env from display
   still have some magic numbers in simple_model.py
-
   warp might breaks unsupervised need to renenable
   does inhibition mean we need higher max strengths
   too much  repeated code in main

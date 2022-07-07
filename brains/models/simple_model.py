@@ -222,7 +222,8 @@ class Cell:
         change_factor = negative_scale_factor * self._input_balance_scalar
         keep_factor = 1 - self._input_balance_scalar
         for synapse in self.input_synapses:
-            synapse.inhibitory_strength = (synapse.inhibitory_strength * change_factor) + (synapse.inhibitory_strength * keep_factor)
+            change_part = synapse.inhibitory_strength * change_factor
+            synapse.inhibitory_strength = (change_part) + (synapse.inhibitory_strength * keep_factor)
             synapse.cap()
             real_negative_input_strength += synapse.inhibitory_strength
         return real_negative_input_strength
@@ -330,9 +331,6 @@ class Cell:
 
             self._target_input += self._target_strength_increase(rate_based_up_scale_factor,
                                                      self._target_input)
-
-        if self._target_input > 10:
-            self._target_input = 10
 
         real_positive_strength = self._apply_positive_input_balance(self._target_input)
 
