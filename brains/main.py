@@ -213,30 +213,34 @@ def create_args():
 
 def main(parameters):
     brain, environment = create_world(parameters)
+    
     def handler(signum, frame):
         if parameters.export_name:
             export(brain, parameters.export_name)
         exit(1)
-
     signal.signal(signal.SIGINT, handler)
 
-    warp_allowed = False
+    # display really should not take brain and environment as parameters either
     display = create_display(parameters.display_type, brain, environment=environment)
+    display_active = display is not None
+    brain_output_ids = []
+    should_exit = False
     for i in range(parameters.steps):
-        epoch = (i - parameters.input_delay) // parameters.epoch_length
-        environment.step(i)
-        stimuli = environment.stimuli(i)
-        warp = warp_allowed and parameters.attempt_warp
-        brain.step(i, environment, stimuli, warp)
-        if display is None:
-            warp_allowed = True
-            continue
+        environment.step(i, brain_output_ids)
+        warp_allowed = parameters.attempt_warp and not display_active
+        brain_output_ids = brain.step(i, warp_allowed,
+                                      environment.stimuli(i),
+                                      environment.has_reward(), environment.active(i))
 
-        warp_allowed = display._get_mode() == "none"
-        should_exit = display.process_step(i, epoch=epoch)
-        if should_exit:
-            if parameters.export_name:
-                export(brain, parameters.export_name)
+        if display is not None:
+            epoch = (i - parameters.input_delay) // parameters.epoch_length
+            should_exit = display.process_step(i, epoch=epoch)
+            if display._get_mode() == "none":
+                display_active = False
+            
+            if should_exit:
+                if parameters.export_name:
+                    export(brain, parameters.export_name)
                 exit(1)
 
     if display is not None:

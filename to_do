@@ -1,16 +1,21 @@
 unsorted issues
-  warp might breaks unsupervised
+  decuple brain and env from display
+  remove prints from brain
+  remove handwrinting from brain
+  should help us move to rust
+
+  warp might breaks unsupervised need to renenable
   does inhibition mean we need higher max strengths
   too much  repeated code in main
   is it ok to include mnist data in our repo
   multiple simultanious runs
-  on brain step return info for display and environment rather than holding these
-
   record results to file
   import full mnist set
   put up nmist data and readme
   need to way to loop inputs or an option to run all inputs
   memory leak in UI
+  wtf step size
+
   network.py needs refactored
     too much ui
     lock_inhibition_strength probably uneeded

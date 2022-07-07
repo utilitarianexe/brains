@@ -100,9 +100,9 @@ class TestModel(unittest.TestCase):
 
         fire_history = []
         for i in range(100):
-            test_environment.step(i)
+            test_environment.step(i, [])
             stimuli = test_environment.stimuli(i)
-            model.step(i, test_environment, stimuli)
+            model.step(i, True, stimuli, test_environment.has_reward(), test_environment.active(i))
 
             # clearly we need a nicer output system
             outputs = model.test_outputs()
@@ -130,9 +130,9 @@ class TestModel(unittest.TestCase):
         model = self.two_cell_model(starting_synapse_strength)
         fire_history = []
         for i in range(200):
-            test_environment.step(i)
+            test_environment.step(i, [])
             stimuli = test_environment.stimuli(i)
-            model.step(i, test_environment, stimuli)
+            model.step(i, True, stimuli, test_environment.has_reward(), test_environment.active(i))
         self.assertGreater(model.synapses[0].strength, starting_synapse_strength)
 
     def test_stdp_post_pre(self):
@@ -149,9 +149,9 @@ class TestModel(unittest.TestCase):
         model = self.two_cell_model(starting_synapse_strength)
         fire_history = []
         for i in range(200):
-            test_environment.step(i)
+            test_environment.step(i, [])
             stimuli = test_environment.stimuli(i)
-            model.step(i, test_environment, stimuli)
+            model.step(i, True, stimuli, test_environment.has_reward(), test_environment.active(i))
         self.assertLess(model.synapses[0].strength, starting_synapse_strength)
 
     def test_rewarded_stdp(self):
@@ -181,15 +181,17 @@ class TestModel(unittest.TestCase):
                                          model_parameters)
 
         fire_history = []
+        output_ids = []
         for i in range(500):
             if i == 150:
                 self.assertEqual(model.synapses[0].strength, starting_synapse_strength)
             if i == 260:
                 self.assertGreater(model.synapses[0].strength, starting_synapse_strength)
 
-            test_environment.step(i)
-            stimuli = test_environment.stimuli(i)
-            model.step(i, test_environment, stimuli)
+            test_environment.step(i, output_ids)
+            output_ids = model.step(i, True, test_environment.stimuli(i),
+                                    test_environment.has_reward(), test_environment.active(i))
+
 
     def test_stdp_auto_input_selection(self):
         '''
@@ -217,12 +219,12 @@ class TestModel(unittest.TestCase):
         synapse_early_input = synapses_by_pre_cell["a"]
         synapse_late_input = synapses_by_pre_cell["b"]
         starting_strength = synapse_early_input.strength
-            
+
+        output_ids = []
         for i in range(20000):
-            test_environment.step(i)
-            stimuli = test_environment.stimuli(i)
-            model.step(i, test_environment, stimuli)
-            outputs = model.test_outputs()
+            test_environment.step(i, output_ids)
+            output_ids = model.step(i, True, test_environment.stimuli(i),
+                                    test_environment.has_reward(), test_environment.active(i))
             if i == 750:
                 self.assertTrue(synapse_early_input.strength > starting_strength)
                 self.assertTrue(synapse_late_input.strength > synapse_early_input.strength)
@@ -255,12 +257,12 @@ class TestModel(unittest.TestCase):
         synapse_early_input = synapses_by_pre_cell["a"]
         synapse_late_input = synapses_by_pre_cell["b"]
         starting_strength = synapse_early_input.strength 
-            
+
+        output_ids = []
         for i in range(800):
-            test_environment.step(i)
-            stimuli = test_environment.stimuli(i)
-            model.step(i, test_environment, stimuli)
-            outputs = model.test_outputs()
+            test_environment.step(i, output_ids)
+            output_ids = model.step(i, True, test_environment.stimuli(i),
+                                    test_environment.has_reward(), test_environment.active(i))
 
         self.assertTrue(synapse_late_input.strength > synapse_early_input.strength)
 

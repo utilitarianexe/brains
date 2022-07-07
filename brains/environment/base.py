@@ -31,7 +31,6 @@ class ResultTracker:
     fail: int = 0
     accuracy: float = 0.0
 
-
     def update(self, found_output_ids: list, desired_output_id:int, possible_outputs:list, step:int):
         print(f"found: {sorted(found_output_ids)} desired: {desired_output_id}")
         self.epochs += 1
@@ -107,7 +106,8 @@ class BaseEpochChallengeEnvironment(ABC):
     def stimuli(self, step: int) -> list:
         raise NotImplementedError
 
-    def step(self, step: int):
+    def step(self, step: int, brain_output_ids: list[int]):
+        self._found_output_ids += brain_output_ids
         real_step = step - self._input_delay
         if real_step % self._epoch_length == 0:
             print(self._result_tracker)
@@ -140,11 +140,6 @@ class BaseEpochChallengeEnvironment(ABC):
             return True
         return False
 
-    # really output ids should come from step
-    # that way model does not need to carry around environment
-    def accept_fire(self, step: int, output_id: int):
-        self._found_output_ids.append(output_id)
-
 class FakeEnvironment(BaseEpochChallengeEnvironment):
     def __init__(self, input_points, reward_ids, epoch_length, input_delay=0):
         super().__init__(epoch_length, input_delay)
@@ -163,8 +158,8 @@ class FakeEnvironment(BaseEpochChallengeEnvironment):
     def stimuli(self, step: int) -> list:
         return self._stimuli[step]
 
-    def step(self, step: int):
-        super().step(step)
+    def step(self, step: int, output_ids: list[int]):
+        super().step(step, output_ids)
         real_step = step - self._input_delay
         if real_step % self._epoch_length == 0:
             self._reward_id = self._reward_ids[real_step//self._epoch_length]

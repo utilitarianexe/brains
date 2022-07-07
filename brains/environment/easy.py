@@ -32,8 +32,8 @@ class EasyEnvironment(base.BaseEpochChallengeEnvironment):
             stimuli.add((0, 2, 0.3,))
         return stimuli
 
-    def step(self, step):
-        super().step(step)
+    def step(self, step, output_ids):
+        super().step(step, output_ids)
         real_step = step - self._input_delay
         if real_step % self._epoch_length == 0:
             self._fire_the_random_input_cell = random.random() > 0.5

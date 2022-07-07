@@ -220,8 +220,8 @@ class Cell:
         self._is_input_cell = cell_definition.is_input_cell
         self._x_input_position = cell_definition.x_input_position
         self._y_input_position = cell_definition.y_input_position
-        self._is_output_cell = cell_definition.is_output_cell
-        self._output_id = cell_definition.output_id
+        self.is_output_cell = cell_definition.is_output_cell
+        self.output_id = cell_definition.output_id
         
         self._cell_membrane = cell_membrane
         self.cell_type = cell_definition.cell_type
@@ -373,7 +373,7 @@ class Cell:
         self._fire_history = new_fire_history
 
         # Print information for one cell in the middle layer and one cell in the output layer.
-        if (self.layer_id == 'b' or self.layer_id == 'c') and self._output_id == 0:
+        if (self.layer_id == 'b' or self.layer_id == 'c') and self.output_id == 0:
             print(f"layer_id {self.layer_id} running_rate {running_fire_rate} " \
                   f"target_rate {target_fire_rate} fires {fires} "\
                   f"target_input {self._target_input}")
@@ -462,15 +462,13 @@ class Cell:
     def receive_fire(self, strength):
         self._cell_membrane.receive_input(strength)
 
-    def apply_fire(self, step, environment=None):
+    def apply_fire(self, step):
         self._fire_history.append(step)
         for synapse in self.output_synapses:
             synapse.pre_fire(step)
         for synapse in self.input_synapses:
             synapse.post_fire(step)
-        if environment is not None and self._is_output_cell:
-            environment.accept_fire(step, self._output_id)
-
+  
     def warp(self, time_steps):
         self._cell_membrane.warp(time_steps)
 
@@ -571,7 +569,7 @@ class SimpleModel:
             for cell in cells:
                 cell._cell_membrane.receive_input(outside_current)
 
-    def _maybe_start_warp(self, step, environment, warp_allowed):
+    def _maybe_start_warp(self, step, active_environment, warp_allowed):
         if not warp_allowed:
             return
         
@@ -579,20 +577,18 @@ class SimpleModel:
         for cell in self._cells:
             if cell.active():
                 active = True
-                break
                     
         if self._dopamine > 0.0001:
             active = True
 
-        if environment is not None:
-            if environment.active(step):
-                active = True
+        if active_environment:
+            active = True
 
-        if not active:
-            self._warp_timer += 1
-        else:
+        if active:
             self._warp_timer = 0
-            
+            return
+
+        self._warp_timer += 1
         if self._warp_timer >= 10:
             self._warping = True
             self._warp_timer = 0
@@ -608,8 +604,8 @@ class SimpleModel:
         for cell in self._cells:
             cell.fire_rate_balance(step, self.epoch_length)
 
-    def step(self, step, environment=None, stimuli=None, warp_allowed=False):
-        self.update_dopamine(step, environment)
+    def step(self, step, warp_allowed, stimuli, has_reward, active_environment):
+        self.update_dopamine(step, has_reward)
 
         # We need a seperate epoch variable for the model
         real_step = step - self._epoch_delay
@@ -617,7 +613,7 @@ class SimpleModel:
             self._epoch_updates(step)
 
         if self._warping:
-            if not environment.active(step) and self._dopamine <= 0.0001 and warp_allowed:
+            if not active_environment and self._dopamine <= 0.0001 and warp_allowed:
                 # continue warping
                 return
 
@@ -626,7 +622,7 @@ class SimpleModel:
                 cell.warp(step - self._last_active)
             self._warping = False
         else:
-            self._maybe_start_warp(step, environment, warp_allowed)
+            self._maybe_start_warp(step, active_environment, warp_allowed)
             if self._warping:
                 return
             
@@ -639,19 +635,23 @@ class SimpleModel:
         for cell in self._cells:
             cell.update(step)
 
+        output_ids = []
         for cell in self._cells:
             if cell.fired():
                 cell.fire_trace = 100
-                cell.apply_fire(step, environment)
+                cell.apply_fire(step)
+                if cell.is_output_cell:
+                    output_ids.append(cell.output_id)
             else:
                 if cell.fire_trace > 0:
                     cell.fire_trace -= 1
 
-    def update_dopamine(self, step, environment=None):
+        return output_ids
+
+    def update_dopamine(self, step, has_reward):
         self._dopamine = decay(self._dopamine, self._dopamine_decay, self._step_size)
-        if environment is not None:
-            if environment.has_reward():
-                self._dopamine = 1
+        if has_reward:
+            self._dopamine = 1
 
     def export(self):
         updated_synapse_definitions = []

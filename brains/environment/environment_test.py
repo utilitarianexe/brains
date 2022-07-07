@@ -34,9 +34,9 @@ class TestHandwriting(unittest.TestCase):
         third_image_step = delay + frequency * 2
 
         for i in range(2000):
-            environment.step(i)
+            output_ids = []
             if i == first_image_step + 20:
-                environment.accept_fire(i, 0)
+                output_ids = [0]
             if i == first_image_step + 30:
                 # not enough time has passed
                 self.assertFalse(environment.has_reward())
@@ -47,11 +47,12 @@ class TestHandwriting(unittest.TestCase):
                 self.assertFalse(environment.has_reward())
             if i == third_image_step + 20:
                 # wrong cell fires
-                environment.accept_fire(i, 0)
+                output_ids = [0]
                 self.assertFalse(environment.has_reward())
             if i == third_image_step + 210:
                 # no reward even after enough time because wrong cell fired.
                 self.assertFalse(environment.has_reward())
+            environment.step(i, output_ids)
 
 if __name__ == '__main__':
     unittest.main()

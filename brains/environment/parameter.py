@@ -27,10 +27,7 @@ class ParameterTestEnvironment:
     def has_reward(self):
         return False
 
-    def step(self, step):
-        pass
-
-    def accept_fire(self, step, output_id):
+    def step(self, step, output_ids):
         pass
 
     def video_output(self, step):
