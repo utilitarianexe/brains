@@ -126,7 +126,7 @@ def mnist_network(number_of_outputs=10):
                     lock_inhibition_strength = True),
               Layer("b", 30*30,
                     layout = Layout.SQUARE,
-                    target_fire_rate_per_epoch = 0.1,
+                    target_fire_rate_per_epoch = 0.05,
                     input_balance = True,
                     output_balance = True,
                     lock_inhibition_strength = True),

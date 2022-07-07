@@ -1,7 +1,6 @@
 import brains.utils as utils
 import brains.environment.base as base
 from typing import Optional
-
 from collections import defaultdict
 import random
 

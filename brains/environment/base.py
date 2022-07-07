@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 from collections import defaultdict
+from abc import ABC, abstractmethod
 
-def result_convert(found_output_ids, desired_output_id):
+
+def result_convert(found_output_ids: list, desired_output_id:int) -> tuple[bool, bool]:
     correct_cell_fired = False
     incorrect_cell_fired = False
     if desired_output_id in found_output_ids:
@@ -30,7 +32,7 @@ class ResultTracker:
     accuracy: float = 0.0
 
 
-    def update(self, found_output_ids, desired_output_id, possible_outputs, step):
+    def update(self, found_output_ids: list, desired_output_id:int, possible_outputs:list, step:int):
         print(f"found: {sorted(found_output_ids)} desired: {desired_output_id}")
         self.epochs += 1
 
@@ -44,7 +46,6 @@ class ResultTracker:
 
         self.total_fires += len(found_output_ids)
 
-        # ehh 10 hack
         if number_cells_fired < len(found_output_ids) - 1:
             self.double_spike += 1
             
@@ -59,7 +60,8 @@ class ResultTracker:
             self.one_cell_fired_not_null += 1
 
         if desired_output_id in found_output_ids:
-            self.rewarded += 1    
+            self.rewarded += 1
+            
         correct_cell_fired, incorrect_cell_fired = result_convert(found_output_ids, desired_output_id)
         if correct_cell_fired and not incorrect_cell_fired:
             self.win += 1
@@ -70,11 +72,11 @@ class ResultTracker:
             self.accuracy = float(self.win) / float(self.win + self.fail)
 
 
-class BaseEpochChallengeEnvironment:
+class BaseEpochChallengeEnvironment(ABC):
     '''
     User is expected to implement:
-    stimuli to act as input from the environment to the brain.
     desired_output_id expected output from brain to determine if the brain has fired the right cell
+    stimuli to act as input from the environment to the brain.
     _possible_outputs variable
     See FakeEnvironment for examples
 
@@ -82,22 +84,30 @@ class BaseEpochChallengeEnvironment:
     current output cell must fire by half way through the epoch and that after that a reward should
     be given to the brain exactly one time.
     '''
-    def __init__(self, epoch_length, input_delay):
+    def __init__(self, epoch_length: int, input_delay: int):
         self._epoch_length = epoch_length
         self._input_delay = input_delay
 
         self._success = False
         self._reward_provided = False
 
-        self._found_output_ids = []
+        self._found_output_ids: list[int] = []
         self._result_tracker = ResultTracker()
-        self._possible_outputs = []
+        self._possible_outputs: list[int] = []
         
-    def active(self, step):
+    def active(self, step: int) -> bool:
         real_step = step - self._input_delay
         return real_step % self._epoch_length == 0 and step > real_step
 
-    def step(self, step):
+    @abstractmethod
+    def desired_output_id(self, step: int) -> int:
+        raise NotImplementedError
+
+    @abstractmethod
+    def stimuli(self, step: int) -> list:
+        raise NotImplementedError
+
+    def step(self, step: int):
         real_step = step - self._input_delay
         if real_step % self._epoch_length == 0:
             print(self._result_tracker)
@@ -113,18 +123,18 @@ class BaseEpochChallengeEnvironment:
             else:
                 self._success = False
                 
-    def has_success(self, desired_output_id):
+    def has_success(self, desired_output_id: int) -> bool:
         if desired_output_id is None:
             return False
         return desired_output_id in self._found_output_ids
 
-    def video_output(self, step):
+    def video_output(self, step: int) -> list:
         output_id = self.desired_output_id(step)
         if output_id is None:
             return ["expected output: none"]
         return [f"expected output: {output_id}"]
 
-    def has_reward(self):
+    def has_reward(self) -> bool:
         if self._success and not self._reward_provided:
             self._reward_provided = True
             return True
@@ -132,9 +142,8 @@ class BaseEpochChallengeEnvironment:
 
     # really output ids should come from step
     # that way model does not need to carry around environment
-    def accept_fire(self, step, output_id):
+    def accept_fire(self, step: int, output_id: int):
         self._found_output_ids.append(output_id)
-
 
 class FakeEnvironment(BaseEpochChallengeEnvironment):
     def __init__(self, input_points, reward_ids, epoch_length, input_delay=0):
@@ -148,13 +157,13 @@ class FakeEnvironment(BaseEpochChallengeEnvironment):
         self._reward_ids = reward_ids
         self._reward_id = self._reward_ids[0]
 
-    def active(self, step):
+    def active(self, step: int) -> bool:
         return step in self._stimuli
 
-    def stimuli(self, step):
+    def stimuli(self, step: int) -> list:
         return self._stimuli[step]
 
-    def step(self, step):
+    def step(self, step: int):
         super().step(step)
         real_step = step - self._input_delay
         if real_step % self._epoch_length == 0:
