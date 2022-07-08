@@ -24,16 +24,17 @@ class MnistEnvironment(base.BaseEpochChallengeEnvironment):
         if shuffle:
             random.shuffle(self._labels_and_images)
 
+    def _image_index_for_step(self, step):
+        real_step = step - self._input_delay
+        return (real_step//self._epoch_length) % len(self._labels_and_images)
+
     def stimuli(self, step: int) -> set:
         real_step = step - self._input_delay
         is_correct_time = real_step % self._epoch_length == 0 and real_step >= 0
         if not is_correct_time:
             return set()
 
-        image_index = real_step//self._epoch_length
-        if image_index >= len(self._labels_and_images):
-            #print("ran out of images to show network will continue running with no inputs")
-            return set()
+        image_index = self._image_index_for_step(step)
 
         stimuli = set()
         (label, image) = self._labels_and_images[image_index]
@@ -46,13 +47,10 @@ class MnistEnvironment(base.BaseEpochChallengeEnvironment):
 
     def desired_output_id(self, step: int) -> Optional[int]:
         real_step = step - self._input_delay
-        if real_step//self._epoch_length >= len(self._labels_and_images):
-            return None
-
         if real_step < 0:
             return None
 
-        image_index = real_step//self._epoch_length
+        image_index = self._image_index_for_step(step)
         (label, image) = self._labels_and_images[image_index]
         return label
 
@@ -95,7 +93,7 @@ def read(image_file_name: str, label_file_name: str,
     return images_by_label
 
 def read_mnist(possible_outputs: list):
-    return read("train-images.idx3-ubyte", "train-labels.idx1-ubyte", 10000, possible_outputs)
+    return read("train-images.idx3-ubyte", "train-labels.idx1-ubyte", 10, possible_outputs)
 
 if __name__ == '__main__':
     images_by_label = read_mnist([0, 1, 2])

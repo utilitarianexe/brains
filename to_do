@@ -1,12 +1,11 @@
 unsorted issues
-  record results to file
+  warp might breaks unsupervised need to renenable
+  
+  record results to filep
   import full mnist set
   put nmist in readme with learned model
-  need to way to loop inputs or an option to run all inputs
   is it ok to include mnist data in our repo
-
   make things faster
-  warp might breaks unsupervised need to renenable
   decuple brain and env from display
   still have some magic numbers in simple_model.py
   does inhibition mean we need higher max strengths
