@@ -61,7 +61,7 @@ class SynapseDefinition:
     starting_strength: float = 0.0
     starting_inhibitory_strength: float = 0.0
     unsupervised_stdp: bool = False
-    reward_scalar: float = 0.06
+    reward_scalar: float = 0.1
     s_tag_decay_rate: float = 0.002
 
 @dataclass
@@ -120,7 +120,7 @@ class LayerConnection:
     define_by_inputs_per_cell: bool = False
     inputs_per_cell: int = 0
     unsupervised_stdp: bool = False
-    reward_scalar: float = 0.06
+    reward_scalar: float = 0.1
     s_tag_decay_rate: float = 0.002
 
 @dataclass

@@ -1,6 +1,7 @@
 unsorted issues
-  warp might breaks unsupervised need to renenable
-  
+  validate s_tag decay bug fix
+  validate warp fix and reprofile
+
   record results to filep
   import full mnist set
   put nmist in readme with learned model

@@ -50,10 +50,10 @@ class TestBuildingNetwork(unittest.TestCase):
             ("c_0", 2, 0)]
         self.assertCountEqual(cells, expected_cells)
 
-        expected_synapses = [("a_0", "b_0", 0.1, False, 0.06, 0.002),
-                             ("a_0", "b_1", 0.1, False, 0.06, 0.002),
-                             ("b_0", "c_0", 0.1, False, 0.06, 0.002),
-                             ("b_1", "c_0", 0.1, False, 0.06, 0.002),]
+        expected_synapses = [("a_0", "b_0", 0.1, False, 0.1, 0.002),
+                             ("a_0", "b_1", 0.1, False, 0.1, 0.002),
+                             ("b_0", "c_0", 0.1, False, 0.1, 0.002),
+                             ("b_1", "c_0", 0.1, False, 0.1, 0.002),]
         self.assertCountEqual(synapses, expected_synapses)
 
 

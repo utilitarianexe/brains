@@ -32,7 +32,7 @@ class Synapse:
         
         self._pre_cell_fired = False
         self._post_cell_fired = False
-        self._last_fire_step = 0
+        self._last_stag_decay = 0
 
     def cap(self):
         if self.strength >= self._max_strength:
@@ -47,7 +47,13 @@ class Synapse:
         if self.inhibitory_strength < self._min_strength:
             self.inhibitory_strength = self._min_strength
 
-    def update(self, dopamine):
+    def _decay_s_tag(self, step):
+        steps_sense_last_stag_decay=  step - self._last_stag_decay
+        self._last_stag_decay = step
+        self._s_tag = self._s_tag * (1 - self._s_tag_decay_rate)**steps_sense_last_stag_decay
+
+    def update(self, step, dopamine):
+        self._decay_s_tag(step)
         if self._unsupervised_stdp:
             self.strength += self._s_tag * self._reward_scalar
         else:
@@ -58,9 +64,7 @@ class Synapse:
         if self._pre_cell_type == CellType.INHIBITORY:
             return
 
-        steps_sense_last_fire =  step - self._last_fire_step
-        self._last_fire_step = step
-        self._s_tag = self._s_tag * (1 - self._s_tag_decay_rate)**steps_sense_last_fire
+        self._decay_s_tag(step)
         self._s_tag += self._stdp_scalar * self.pre_cell.calcium()
 
     def pre_fire(self, step):
@@ -68,10 +72,8 @@ class Synapse:
             self.post_cell.receive_fire(self.inhibitory_strength * -1.0)
 
         if self._pre_cell_type == CellType.EXCITATORY or self._pre_cell_type == CellType.MIXED:
+            self._decay_s_tag(step)
             self._s_tag -= self._stdp_scalar * self.post_cell.calcium()
-            steps_sense_last_fire =  step - self._last_fire_step
-            self._last_fire_step = step
-            self._s_tag = self._s_tag * (1 - self._s_tag_decay_rate)**steps_sense_last_fire
 
             if self._noise_factor > 0:
                 noise = self._noise_factor * random.uniform(-1, 1) * self.strength
@@ -96,8 +98,6 @@ class CellMembrane:
         
         self._step_size = step_size
         self.active = True
-        self.real_active = True
-        self.active_timer = 0
 
     def calcium(self):
         return self._calcium
@@ -187,6 +187,7 @@ class Cell:
         self._fire_rate_balance_scalar = 0.01
         self._fire_history_length = 20
         self._input_balance_scalar = 1.0
+        self.synapses_to_update = {}
 
     def weight_totals(self):
         (positive_in, negative_in, positive_out, negative_out,) = (0.0, 0.0, 0.0, 0.0,)
@@ -403,8 +404,15 @@ class Cell:
         self._fire_history.append(step)
         for synapse in self.output_synapses:
             synapse.pre_fire(step)
+            #this could be improved
+            if synapse._s_tag != 0:
+                self.synapses_to_update[synapse.label] = synapse
+
         for synapse in self.input_synapses:
             synapse.post_fire(step)
+            #this could be improved
+            if synapse._s_tag != 0:
+                self.synapses_to_update[synapse.label] = synapse
   
     def warp(self, time_steps):
         self._cell_membrane.warp(time_steps)
@@ -480,6 +488,7 @@ class SimpleModel:
         self.epoch_length = model_parameters.epoch_length
         self._epoch_delay = model_parameters.epoch_delay
 
+        # misleading name
         self.rewarded_synapses = []
         for synapse in self.synapses:
             if synapse._pre_cell_type != CellType.INHIBITORY:
@@ -512,7 +521,7 @@ class SimpleModel:
         
         active = False
         for cell in self._cells:
-            if cell.active():
+            if cell.active() or len(cell.synapses_to_update) > 0:
                 active = True
                     
         if self._dopamine > 0.0001:
@@ -541,6 +550,9 @@ class SimpleModel:
         for cell in self._cells:
             cell.fire_rate_balance(step, self.epoch_length)
 
+        for cell in self._cells:
+            cell.synapses_to_update = {}
+
     def step(self, step, warp_allowed, stimuli, has_reward, active_environment):
         self.update_dopamine(step, has_reward)
 
@@ -563,9 +575,12 @@ class SimpleModel:
             if self._warping:
                 return
             
-        if self._dopamine > 0.0001:
-            for synapse in self.rewarded_synapses:
-                synapse.update(self._dopamine)
+        #if self._dopamine > 0.0001:
+        # for synapse in self.rewarded_synapses:
+        #     synapse.update(self._dopamine)
+        for cell in self._cells:
+            for synapse in cell.synapses_to_update.values():
+                synapse.update(step, self._dopamine)
         
         self._last_active = step
         self._apply_stimuli(stimuli)

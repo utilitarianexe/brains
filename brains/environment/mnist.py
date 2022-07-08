@@ -93,7 +93,7 @@ def read(image_file_name: str, label_file_name: str,
     return images_by_label
 
 def read_mnist(possible_outputs: list):
-    return read("train-images.idx3-ubyte", "train-labels.idx1-ubyte", 10, possible_outputs)
+    return read("train-images.idx3-ubyte", "train-labels.idx1-ubyte", 10000, possible_outputs)
 
 if __name__ == '__main__':
     images_by_label = read_mnist([0, 1, 2])
