@@ -107,7 +107,7 @@ class CellMembrane:
         #return self._voltage
 
     def calcium(self):
-        return iron_brains.voltage(self.iron_cell)
+        return iron_brains.calcium(self.iron_cell)
         #return self._calcium
         
     def receive_input(self, strength):
@@ -421,7 +421,7 @@ class Cell:
     def complete_warp(self, time_steps):
         self._cell_membrane.complete_warp(time_steps)
 
-    def update(self, step, stimuli=None):
+    def update(self, step):
         self._cell_membrane.update()
 
     def active(self):
@@ -562,19 +562,19 @@ class SimpleModel:
         if real_step % self.epoch_length == 0:
             self._epoch_updates(step)
 
-        if self._warping:
-            if not active_environment and self._dopamine <= 0.0001 and warp_allowed:
-                # continue warping
-                return
+        # if self._warping:
+        #     if not active_environment and self._dopamine <= 0.0001 and warp_allowed:
+        #         # continue warping
+        #         return
 
-            #come out of warp
-            for cell in self._cells:
-                cell.complete_warp(step - self._last_active)
-            self._warping = False
-        else:
-            self._maybe_start_warp(step, active_environment, warp_allowed)
-            if self._warping:
-                return
+        #     #come out of warp
+        #     for cell in self._cells:
+        #         cell.complete_warp(step - self._last_active)
+        #     self._warping = False
+        # else:
+        #     self._maybe_start_warp(step, active_environment, warp_allowed)
+        #     if self._warping:
+        #         return
             
         #if self._dopamine > 0.0001:
         # for synapse in self.rewarded_synapses:
