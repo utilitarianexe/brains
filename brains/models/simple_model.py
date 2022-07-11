@@ -576,9 +576,9 @@ class SimpleModel:
         #     if self._warping:
         #         return
             
-        #if self._dopamine > 0.0001:
-        # for synapse in self.rewarded_synapses:
-        #     synapse.update(self._dopamine)
+        # if self._dopamine > 0.0001:
+        #     for synapse in self.rewarded_synapses:
+        #         synapse.update(step, self._dopamine)
         for cell in self._cells:
             for synapse in cell.synapses_to_update.values():
                 synapse.update(step, self._dopamine)
