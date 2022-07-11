@@ -8,7 +8,7 @@ class CellTypeParameters:
     voltage_decay: float = 0.01
     current_decay: float = 0.03
     calcium_decay: float = 0.1
-    starting_membrane_voltage: float =0.0
+    starting_membrane_voltage: float = 0.0
     max_voltage: float = 1.0
     voltage_reset: float = -1.0
     calcium_increment: float = 1.0

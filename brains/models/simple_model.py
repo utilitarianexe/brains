@@ -1,5 +1,6 @@
 from brains.utils import decay
 from brains.network import SynapseDefinition, NetworkDefinition, CellType
+import iron_brains
 
 from collections import defaultdict
 import random
@@ -83,35 +84,37 @@ class Synapse:
 
 class CellMembrane:
     def __init__(self, cell_type_parameters, step_size):
-        self.fired = False
-        self._voltage_decay = cell_type_parameters.voltage_decay
-        self._current_decay = cell_type_parameters.current_decay
-        self._calcium_decay = cell_type_parameters.calcium_decay
-        self._voltage = cell_type_parameters.starting_membrane_voltage
-        self._input_current = cell_type_parameters.starting_input_current
-        self._calcium = cell_type_parameters.starting_calcium
-        self._max_voltage = cell_type_parameters.max_voltage
-        self._voltage_reset = cell_type_parameters.voltage_reset
-        self._calcium_increment = cell_type_parameters.calcium_increment
-        self._input_current_reset = cell_type_parameters.input_current_reset
-        self._reset_input_current = cell_type_parameters.reset_input_current
+        self.iron_cell = iron_brains.create()
         
-        self._step_size = step_size
-        self.active = True
+        self.fired = False
+        # self._voltage_decay = cell_type_parameters.voltage_decay
+        # self._current_decay = cell_type_parameters.current_decay
+        # self._calcium_decay = cell_type_parameters.calcium_decay
+        # self._voltage = cell_type_parameters.starting_membrane_voltage
+        # self._input_current = cell_type_parameters.starting_input_current
+        # self._calcium = cell_type_parameters.starting_calcium
+        # self._max_voltage = cell_type_parameters.max_voltage
+        # self._voltage_reset = cell_type_parameters.voltage_reset
+        # self._calcium_increment = cell_type_parameters.calcium_increment
+        # self._input_current_reset = cell_type_parameters.input_current_reset
+        # self._reset_input_current = cell_type_parameters.reset_input_current
+        
+        # self._step_size = step_size
+        # self.active = True
+
+    def voltage(self):
+        return iron_brains.voltage(self.iron_cell)
+        #return self._voltage
 
     def calcium(self):
-        return self._calcium
+        return iron_brains.voltage(self.iron_cell)
+        #return self._calcium
         
-    def voltage(self):
-        return self._voltage
-
-    def input_current(self):
-        return self._input_current
-
     def receive_input(self, strength):
-        self._input_current += strength
+        iron_brains.receive_input(self.iron_cell, strength)
+        #self._input_current += strength
 
-    def warp(self, time_steps):
+    def complete_warp(self, time_steps):
         self.active = True
         self._voltage = self._voltage * (1 - self._voltage_decay)**time_steps
         
@@ -130,26 +133,27 @@ class CellMembrane:
 
            Calcium increases after firing as a sort of history of recent firing.
         '''
-        self.fired = False
+        iron_brains.update(self.iron_cell)
+        self.fired = iron_brains.fired(self.iron_cell)
 
-        voltage_before_update = self._voltage
+        # voltage_before_update = self._voltage
 
-        if self._voltage > self._max_voltage:
-            self._voltage = self._voltage_reset
-            self.fired = True
-            self._calcium += self._calcium_increment
-            if self._reset_input_current:
-                self._input_current = self._input_current_reset
+        # if self._voltage > self._max_voltage:
+        #     self._voltage = self._voltage_reset
+        #     self.fired = True
+        #     self._calcium += self._calcium_increment
+        #     if self._reset_input_current:
+        #         self._input_current = self._input_current_reset
 
-        self._voltage = self._voltage * (1 - self._voltage_decay)**self._step_size
-        self._voltage += self._input_current * self._step_size
-        self._input_current = self._input_current * (1 - self._current_decay)**self._step_size
-        self._calcium = self._calcium * (1 - self._calcium_decay)**self._step_size
+        # self._voltage = self._voltage * (1 - self._voltage_decay)**self._step_size
+        # self._voltage += self._input_current * self._step_size
+        # self._input_current = self._input_current * (1 - self._current_decay)**self._step_size
+        # self._calcium = self._calcium * (1 - self._calcium_decay)**self._step_size
 
-        if self._voltage <= 0 or voltage_before_update >= self._voltage:
-            self.active = False
-        else:
-            self.active = True
+        # if self._voltage <= 0 or voltage_before_update >= self._voltage:
+        #     self.active = False
+        # else:
+        #     self.active = True
 
 
 class Cell:
@@ -414,8 +418,8 @@ class Cell:
             if synapse._s_tag != 0:
                 self.synapses_to_update[synapse.label] = synapse
   
-    def warp(self, time_steps):
-        self._cell_membrane.warp(time_steps)
+    def complete_warp(self, time_steps):
+        self._cell_membrane.complete_warp(time_steps)
 
     def update(self, step, stimuli=None):
         self._cell_membrane.update()
@@ -429,9 +433,6 @@ class Cell:
     def calcium(self):
         return self._cell_membrane.calcium()
     
-    def input_current(self):
-        return self._cell_membrane.input_current()
-
     def fired(self):
         return self._cell_membrane.fired
 
@@ -568,7 +569,7 @@ class SimpleModel:
 
             #come out of warp
             for cell in self._cells:
-                cell.warp(step - self._last_active)
+                cell.complete_warp(step - self._last_active)
             self._warping = False
         else:
             self._maybe_start_warp(step, active_environment, warp_allowed)

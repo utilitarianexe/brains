@@ -1,14 +1,18 @@
 unsorted issues
-  validate s_tag decay bug fix
   validate warp fix and reprofile
-
-  record results to filep
+  whats preventing 1 from firing an output
+  record results to file
   import full mnist set
   put nmist in readme with learned model
   is it ok to include mnist data in our repo
-  make things faster
+  move to rust
+      make the cell membrane in rust
+      make some tests for it
+      connect it up to simple model
+      make a script to auto compile everything
+      make the whole model in rust
+      
   decuple brain and env from display
-  still have some magic numbers in simple_model.py
   does inhibition mean we need higher max strengths
   too much  repeated code in main
   multiple simultanious runs

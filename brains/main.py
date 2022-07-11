@@ -4,6 +4,7 @@ import brains.models.simple_model as simple_model
 import brains.models.simple_model_builder as simple_model_builder
 import brains.network_definitions as network_definitions
 import brains.utils as utils
+
 from brains.environment.easy import EasyEnvironment
 from brains.environment.handwriting import HandwritingEnvironment
 from brains.environment.mnist import MnistEnvironment
