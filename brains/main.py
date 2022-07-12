@@ -235,7 +235,7 @@ def main(parameters):
     for i in range(parameters.steps):
         environment.step(i, brain_output_ids)
         warp_allowed = parameters.attempt_warp and not display_active
-        brain_output_ids = brain.step(i, warp_allowed,
+        brain_output_ids = brain.step(i,
                                       environment.stimuli(i),
                                       environment.has_reward(), environment.active(i))
 

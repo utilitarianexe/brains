@@ -26,16 +26,11 @@ impl CellMembraneParameters{
     }
 }
 
-
-// we are going to want to seperate this from glue to python.
-use pyo3::prelude::*;
-#[pyclass]
 pub struct CellMembrane {
     voltage: f64, 
     input_current: f64,
     calcium: f64,
     fired: bool,
-    active: bool,
 }
 
 impl CellMembrane {
@@ -48,7 +43,6 @@ impl CellMembrane {
 	    input_current: 0.0,
 	    calcium: 0.0,
 	    fired: false,
-	    active: true,
 	}
     }
 
@@ -70,8 +64,6 @@ impl CellMembrane {
 
     pub fn update(&mut self, parameters: &CellMembraneParameters) {
         self.fired = false;
-        let voltage_before_update: f64 = self.voltage;
-
         if self.voltage > parameters.max_voltage {
             self.voltage = parameters.voltage_reset;
             self.fired = true;
@@ -88,12 +80,6 @@ impl CellMembrane {
 	let input_current_factor:f64 = (1.0 - parameters.current_decay).powf(step_size);
         self.input_current = self.input_current * input_current_factor;
         self.calcium = self.calcium * (1.0 - parameters.calcium_decay).powf(step_size);
-
-        if self.voltage <= 0.0 || voltage_before_update >= self.voltage {
-            self.active = false;
-        } else {
-	    self.active = true;
-	}
     }
 }
 

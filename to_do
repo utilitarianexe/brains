@@ -1,16 +1,15 @@
 unsorted issues
   validate warp fix and reprofile
-  whats preventing 1 from firing an output
   record results to file
   import full mnist set
   put nmist in readme with learned model
   is it ok to include mnist data in our repo
+  
   move to rust
-      make the cell membrane in rust
+      synapses in rust
       make some tests for it
-      connect it up to simple model
       make a script to auto compile everything
-      make the whole model in rust
+      fix simple model tests
       
   decuple brain and env from display
   does inhibition mean we need higher max strengths
