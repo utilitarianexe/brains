@@ -1,7 +1,6 @@
 mod model;
 
 use crate::model::Model;
-use crate::model::cell_membrane::CellMembraneParameters;
 
 use pyo3::prelude::*;
 
@@ -32,9 +31,57 @@ fn receive_input(model: &mut Model, index: u32, strength: f64){
 }
 
 #[pyfunction]
-fn update(model: &mut Model){
-    let parameters = CellMembraneParameters::default_cell_membrane_parameters();
-    model.update(&parameters);
+fn update_cells(model: &mut Model){
+    model.update_cells();
+}
+
+//////////
+
+#[pyfunction]
+fn add_synapse(model: &mut Model, unsupervised_stdp: bool,
+	       strength: f64, inhibitory_strength: f64) -> PyResult<i64>{
+    return Ok(model.add_synapse(unsupervised_stdp, strength, inhibitory_strength));
+}
+
+
+#[pyfunction]
+fn s_tag(model: &Model, index: u32) -> PyResult<f64> {
+    Ok(model.s_tag(index))
+}
+
+#[pyfunction]
+fn strength(model: &Model, index: u32) -> PyResult<f64> {
+    Ok(model.strength(index))
+}
+
+#[pyfunction]
+fn inhibitory_strength(model: &Model, index: u32) -> PyResult<f64> {
+    Ok(model.inhibitory_strength(index))
+}
+
+#[pyfunction]
+fn update_s_tag(model: &mut Model, index: u32, s_tag: f64){
+    model.update_s_tag(index, s_tag);
+}
+
+#[pyfunction]
+fn update_strength(model: &mut Model, index: u32, strength: f64){
+    model.update_strength(index, strength);
+}
+
+#[pyfunction]
+fn update_inhibitory_strength(model: &mut Model, index: u32, inhibitory_strength: f64){
+    model.update_inhibitory_strength(index, inhibitory_strength);
+}
+
+#[pyfunction]
+fn update_synapses(model: &mut Model, dopamine: f64){
+    model.update_synapses(dopamine);
+}
+
+#[pyfunction]
+fn cap(model: &mut Model, index: u32){
+    model.cap(index);
 }
 
 /// A Python module implemented in Rust. The name of this function must match
@@ -47,7 +94,18 @@ fn iron_brains(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(calcium, m)?)?;
     m.add_function(wrap_pyfunction!(fired, m)?)?;
     m.add_function(wrap_pyfunction!(receive_input, m)?)?;
-    m.add_function(wrap_pyfunction!(update, m)?)?;
+    m.add_function(wrap_pyfunction!(update_cells, m)?)?;
+
+    m.add_function(wrap_pyfunction!(add_synapse, m)?)?;
+    m.add_function(wrap_pyfunction!(s_tag, m)?)?;
+    m.add_function(wrap_pyfunction!(strength, m)?)?;
+    m.add_function(wrap_pyfunction!(inhibitory_strength, m)?)?;
+    m.add_function(wrap_pyfunction!(update_s_tag, m)?)?;
+    m.add_function(wrap_pyfunction!(update_strength, m)?)?;
+    m.add_function(wrap_pyfunction!(update_inhibitory_strength, m)?)?;
+    m.add_function(wrap_pyfunction!(update_synapses, m)?)?;
+    m.add_function(wrap_pyfunction!(cap, m)?)?;
+    
     //m.add_class::<CellMembrane>()?;
     Ok(())
 }

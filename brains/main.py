@@ -237,7 +237,8 @@ def main(parameters):
         warp_allowed = parameters.attempt_warp and not display_active
         brain_output_ids = brain.step(i,
                                       environment.stimuli(i),
-                                      environment.has_reward(), environment.active(i))
+                                      environment.has_reward(),
+                                      environment.active(i))
 
         if (i - parameters.input_delay) % parameters.epoch_length == 0:
             for text in brain.text_output():

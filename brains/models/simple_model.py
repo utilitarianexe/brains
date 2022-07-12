@@ -9,74 +9,110 @@ import dataclasses
 class Synapse:
     def __init__(self, pre_cell, post_cell,
                  synapse_definition, step_size,
-                 synapse_type_parameters):
+                 synapse_type_parameters, iron_model):
+
+        self._iron_model = iron_model
+        self._index = iron_brains.add_synapse(self._iron_model,
+                                              synapse_definition.unsupervised_stdp,
+                                              synapse_definition.starting_strength,
+                                              synapse_definition.starting_inhibitory_strength)
+                                              
         
-        self._step_size = step_size
         self.pre_cell = pre_cell
         self._pre_cell_type = pre_cell.cell_type
         self.post_cell = post_cell
-        
-        self._unsupervised_stdp = synapse_definition.unsupervised_stdp
-        self._reward_scalar = synapse_definition.reward_scalar
         self.label = synapse_definition.label
-        self._s_tag_decay_rate = synapse_definition.s_tag_decay_rate
-
         
+        # self._reward_scalar = synapse_definition.reward_scalar
+        # self._s_tag_decay_rate = synapse_definition.s_tag_decay_rate
+        # self._max_strength = synapse_type_parameters.max_strength
+        # self._min_strength = synapse_type_parameters.min_strength
         
-        self._stdp_scalar = synapse_type_parameters.stdp_scalar
-        self._max_strength = synapse_type_parameters.max_strength
-        self._min_strength = synapse_type_parameters.min_strength
+        # self._step_size = step_size
+        
         self._noise_factor = synapse_type_parameters.noise_factor
+        self._stdp_scalar = synapse_type_parameters.stdp_scalar
         
+
+        # self._unsupervised_stdp = synapse_definition.unsupervised_stdp
+        # self.strength = synapse_definition.starting_strength
+        # self.inhibitory_strength = synapse_definition.starting_inhibitory_strength
+        # self._s_tag = synapse_type_parameters.starting_s_tag
+
         self._pre_cell_fired = False
         self._post_cell_fired = False
-        self._last_s_tag_decay = 0
 
-        self.strength = synapse_definition.starting_strength
-        self.inhibitory_strength = synapse_definition.starting_inhibitory_strength
-        self._s_tag = synapse_type_parameters.starting_s_tag
+        #self._last_s_tag_decay = 0
+
+    @property
+    def s_tag(self):
+        return iron_brains.s_tag(self._iron_model, self._index)
+
+    @s_tag.setter
+    def s_tag(self, value):
+        iron_brains.update_s_tag(self._iron_model, self._index, value)
+
+
+    @property
+    def strength(self):
+        return iron_brains.strength(self._iron_model, self._index)
+
+    @strength.setter
+    def strength(self, value):
+        iron_brains.update_strength(self._iron_model, self._index, value)
+
+    @property
+    def inhibitory_strength(self):
+        return iron_brains.inhibitory_strength(self._iron_model, self._index)
+
+    @inhibitory_strength.setter
+    def inhibitory_strength(self, value):
+        iron_brains.update_inhibitory_strength(self._iron_model, self._index, value)
+
+
+    # def update(self, step, dopamine):
+    #     self._decay_s_tag(step)
+    #     if self._unsupervised_stdp:
+    #         self.strength += self._s_tag * self._reward_scalar
+    #     else:
+    #         self.strength += self._s_tag * dopamine * self._reward_scalar
+    #     self.cap()
 
 
     def cap(self):
-        if self.strength >= self._max_strength:
-            self.strength = self._max_strength
+        iron_brains.cap(self._iron_model, self._index)
+        # if self.strength >= self._max_strength:
+        #     self.strength = self._max_strength
         
-        if self.strength < self._min_strength:
-            self.strength = self._min_strength
+        # if self.strength < self._min_strength:
+        #     self.strength = self._min_strength
 
-        if self.inhibitory_strength >= self._max_strength:
-            self.inhibitory_strength = self._max_strength
+        # if self.inhibitory_strength >= self._max_strength:
+        #     self.inhibitory_strength = self._max_strength
             
-        if self.inhibitory_strength < self._min_strength:
-            self.inhibitory_strength = self._min_strength
+        # if self.inhibitory_strength < self._min_strength:
+        #     self.inhibitory_strength = self._min_strength
 
-    def _decay_s_tag(self, step):
-        steps_sense_last_s_tag_decay=  step - self._last_s_tag_decay
-        self._last_s_tag_decay = step
-        self._s_tag = self._s_tag * (1 - self._s_tag_decay_rate)**steps_sense_last_s_tag_decay
+    # def _decay_s_tag(self, step):
+    #     steps_sense_last_s_tag_decay=  step - self._last_s_tag_decay
+    #     self._last_s_tag_decay = step
+    #     self._s_tag = self._s_tag * (1 - self._s_tag_decay_rate)**steps_sense_last_s_tag_decay
 
-    def update(self, step, dopamine):
-        self._decay_s_tag(step)
-        if self._unsupervised_stdp:
-            self.strength += self._s_tag * self._reward_scalar
-        else:
-            self.strength += self._s_tag * dopamine * self._reward_scalar
-        self.cap()
 
     def post_fire(self, step):
         if self._pre_cell_type == CellType.INHIBITORY:
             return
 
-        self._decay_s_tag(step)
-        self._s_tag += self._stdp_scalar * self.pre_cell.calcium()
+        # self._decay_s_tag(step)
+        self.s_tag += self._stdp_scalar * self.pre_cell.calcium()
 
     def pre_fire(self, step):
         if self._pre_cell_type == CellType.INHIBITORY or self._pre_cell_type == CellType.MIXED:
             self.post_cell.receive_fire(self.inhibitory_strength * -1.0)
 
         if self._pre_cell_type == CellType.EXCITATORY or self._pre_cell_type == CellType.MIXED:
-            self._decay_s_tag(step)
-            self._s_tag -= self._stdp_scalar * self.post_cell.calcium()
+            # self._decay_s_tag(step)
+            self.s_tag -= self._stdp_scalar * self.post_cell.calcium()
 
             if self._noise_factor > 0:
                 noise = self._noise_factor * random.uniform(-1, 1) * self.strength
@@ -138,7 +174,6 @@ class Cell:
         self._fire_rate_balance_scalar = 0.01
         self._fire_history_length = 20
         self._input_balance_scalar = 1.0
-        self.synapses_to_update = {}
 
     def weight_totals(self):
         (positive_in, negative_in, positive_out, negative_out,) = (0.0, 0.0, 0.0, 0.0,)
@@ -191,16 +226,19 @@ class Cell:
         change_factor = positive_scale_factor * self._input_balance_scalar
         keep_factor = 1 - self._input_balance_scalar
         for synapse in self.input_synapses:
-            synapse.strength = (synapse.strength * change_factor) + (synapse.strength * keep_factor)
-
-            # avoid expensive cap call
-            if synapse.strength >= synapse._max_strength:
-                synapse.strength = synapse._max_strength
-            elif synapse.strength < synapse._min_strength:
-                synapse.strength = synapse._min_strength
-
-            real_positive_input_strength += synapse.strength
-        return real_positive_input_strength
+            # bunch of bullshit for performance
+            strength = iron_brains.strength(synapse._iron_model, synapse._index)
+            new_strength = (strength * change_factor) + (strength * keep_factor)
+            iron_brains.update_strength(synapse._iron_model, synapse._index, new_strength)
+            synapse.cap()
+            if not self._lock_inhibition_strength:
+                real_positive_input_strength += iron_brains.strength(synapse._iron_model,
+                                                                     synapse._index)
+        # more performance bs
+        if self._lock_inhibition_strength:
+            return real_positive_input_strength
+        else:
+            return 1.0
 
     def output_balance(self):
         if not self._output_balance:
@@ -327,7 +365,7 @@ class Cell:
     def _positive_input_strength(self):
         positive_total = 0.0
         for synapse in self.input_synapses:
-            positive_total += synapse.strength
+            positive_total += iron_brains.strength(synapse._iron_model, synapse._index)
         return positive_total
 
     def _negative_input_strength(self):
@@ -355,15 +393,9 @@ class Cell:
         self._fire_history.append(step)
         for synapse in self.output_synapses:
             synapse.pre_fire(step)
-            #this could be improved
-            if synapse._s_tag != 0:
-                self.synapses_to_update[synapse.label] = synapse
 
         for synapse in self.input_synapses:
             synapse.post_fire(step)
-            #this could be improved
-            if synapse._s_tag != 0:
-                self.synapses_to_update[synapse.label] = synapse
   
     def active(self):
         return self._cell_membrane.active
@@ -418,7 +450,7 @@ class SimpleModel:
         self._dopamine = model_parameters.starting_dopamine
         self._dopamine_decay = model_parameters.dopamine_decay
         self._step_size = model_parameters.step_size
-        self.iron_model = iron_brains.create(len(network_definition.cell_definitions))
+        self._iron_model = iron_brains.create(len(network_definition.cell_definitions))
         
         self._cells, self.synapses = self._build_network(
             model_parameters.cell_type_parameters,
@@ -445,12 +477,10 @@ class SimpleModel:
         if real_step % self.epoch_length == 0:
             self._epoch_updates(step)
 
-        for cell in self._cells:
-            for synapse in cell.synapses_to_update.values():
-                synapse.update(step, self._dopamine)
+        iron_brains.update_synapses(self._iron_model, self._dopamine)
         
         self._apply_stimuli(stimuli)
-        iron_brains.update(self.iron_model)
+        iron_brains.update_cells(self._iron_model)
 
         output_ids = []
         for cell in self._cells:
@@ -488,7 +518,7 @@ class SimpleModel:
     def _epoch_updates(self, step):
         # bad hack(means messing with input delays breaks things
         for synapse in self.synapses:
-            synapse._s_tag = 0.0
+            synapse.s_tag = 0.0
 
         for cell in self._cells:
             cell.output_balance()
@@ -615,7 +645,7 @@ class SimpleModel:
         cells_by_id = {}
         cells = []
         for i, cell_definition in enumerate(network_definition.cell_definitions):
-            cell_membrane = CellMembrane(self.iron_model, i)
+            cell_membrane = CellMembrane(self._iron_model, i)
             cell = Cell(cell_definition, cell_membrane)
             cells_by_id[cell.uuid] = cell
             cells.append(cell)
@@ -628,7 +658,7 @@ class SimpleModel:
             synapse = Synapse(pre_cell, post_cell,
                               synapse_definition,
                               step_size,
-                              synapse_type_parameters)
+                              synapse_type_parameters, self._iron_model)
             synapses.append(synapse)
             synapses_by_cell_id[synapse_definition.pre_cell_id].append(synapse)
             synapses_by_cell_id[synapse_definition.post_cell_id].append(synapse)

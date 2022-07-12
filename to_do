@@ -6,10 +6,14 @@ unsorted issues
   is it ok to include mnist data in our repo
   
   move to rust
-      synapses in rust
-      make some tests for it
+      mnist still slow
+        we are updating inhibitory synapses
+	can we do s_tag fast decay right
+      pass parameters from python(look at max strength particularly)
+      run as either python or rust
       make a script to auto compile everything
       fix simple model tests
+      rust tests
       
   decuple brain and env from display
   does inhibition mean we need higher max strengths
