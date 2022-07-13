@@ -9,13 +9,14 @@ import dataclasses
 class Synapse:
     def __init__(self, pre_cell, post_cell,
                  synapse_definition, step_size,
-                 synapse_type_parameters, iron_model):
+                 synapse_type_parameters, iron_model, cell_index):
 
         self._iron_model = iron_model
         self._index = iron_brains.add_synapse(self._iron_model,
                                               synapse_definition.unsupervised_stdp,
                                               synapse_definition.starting_strength,
-                                              synapse_definition.starting_inhibitory_strength)
+                                              synapse_definition.starting_inhibitory_strength,
+                                              cell_index)
                                               
         
         self.pre_cell = pre_cell
@@ -215,30 +216,10 @@ class Cell:
             real_negative_input_strength += synapse.inhibitory_strength
         return real_negative_input_strength
 
-    def _apply_positive_input_balance(self, target_positive_input_strength,):
-        current_positive_strength = self._positive_input_strength()
-        if current_positive_strength > 0.0:
-            positive_scale_factor = target_positive_input_strength / current_positive_strength
-        else:
-            positive_scale_factor = 1.0
-
-        real_positive_input_strength = 0.0
-        change_factor = positive_scale_factor * self._input_balance_scalar
-        keep_factor = 1 - self._input_balance_scalar
-        for synapse in self.input_synapses:
-            # bunch of bullshit for performance
-            strength = iron_brains.strength(synapse._iron_model, synapse._index)
-            new_strength = (strength * change_factor) + (strength * keep_factor)
-            iron_brains.update_strength(synapse._iron_model, synapse._index, new_strength)
-            synapse.cap()
-            if not self._lock_inhibition_strength:
-                real_positive_input_strength += iron_brains.strength(synapse._iron_model,
-                                                                     synapse._index)
-        # more performance bs
-        if self._lock_inhibition_strength:
-            return real_positive_input_strength
-        else:
-            return 1.0
+    def _apply_positive_input_balance(self, target):
+        return iron_brains.positive_normalize(self._cell_membrane.iron_model,
+                                              self._cell_membrane.index,
+                                              target)
 
     def output_balance(self):
         if not self._output_balance:
@@ -363,10 +344,8 @@ class Cell:
         return positive_total, negative_total
 
     def _positive_input_strength(self):
-        positive_total = 0.0
-        for synapse in self.input_synapses:
-            positive_total += iron_brains.strength(synapse._iron_model, synapse._index)
-        return positive_total
+        return iron_brains.cell_positive_strength(self._cell_membrane.iron_model,
+                                                  self._cell_membrane.index)
 
     def _negative_input_strength(self):
         negative_total = 0.0
@@ -478,7 +457,6 @@ class SimpleModel:
             self._epoch_updates(step)
 
         iron_brains.update_synapses(self._iron_model, self._dopamine)
-        
         self._apply_stimuli(stimuli)
         iron_brains.update_cells(self._iron_model)
 
@@ -658,7 +636,8 @@ class SimpleModel:
             synapse = Synapse(pre_cell, post_cell,
                               synapse_definition,
                               step_size,
-                              synapse_type_parameters, self._iron_model)
+                              synapse_type_parameters, self._iron_model,
+                              post_cell._cell_membrane.index)
             synapses.append(synapse)
             synapses_by_cell_id[synapse_definition.pre_cell_id].append(synapse)
             synapses_by_cell_id[synapse_definition.post_cell_id].append(synapse)

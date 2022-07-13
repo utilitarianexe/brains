@@ -19,21 +19,27 @@ impl SynapseParameters {
 
 pub struct Synapse {
     unsupervised_stdp: bool,
-    strength: f64,
+    pub strength: f64,
     inhibitory_strength: f64,
     s_tag: f64,
+    cell_index: i64
 }
 
 impl Synapse {
 
     pub fn default_synapse(unsupervised_stdp: bool,
-			   strength: f64, inhibitory_strength: f64) -> Synapse {
+			   strength: f64, inhibitory_strength: f64, cell_index: i64) -> Synapse {
 	Synapse {
 	    unsupervised_stdp,
 	    strength,
 	    inhibitory_strength,
 	    s_tag: 0.0,
+	    cell_index,
 	}
+    }
+
+    pub fn cell_index(&self) -> i64 {
+	self.cell_index
     }
 
     pub fn s_tag(&self) -> f64 {

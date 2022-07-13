@@ -4,11 +4,18 @@ unsorted issues
   import full mnist set
   put nmist in readme with learned model
   is it ok to include mnist data in our repo
+  cycling inhibitory synapses in input_balance is performance hit
+  apply_negative_input_balance names in these functions are terrible too
   
   move to rust
       mnist still slow
         we are updating inhibitory synapses
-	can we do s_tag fast decay right
+	cycling inhibitory functions in input_balance
+	
+	we need per cell functions in rust
+	can we do s_tag fast decay right?
+	python reference to iron_model in bad places
+	
       pass parameters from python(look at max strength particularly)
       run as either python or rust
       make a script to auto compile everything
@@ -21,6 +28,9 @@ unsorted issues
   multiple simultanious runs
   memory leak in UI
   wtf step size
+  do the negative random images matter?
+  does output balancing matter( is it too high)?
+  too many negative synapses
 
   network.py needs refactored
     too much ui
