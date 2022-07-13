@@ -54,6 +54,11 @@ fn positive_normalize(model: &mut Model, cell_index: i64, target: f64) -> PyResu
 }
 
 #[pyfunction]
+fn clear_positive_s_tags(model: &mut Model){
+    model.clear_positive_s_tags();
+}
+
+#[pyfunction]
 fn cell_positive_strength(model: &Model, cell_index: i64) -> PyResult<f64> {
     Ok(model.cell_positive_strength(cell_index))
 }
@@ -110,9 +115,10 @@ fn iron_brains(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(receive_input, m)?)?;
     m.add_function(wrap_pyfunction!(update_cells, m)?)?;
     m.add_function(wrap_pyfunction!(fired_indexes, m)?)?;
-
     
+
     m.add_function(wrap_pyfunction!(add_synapse, m)?)?;
+    m.add_function(wrap_pyfunction!(clear_positive_s_tags, m)?)?;
     m.add_function(wrap_pyfunction!(positive_normalize, m)?)?;
     m.add_function(wrap_pyfunction!(cell_positive_strength, m)?)?;
     m.add_function(wrap_pyfunction!(s_tag, m)?)?;

@@ -84,6 +84,14 @@ impl Model {
 	index as i64
     }
 
+    pub fn clear_positive_s_tags(&mut self) {
+	for index in self.positive_synapse_indexes.iter() {
+	    let synapse: &mut Synapse = &mut self.synapses[*index];
+	    synapse.s_tag = 0.0
+	}
+    }
+
+
     // would be much faster with per cell indexes
     pub fn positive_normalize(&mut self, cell_index: i64, target: f64) -> f64 {
 	let total = self.cell_positive_strength(cell_index);

@@ -506,17 +506,16 @@ class SimpleModel:
 
     def _epoch_updates(self, step):
         # bad hack(means messing with input delays breaks things
-        for synapse in self.synapses:
-            synapse.s_tag = 0.0
+        iron_brains.clear_positive_s_tags(self._iron_model);
+
+        # for synapse in self.synapses:
+        #     synapse.s_tag = 0.0
 
         for cell in self._cells:
             cell.output_balance()
 
         for cell in self._cells:
             cell.fire_rate_balance(step, self.epoch_length)
-
-        for cell in self._cells:
-            cell.synapses_to_update = {}
 
     def _update_dopamine(self, step, has_reward):
         self._dopamine = decay(self._dopamine, self._dopamine_decay, self._step_size)

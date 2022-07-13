@@ -5,6 +5,7 @@ unsorted issues
   put nmist in readme with learned model
   is it ok to include mnist data in our repo
   cycling inhibitory synapses in input_balance is performance hit
+  cycling inhibitory synapses when clearing s_tag
   apply_negative_input_balance names in these functions are terrible too
   
   move to rust

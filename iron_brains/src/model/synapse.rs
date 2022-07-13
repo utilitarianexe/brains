@@ -21,7 +21,7 @@ pub struct Synapse {
     unsupervised_stdp: bool,
     pub strength: f64,
     inhibitory_strength: f64,
-    s_tag: f64,
+    pub s_tag: f64,
     cell_index: i64
 }
 
