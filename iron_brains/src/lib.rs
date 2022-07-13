@@ -5,7 +5,7 @@ use crate::model::Model;
 use pyo3::prelude::*;
 
 #[pyfunction]
-fn create(size: u32) -> PyResult<Model> {
+fn create(size: usize) -> PyResult<Model> {
     let model = Model::default_model(size);
     Ok(model)
 }
@@ -33,6 +33,11 @@ fn receive_input(model: &mut Model, index: u32, strength: f64){
 #[pyfunction]
 fn update_cells(model: &mut Model){
     model.update_cells();
+}
+
+#[pyfunction]
+pub fn fired_indexes(model: &mut Model) -> PyResult<std::vec::Vec<usize>> {
+    Ok(model.fired_indexes())
 }
 
 //////////
@@ -104,6 +109,7 @@ fn iron_brains(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(fired, m)?)?;
     m.add_function(wrap_pyfunction!(receive_input, m)?)?;
     m.add_function(wrap_pyfunction!(update_cells, m)?)?;
+    m.add_function(wrap_pyfunction!(fired_indexes, m)?)?;
 
     
     m.add_function(wrap_pyfunction!(add_synapse, m)?)?;

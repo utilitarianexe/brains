@@ -20,16 +20,16 @@ impl Model {
 
     // what is the naming convention
     // all kinds of naming issues with file
-    pub fn default_model(size: u32) -> Model {
+    pub fn default_model(size: usize) -> Model {
 	let mut model = Model {
-	    cell_membranes : std::vec::Vec::with_capacity(size as usize),
+	    cell_membranes : std::vec::Vec::with_capacity(size),
 	    cell_membrane_parameters: CellMembraneParameters::default_cell_membrane_parameters(),
 	    synapses: std::vec::Vec::new(),
 	    positive_synapse_indexes: std::vec::Vec::new(),
 	    synapse_parameters: SynapseParameters::default_synapse_parameters(),
 	};
-	for _i in 0..size {
-            model.cell_membranes.push(CellMembrane::default_cell_membrane());   
+	for index in 0..size {
+            model.cell_membranes.push(CellMembrane::default_cell_membrane(index));   
 	};
 	model
     }
@@ -41,6 +41,18 @@ impl Model {
 
     pub fn fired(&self, index: u32) -> bool {
 	self.cell_membranes[index as usize].fired()
+    }
+
+    // could be made faster by creating the vector duing updates.
+    // we chould do this in python too.
+    pub fn fired_indexes(&self) -> std::vec::Vec<usize> {
+	let mut indexes: std::vec::Vec<usize> =  std::vec::Vec::new();
+	for cell_membrane in self.cell_membranes.iter() {
+	    if cell_membrane.fired() {
+		indexes.push(cell_membrane.index);
+	    };
+	};
+	return indexes;
     }
 
     pub fn calcium(&self, index: u32) -> f64 {

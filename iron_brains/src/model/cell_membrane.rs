@@ -27,6 +27,7 @@ impl CellMembraneParameters{
 }
 
 pub struct CellMembrane {
+    pub index: usize,
     voltage: f64, 
     input_current: f64,
     calcium: f64,
@@ -37,8 +38,9 @@ impl CellMembrane {
 
     // what is the naming convention
     // all kinds of naming issues with file
-    pub fn default_cell_membrane() -> CellMembrane {
+    pub fn default_cell_membrane(index: usize) -> CellMembrane {
 	CellMembrane {
+	    index,
 	    voltage: 0.0,
 	    input_current: 0.0,
 	    calcium: 0.0,

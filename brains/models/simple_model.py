@@ -430,6 +430,7 @@ class SimpleModel:
         self._dopamine_decay = model_parameters.dopamine_decay
         self._step_size = model_parameters.step_size
         self._iron_model = iron_brains.create(len(network_definition.cell_definitions))
+        self._firing_indexes = set()
         
         self._cells, self.synapses = self._build_network(
             model_parameters.cell_type_parameters,
@@ -461,16 +462,26 @@ class SimpleModel:
         iron_brains.update_cells(self._iron_model)
 
         output_ids = []
-        for cell in self._cells:
-            if cell.fired():
-                cell.fire_trace = 100
-                cell.apply_fire(step)
-                if cell.is_output_cell:
-                    output_ids.append(cell.output_id)
+        indexes = iron_brains.fired_indexes(self._iron_model);
+
+        for index in indexes:
+            cell = self._cells[index]
+            self._firing_indexes.add(index)
+            cell.fire_trace = 100
+            cell.apply_fire(step)
+            if cell.is_output_cell:
+                output_ids.append(cell.output_id)
+
+        new_firing_indexes = []
+        for index in self._firing_indexes:
+            if index in indexes:
+                new_firing_indexes.append(index)
             else:
+                cell = self._cells[index]
                 if cell.fire_trace > 0:
                     cell.fire_trace -= 1
-
+                    new_firing_indexes.append(index)
+        self._firing_indexes = set(new_firing_indexes)
         return output_ids
 
 

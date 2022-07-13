@@ -8,19 +8,13 @@ unsorted issues
   apply_negative_input_balance names in these functions are terrible too
   
   move to rust
-      mnist still slow
-        we are updating inhibitory synapses
-	cycling inhibitory functions in input_balance
-	
-	we need per cell functions in rust
-	can we do s_tag fast decay right?
-	python reference to iron_model in bad places
-	
-      pass parameters from python(look at max strength particularly)
-      run as either python or rust
-      make a script to auto compile everything
-      fix simple model tests
-      rust tests
+     per cell functionst
+     python reference to iron_model in bad places
+     pass parameters from python(look at max strength particularly)
+     run as either python or rust
+     make a script to auto compile everything
+     fix simple model tests
+     rust tests
       
   decuple brain and env from display
   does inhibition mean we need higher max strengths
@@ -31,6 +25,7 @@ unsorted issues
   do the negative random images matter?
   does output balancing matter( is it too high)?
   too many negative synapses
+  easy only works 80% of the time
 
   network.py needs refactored
     too much ui
