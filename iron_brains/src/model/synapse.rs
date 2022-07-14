@@ -68,7 +68,7 @@ impl Synapse {
 	if self.s_tag != 0.0 {
 	    self.s_tag = self.s_tag * (1.0 - synapse_parameters.s_tag_decay_rate);
             if self.unsupervised_stdp {
-		self.strength += self.s_tag * synapse_parameters.reward_scalar;
+		self.strength += self.s_tag * synapse_parameters.reward_scalar * 0.1;
             } else {
 		self.strength += self.s_tag * dopamine * synapse_parameters.reward_scalar;
 	    };

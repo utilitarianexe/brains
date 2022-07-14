@@ -16,34 +16,17 @@ class Synapse:
                                               synapse_definition.unsupervised_stdp,
                                               synapse_definition.starting_strength,
                                               synapse_definition.starting_inhibitory_strength,
-                                              cell_index)
-                                              
-        
+                                              cell_index)        
         self.pre_cell = pre_cell
         self._pre_cell_type = pre_cell.cell_type
         self.post_cell = post_cell
         self.label = synapse_definition.label
         
-        # self._reward_scalar = synapse_definition.reward_scalar
-        # self._s_tag_decay_rate = synapse_definition.s_tag_decay_rate
-        # self._max_strength = synapse_type_parameters.max_strength
-        # self._min_strength = synapse_type_parameters.min_strength
-        
-        # self._step_size = step_size
-        
         self._noise_factor = synapse_type_parameters.noise_factor
         self._stdp_scalar = synapse_type_parameters.stdp_scalar
         
-
-        # self._unsupervised_stdp = synapse_definition.unsupervised_stdp
-        # self.strength = synapse_definition.starting_strength
-        # self.inhibitory_strength = synapse_definition.starting_inhibitory_strength
-        # self._s_tag = synapse_type_parameters.starting_s_tag
-
         self._pre_cell_fired = False
         self._post_cell_fired = False
-
-        #self._last_s_tag_decay = 0
 
     @property
     def s_tag(self):
@@ -70,41 +53,13 @@ class Synapse:
     def inhibitory_strength(self, value):
         iron_brains.update_inhibitory_strength(self._iron_model, self._index, value)
 
-
-    # def update(self, step, dopamine):
-    #     self._decay_s_tag(step)
-    #     if self._unsupervised_stdp:
-    #         self.strength += self._s_tag * self._reward_scalar
-    #     else:
-    #         self.strength += self._s_tag * dopamine * self._reward_scalar
-    #     self.cap()
-
-
     def cap(self):
         iron_brains.cap(self._iron_model, self._index)
-        # if self.strength >= self._max_strength:
-        #     self.strength = self._max_strength
-        
-        # if self.strength < self._min_strength:
-        #     self.strength = self._min_strength
-
-        # if self.inhibitory_strength >= self._max_strength:
-        #     self.inhibitory_strength = self._max_strength
-            
-        # if self.inhibitory_strength < self._min_strength:
-        #     self.inhibitory_strength = self._min_strength
-
-    # def _decay_s_tag(self, step):
-    #     steps_sense_last_s_tag_decay=  step - self._last_s_tag_decay
-    #     self._last_s_tag_decay = step
-    #     self._s_tag = self._s_tag * (1 - self._s_tag_decay_rate)**steps_sense_last_s_tag_decay
-
 
     def post_fire(self, step):
         if self._pre_cell_type == CellType.INHIBITORY:
             return
 
-        # self._decay_s_tag(step)
         self.s_tag += self._stdp_scalar * self.pre_cell.calcium()
 
     def pre_fire(self, step):
@@ -112,7 +67,6 @@ class Synapse:
             self.post_cell.receive_fire(self.inhibitory_strength * -1.0)
 
         if self._pre_cell_type == CellType.EXCITATORY or self._pre_cell_type == CellType.MIXED:
-            # self._decay_s_tag(step)
             self.s_tag -= self._stdp_scalar * self.post_cell.calcium()
 
             if self._noise_factor > 0:
@@ -199,24 +153,24 @@ class Cell:
         current_positive_strength = self._positive_input_strength()
         self._target_input = current_positive_strength
 
-    def _apply_negative_input_balance(self, target_negative_input_strength,):
-        current_negative_strength = self._negative_input_strength()
-        if current_negative_strength > 0.0:
-            negative_scale_factor = target_negative_input_strength/current_negative_strength
+    def _normalize_negative_input(self, target):
+        total = self._negative_input_strength()
+        if total > 0.0:
+            scale = target/total
         else:
-            negative_scale_factor = 1.0
+            scale = 1.0
             
-        real_negative_input_strength = 0.0
-        change_factor = negative_scale_factor * self._input_balance_scalar
-        keep_factor = 1 - self._input_balance_scalar
+        new_total = 0.0
+        change_factor = scale * self._input_balance_scalar
+        keep_factor = 1.0 - self._input_balance_scalar
         for synapse in self.input_synapses:
             change_part = synapse.inhibitory_strength * change_factor
             synapse.inhibitory_strength = (change_part) + (synapse.inhibitory_strength * keep_factor)
             synapse.cap()
-            real_negative_input_strength += synapse.inhibitory_strength
-        return real_negative_input_strength
+            new_total += synapse.inhibitory_strength
+        return new_total
 
-    def _apply_positive_input_balance(self, target):
+    def _normalize_positive_input(self, target):
         return iron_brains.positive_normalize(self._cell_membrane.iron_model,
                                               self._cell_membrane.index,
                                               target)
@@ -303,26 +257,22 @@ class Cell:
             self._target_input += self._target_strength_increase(rate_based_up_scale_factor,
                                                      self._target_input)
 
-        real_positive_strength = self._apply_positive_input_balance(self._target_input)
+        real_positive_strength = self._normalize_positive_input(self._target_input)
 
         if not self._lock_inhibition_strength:
-            real_negative_strength = self._apply_negative_input_balance(self._target_input)
+            real_negative_strength = self._normalize_negative_input(self._target_input)
         else:
             real_negative_strength = 0.0
         
         if real_negative_strength == 0.0:
             pass
         elif real_positive_strength < real_negative_strength:
-            real_positive_strength = self._apply_positive_input_balance(
-                real_positive_strength)
-            real_negative_strength = self._apply_negative_input_balance(
-                real_positive_strength)
+            real_positive_strength = self._normalize_positive_input(real_positive_strength)
+            real_negative_strength = self._normalize_negative_input(real_positive_strength)
 
         else:
-            real_positive_strength = self._apply_positive_input_balance(
-                real_negative_strength)
-            real_negative_strength = self._apply_negative_input_balance(
-                real_negative_strength)
+            real_positive_strength = self._normalize_positive_input(real_negative_strength)
+            real_negative_strength = self._normalize_negative_input(real_negative_strength)
 
     def _target_strength_reduction(self, rate_based_down_scale_factor,
                                    current_target_strength):
@@ -335,14 +285,6 @@ class Cell:
         rate_based_change = rate_based_target - current_target_strength
         return self._fire_rate_balance_scalar * rate_based_change
                 
-    def _current_total_input_strength(self):
-        positive_total = 0.0
-        negative_total = 0.0
-        for synapse in self.input_synapses:
-            positive_total += synapse.strength
-            negative_total += synapse.inhibitory_strength
-        return positive_total, negative_total
-
     def _positive_input_strength(self):
         return iron_brains.cell_positive_strength(self._cell_membrane.iron_model,
                                                   self._cell_membrane.index)
@@ -376,9 +318,6 @@ class Cell:
         for synapse in self.input_synapses:
             synapse.post_fire(step)
   
-    def active(self):
-        return self._cell_membrane.active
-        
     def membrane_voltage(self):
         return self._cell_membrane.voltage()
 
@@ -462,19 +401,23 @@ class SimpleModel:
         iron_brains.update_cells(self._iron_model)
 
         output_ids = []
-        indexes = iron_brains.fired_indexes(self._iron_model);
+        fired_indexes = iron_brains.fired_indexes(self._iron_model);
 
-        for index in indexes:
+        for index in fired_indexes:
             cell = self._cells[index]
             self._firing_indexes.add(index)
             cell.fire_trace = 100
             cell.apply_fire(step)
             if cell.is_output_cell:
                 output_ids.append(cell.output_id)
+                
+        self._update_fired_display_markers(fired_indexes)
+        return output_ids
 
+    def _update_fired_display_markers(self, fired_indexes):
         new_firing_indexes = []
         for index in self._firing_indexes:
-            if index in indexes:
+            if index in fired_indexes:
                 new_firing_indexes.append(index)
             else:
                 cell = self._cells[index]
@@ -482,8 +425,6 @@ class SimpleModel:
                     cell.fire_trace -= 1
                     new_firing_indexes.append(index)
         self._firing_indexes = set(new_firing_indexes)
-        return output_ids
-
 
     def _cells_by_input_position(self):
         cells_by_input_position = defaultdict(lambda: defaultdict(list))
@@ -507,9 +448,6 @@ class SimpleModel:
     def _epoch_updates(self, step):
         # bad hack(means messing with input delays breaks things
         iron_brains.clear_positive_s_tags(self._iron_model);
-
-        # for synapse in self.synapses:
-        #     synapse.s_tag = 0.0
 
         for cell in self._cells:
             cell.output_balance()
