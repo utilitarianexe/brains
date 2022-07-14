@@ -6,7 +6,7 @@ use pyo3::prelude::*;
 
 #[pyfunction]
 fn create(size: usize) -> PyResult<Model> {
-    let model = Model::default_model(size);
+    let model = Model::new(size);
     Ok(model)
 }
 

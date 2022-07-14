@@ -6,7 +6,7 @@ pub struct SynapseParameters {
 }
 
 impl SynapseParameters {
-    pub fn default_synapse_parameters() -> SynapseParameters {
+    pub fn new() -> Self {
 	SynapseParameters {
 	    reward_scalar: 0.1,
 	    s_tag_decay_rate: 0.002,
@@ -14,7 +14,6 @@ impl SynapseParameters {
 	    min_strength: 0.0,
 	}
     }
-
 }
 
 pub struct Synapse {
@@ -26,10 +25,9 @@ pub struct Synapse {
 }
 
 impl Synapse {
-
-    pub fn default_synapse(unsupervised_stdp: bool,
-			   strength: f64, inhibitory_strength: f64, cell_index: i64) -> Synapse {
-	Synapse {
+    pub fn new(unsupervised_stdp: bool,
+	       strength: f64, inhibitory_strength: f64, cell_index: i64) -> Self {
+	Self {
 	    unsupervised_stdp,
 	    strength,
 	    inhibitory_strength,

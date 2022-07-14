@@ -11,8 +11,8 @@ pub struct CellMembraneParameters {
 }
 
 impl CellMembraneParameters{
-    pub fn default_cell_membrane_parameters() -> CellMembraneParameters {
-	CellMembraneParameters {
+    pub fn new() -> Self {
+	Self {
 	    voltage_decay: 0.01,
 	    current_decay: 0.03,
 	    calcium_decay: 0.1,
@@ -38,8 +38,8 @@ impl CellMembrane {
 
     // what is the naming convention
     // all kinds of naming issues with file
-    pub fn default_cell_membrane(index: usize) -> CellMembrane {
-	CellMembrane {
+    pub fn new(index: usize) -> Self {
+	Self {
 	    index,
 	    voltage: 0.0,
 	    input_current: 0.0,

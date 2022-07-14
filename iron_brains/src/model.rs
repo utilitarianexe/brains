@@ -18,18 +18,17 @@ pub struct Model {
 
 impl Model {
 
-    // what is the naming convention
     // all kinds of naming issues with file
-    pub fn default_model(size: usize) -> Model {
-	let mut model = Model {
+    pub fn new(size: usize) -> Self {
+	let mut model = Self {
 	    cell_membranes : std::vec::Vec::with_capacity(size),
-	    cell_membrane_parameters: CellMembraneParameters::default_cell_membrane_parameters(),
+	    cell_membrane_parameters: CellMembraneParameters::new(),
 	    synapses: std::vec::Vec::new(),
 	    positive_synapse_indexes: std::vec::Vec::new(),
-	    synapse_parameters: SynapseParameters::default_synapse_parameters(),
+	    synapse_parameters: SynapseParameters::new(),
 	};
 	for index in 0..size {
-            model.cell_membranes.push(CellMembrane::default_cell_membrane(index));   
+            model.cell_membranes.push(CellMembrane::new(index));   
 	};
 	model
     }
@@ -73,8 +72,8 @@ impl Model {
 
     pub fn add_synapse(&mut self, unsupervised_stdp: bool,
 		       strength: f64, inhibitory_strength: f64, cell_index: i64) -> i64{
-	let synapse: Synapse = Synapse::default_synapse(unsupervised_stdp,
-							strength, inhibitory_strength, cell_index);
+	let synapse: Synapse = Synapse::new(unsupervised_stdp,
+					    strength, inhibitory_strength, cell_index);
 
 	self.synapses.push(synapse);
 	let index: usize = self.synapses.len()  - 1;
