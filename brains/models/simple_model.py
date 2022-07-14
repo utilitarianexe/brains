@@ -77,28 +77,30 @@ class Synapse:
 
 class CellMembrane:
     def __init__(self, iron_model, index):
-        self.iron_model = iron_model
-        self.index = index
+        self._iron_model = iron_model
+        self._index = index
 
     def voltage(self):
-        return iron_brains.voltage(self.iron_model, self.index)
+        return iron_brains.voltage(self._iron_model, self._index)
 
     def calcium(self):
-        return iron_brains.calcium(self.iron_model, self.index)
+        return iron_brains.calcium(self._iron_model, self._index)
 
     def fired(self):
-        return iron_brains.fired(self.iron_model, self.index)
+        return iron_brains.fired(self._iron_model, self._index)
         
     def receive_input(self, strength):
-        iron_brains.receive_input(self.iron_model, self.index, strength)
+        iron_brains.receive_input(self._iron_model, self._index, strength)
 
     
 
 class Cell:
-    def __init__(self, cell_definition, cell_membrane):
+    def __init__(self, cell_definition, cell_membrane, iron_model, index):
         self.uuid = cell_definition.uuid
         self.label = cell_definition.label
         self.layer_id = cell_definition.layer_id
+        self._iron_model = iron_model
+        self.index = index
         
         self.x_display_position = cell_definition.x_display_position
         self.y_display_position = cell_definition.y_display_position
@@ -171,8 +173,8 @@ class Cell:
         return new_total
 
     def _normalize_positive_input(self, target):
-        return iron_brains.positive_normalize(self._cell_membrane.iron_model,
-                                              self._cell_membrane.index,
+        return iron_brains.positive_normalize(self._iron_model,
+                                              self.index,
                                               target)
 
     def output_balance(self):
@@ -286,8 +288,8 @@ class Cell:
         return self._fire_rate_balance_scalar * rate_based_change
                 
     def _positive_input_strength(self):
-        return iron_brains.cell_positive_input_strength(self._cell_membrane.iron_model,
-                                                        self._cell_membrane.index)
+        return iron_brains.cell_positive_input_strength(self._iron_model,
+                                                        self.index)
 
     def _negative_input_strength(self):
         negative_total = 0.0
@@ -572,7 +574,7 @@ class SimpleModel:
         cells = []
         for i, cell_definition in enumerate(network_definition.cell_definitions):
             cell_membrane = CellMembrane(self._iron_model, i)
-            cell = Cell(cell_definition, cell_membrane)
+            cell = Cell(cell_definition, cell_membrane, self._iron_model, i)
             cells_by_id[cell.uuid] = cell
             cells.append(cell)
 
@@ -585,7 +587,7 @@ class SimpleModel:
                               synapse_definition,
                               step_size,
                               synapse_type_parameters, self._iron_model,
-                              post_cell._cell_membrane.index)
+                              post_cell.index)
             synapses.append(synapse)
             synapses_by_cell_id[synapse_definition.pre_cell_id].append(synapse)
             synapses_by_cell_id[synapse_definition.post_cell_id].append(synapse)
