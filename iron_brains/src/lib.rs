@@ -44,8 +44,8 @@ pub fn fired_indexes(model: &mut Model) -> PyResult<std::vec::Vec<usize>> {
 
 #[pyfunction]
 fn add_synapse(model: &mut Model, unsupervised_stdp: bool,
-	       strength: f64, inhibitory_strength: f64, cell_index: i64) -> PyResult<i64>{
-    return Ok(model.add_synapse(unsupervised_stdp, strength, inhibitory_strength, cell_index));
+	       strength: f64, inhibitory_strength: f64, post_cell_index: i64) -> PyResult<i64>{
+    return Ok(model.add_synapse(unsupervised_stdp, strength, inhibitory_strength, post_cell_index));
 }
 
 #[pyfunction]
@@ -59,8 +59,8 @@ fn clear_positive_s_tags(model: &mut Model){
 }
 
 #[pyfunction]
-fn cell_positive_strength(model: &Model, cell_index: i64) -> PyResult<f64> {
-    Ok(model.cell_positive_strength(cell_index))
+fn cell_positive_input_strength(model: &Model, cell_index: i64) -> PyResult<f64> {
+    Ok(model.cell_positive_input_strength(cell_index))
 }
 
 #[pyfunction]
@@ -120,7 +120,7 @@ fn iron_brains(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(add_synapse, m)?)?;
     m.add_function(wrap_pyfunction!(clear_positive_s_tags, m)?)?;
     m.add_function(wrap_pyfunction!(positive_normalize, m)?)?;
-    m.add_function(wrap_pyfunction!(cell_positive_strength, m)?)?;
+    m.add_function(wrap_pyfunction!(cell_positive_input_strength, m)?)?;
     m.add_function(wrap_pyfunction!(s_tag, m)?)?;
     m.add_function(wrap_pyfunction!(strength, m)?)?;
     m.add_function(wrap_pyfunction!(inhibitory_strength, m)?)?;

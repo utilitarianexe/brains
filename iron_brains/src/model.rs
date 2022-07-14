@@ -71,9 +71,9 @@ impl Model {
     ////////////////
 
     pub fn add_synapse(&mut self, unsupervised_stdp: bool,
-		       strength: f64, inhibitory_strength: f64, cell_index: i64) -> i64{
+		       strength: f64, inhibitory_strength: f64, post_cell_index: i64) -> i64{
 	let synapse: Synapse = Synapse::new(unsupervised_stdp,
-					    strength, inhibitory_strength, cell_index);
+					    strength, inhibitory_strength, post_cell_index);
 
 	self.synapses.push(synapse);
 	let index: usize = self.synapses.len()  - 1;
@@ -93,7 +93,7 @@ impl Model {
 
     // would be much faster with per cell indexes
     pub fn positive_normalize(&mut self, cell_index: i64, target: f64) -> f64 {
-	let total = self.cell_positive_strength(cell_index);
+	let total = self.cell_positive_input_strength(cell_index);
 	let scale: f64 = if total > 0.0 {
 	    target / total
 	} else {
@@ -107,7 +107,7 @@ impl Model {
 	let mut new_total: f64 = 0.0;
 	for index in self.positive_synapse_indexes.iter() {
 	    let synapse: &mut Synapse = &mut self.synapses[*index];
-	    if synapse.cell_index() == cell_index {
+	    if synapse.post_cell_index() == cell_index {
 		let keep_part = synapse.strength() * keep_factor;
 		let change_part = synapse.strength() * change_factor;
 		synapse.strength =  keep_part +  change_part;
@@ -118,11 +118,11 @@ impl Model {
 	return new_total;
     }
 
-    pub fn cell_positive_strength(&self, cell_index: i64) -> f64 {
+    pub fn cell_positive_input_strength(&self, cell_index: i64) -> f64 {
 	let mut total: f64 = 0.0;
 	for index in self.positive_synapse_indexes.iter() {
 	    let synapse: &Synapse = &self.synapses[*index];
-	    if synapse.cell_index() == cell_index {
+	    if synapse.post_cell_index() == cell_index {
 		total += synapse.strength()
 	    };
 	};

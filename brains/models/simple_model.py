@@ -9,14 +9,14 @@ import dataclasses
 class Synapse:
     def __init__(self, pre_cell, post_cell,
                  synapse_definition, step_size,
-                 synapse_type_parameters, iron_model, cell_index):
+                 synapse_type_parameters, iron_model, post_cell_index):
 
         self._iron_model = iron_model
         self._index = iron_brains.add_synapse(self._iron_model,
                                               synapse_definition.unsupervised_stdp,
                                               synapse_definition.starting_strength,
                                               synapse_definition.starting_inhibitory_strength,
-                                              cell_index)        
+                                              post_cell_index)
         self.pre_cell = pre_cell
         self._pre_cell_type = pre_cell.cell_type
         self.post_cell = post_cell
@@ -286,8 +286,8 @@ class Cell:
         return self._fire_rate_balance_scalar * rate_based_change
                 
     def _positive_input_strength(self):
-        return iron_brains.cell_positive_strength(self._cell_membrane.iron_model,
-                                                  self._cell_membrane.index)
+        return iron_brains.cell_positive_input_strength(self._cell_membrane.iron_model,
+                                                        self._cell_membrane.index)
 
     def _negative_input_strength(self):
         negative_total = 0.0
