@@ -13,7 +13,6 @@ pub struct CellMembraneParameters {
     calcium_increment: f64,
     input_current_reset: f64,
     reset_input_current: bool,
-    step_size: f64,
 }
 
 impl CellMembraneParameters{
@@ -27,7 +26,6 @@ impl CellMembraneParameters{
 	    calcium_increment: 1.0,
 	    input_current_reset: 0.0,
 	    reset_input_current: true,
-	    step_size: 1.0,
 	}
     }
 }
@@ -38,6 +36,8 @@ pub struct CellMembrane {
     input_current: f64,
     calcium: f64,
     fired: bool,
+    pub input_synapse_indexes: std::vec::Vec<usize>,
+    pub output_synapse_indexes: std::vec::Vec<usize>,
 }
 
 impl CellMembrane {
@@ -51,6 +51,8 @@ impl CellMembrane {
 	    input_current: 0.0,
 	    calcium: 0.0,
 	    fired: false,
+	    input_synapse_indexes: std::vec::Vec::new(),
+	    output_synapse_indexes: std::vec::Vec::new(),
 	}
     }
 
@@ -65,13 +67,12 @@ impl CellMembrane {
 	    }
 	}
 
-	let step_size: f64 = parameters.step_size;
-	let voltage_factor: f64 = (1.0 - parameters.voltage_decay).powf(step_size);
+	let voltage_factor: f64 = 1.0 - parameters.voltage_decay;
         self.voltage = self.voltage * voltage_factor;
-        self.voltage += self.input_current * step_size;
-	let input_current_factor:f64 = (1.0 - parameters.current_decay).powf(step_size);
+        self.voltage += self.input_current;
+	let input_current_factor:f64 = 1.0 - parameters.current_decay;
         self.input_current = self.input_current * input_current_factor;
-        self.calcium = self.calcium * (1.0 - parameters.calcium_decay).powf(step_size);
+        self.calcium = self.calcium * (1.0 - parameters.calcium_decay);
     }
 
     pub fn voltage(&self) -> f64 {

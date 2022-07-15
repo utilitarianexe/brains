@@ -41,16 +41,33 @@ impl Model {
 
     // obviously could be way faster than going over every synapse
     pub fn apply_fire(&mut self, index: usize){
-	for synapse in &mut self.synapses {
-	    if synapse.pre_cell_index == index {
-		let pre_cell_type = self.cell_membranes[index].cell_type;
-		synapse.pre_fire(pre_cell_type, &mut self.cell_membranes[synapse.post_cell_index],
-				 &self.synapse_parameters);
-	    }
-	    if synapse.post_cell_index == index {
-		synapse.post_fire(&self.cell_membranes[synapse.pre_cell_index],
-				  &self.synapse_parameters);
-	    }
+	let cell = &self.cell_membranes[index];
+	let output_indexes: &std::vec::Vec<usize> = &cell.output_synapse_indexes;
+	let cell_type: CellType = cell.cell_type;
+
+	let mut post_cell_indexes: std::vec::Vec<usize> = std::vec::Vec::new();
+	let mut synapse_indexes: std::vec::Vec<usize> = std::vec::Vec::new();
+	for synapse_index in output_indexes.iter() {
+	    let synapse = &mut self.synapses[*synapse_index];
+	    post_cell_indexes.push(synapse.post_cell_index);
+	    synapse_indexes.push(*synapse_index)
+	}
+
+	
+	for n in 0..post_cell_indexes.len() {
+	    let synapse_index = synapse_indexes[n];
+	    let post_cell_index = post_cell_indexes[n];
+	    let synapse = &mut self.synapses[synapse_index];
+	    let post_cell = &mut self.cell_membranes[post_cell_index];
+	    synapse.pre_fire(cell_type, post_cell,
+			     &self.synapse_parameters);
+	}
+	
+	for synapse_index in self.cell_membranes[index].input_synapse_indexes.iter() {
+	    let synapse = &mut self.synapses[*synapse_index];
+	    let pre_cell = &self.cell_membranes[synapse.pre_cell_index];
+	    synapse.post_fire(pre_cell,
+			      &self.synapse_parameters);
 	}
     }
 
@@ -101,6 +118,8 @@ impl Model {
 
 	self.synapses.push(synapse);
 	let index: usize = self.synapses.len()  - 1;
+	self.cell_membranes[pre_cell_index].output_synapse_indexes.push(index);
+	self.cell_membranes[post_cell_index].input_synapse_indexes.push(index);
     	if inhibitory_strength == 0.0 {
 	    self.positive_synapse_indexes.push(index);
 	}
