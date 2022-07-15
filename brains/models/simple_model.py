@@ -449,7 +449,7 @@ class SimpleModel:
 
     def _epoch_updates(self, step):
         # bad hack(means messing with input delays breaks things
-        iron_brains.clear_positive_s_tags(self._iron_model);
+        iron_brains.clear_positive_s_tags(self._iron_model)
 
         for cell in self._cells:
             cell.output_balance()
@@ -572,9 +572,16 @@ class SimpleModel:
                        step_size):
         cells_by_id = {}
         cells = []
-        for i, cell_definition in enumerate(network_definition.cell_definitions):
-            cell_membrane = CellMembrane(self._iron_model, i)
-            cell = Cell(cell_definition, cell_membrane, self._iron_model, i)
+        for cell_definition in network_definition.cell_definitions:
+            if cell_definition.cell_type == CellType.EXCITATORY:
+                rust_cell_type = 0
+            elif cell_definition.cell_type == CellType.INHIBITORY:
+                rust_cell_type = 1
+            else:
+                raise NotImplemented("rust does not support cell types other than excite and inhibit")
+            index = iron_brains.add_cell(self._iron_model, rust_cell_type);
+            cell_membrane = CellMembrane(self._iron_model, index)
+            cell = Cell(cell_definition, cell_membrane, self._iron_model, index)
             cells_by_id[cell.uuid] = cell
             cells.append(cell)
 

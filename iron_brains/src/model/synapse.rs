@@ -21,12 +21,12 @@ pub struct Synapse {
     pub strength: f64,
     inhibitory_strength: f64,
     pub s_tag: f64,
-    pub post_cell_index: i64
+    pub post_cell_index: usize,
 }
 
 impl Synapse {
     pub fn new(unsupervised_stdp: bool,
-	       strength: f64, inhibitory_strength: f64, post_cell_index: i64) -> Self {
+	       strength: f64, inhibitory_strength: f64, post_cell_index: usize) -> Self {
 	Self {
 	    unsupervised_stdp,
 	    strength,
@@ -36,7 +36,7 @@ impl Synapse {
 	}
     }
 
-    pub fn post_cell_index(&self) -> i64 {
+    pub fn post_cell_index(&self) -> usize {
 	self.post_cell_index
     }
 

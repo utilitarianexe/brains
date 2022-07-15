@@ -1,3 +1,8 @@
+pub enum CellType {
+    EXCITE,
+    INHIBIT,
+}
+
 pub struct CellMembraneParameters {
     voltage_decay: f64,
     current_decay: f64,
@@ -27,7 +32,7 @@ impl CellMembraneParameters{
 }
 
 pub struct CellMembrane {
-    pub index: usize,
+    pub cell_type: CellType,
     voltage: f64, 
     input_current: f64,
     calcium: f64,
@@ -38,9 +43,9 @@ impl CellMembrane {
 
     // what is the naming convention
     // all kinds of naming issues with file
-    pub fn new(index: usize) -> Self {
+    pub fn new(cell_type:CellType) -> Self {
 	Self {
-	    index,
+	    cell_type,
 	    voltage: 0.0,
 	    input_current: 0.0,
 	    calcium: 0.0,

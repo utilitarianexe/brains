@@ -1,4 +1,5 @@
 pub mod cell_membrane;
+use cell_membrane::CellType;
 use cell_membrane::CellMembrane;
 use cell_membrane::CellMembraneParameters;
 
@@ -20,17 +21,22 @@ impl Model {
 
     // all kinds of naming issues with file
     pub fn new(size: usize) -> Self {
-	let mut model = Self {
+	let model = Self {
+	    // size really uneeded here need it more for sysnapes
 	    cell_membranes : std::vec::Vec::with_capacity(size),
 	    cell_membrane_parameters: CellMembraneParameters::new(),
 	    synapses: std::vec::Vec::new(),
 	    positive_synapse_indexes: std::vec::Vec::new(),
 	    synapse_parameters: SynapseParameters::new(),
 	};
-	for index in 0..size {
-            model.cell_membranes.push(CellMembrane::new(index));   
-	};
 	model
+    }
+
+    pub fn add_cell(&mut self, cell_type: CellType) -> usize{
+	let cell_membrane = CellMembrane::new(cell_type);
+	self.cell_membranes.push(cell_membrane);
+	let index: usize = self.cell_membranes.len()  - 1;
+	index
     }
 
     pub fn voltage(&self, index: u32) -> f64 {
@@ -46,9 +52,9 @@ impl Model {
     // we chould do this in python too.
     pub fn fired_indexes(&self) -> std::vec::Vec<usize> {
 	let mut indexes: std::vec::Vec<usize> =  std::vec::Vec::new();
-	for cell_membrane in self.cell_membranes.iter() {
+	for (index, cell_membrane,) in self.cell_membranes.iter().enumerate() {
 	    if cell_membrane.fired() {
-		indexes.push(cell_membrane.index);
+		indexes.push(index);
 	    };
 	};
 	return indexes;
@@ -71,7 +77,8 @@ impl Model {
     ////////////////
 
     pub fn add_synapse(&mut self, unsupervised_stdp: bool,
-		       strength: f64, inhibitory_strength: f64, post_cell_index: i64) -> i64{
+		       strength: f64, inhibitory_strength: f64,
+		       post_cell_index: usize) -> usize{
 	let synapse: Synapse = Synapse::new(unsupervised_stdp,
 					    strength, inhibitory_strength, post_cell_index);
 
@@ -80,7 +87,7 @@ impl Model {
     	if inhibitory_strength == 0.0 {
 	    self.positive_synapse_indexes.push(index);
 	}
-	index as i64
+	index
     }
 
     pub fn clear_positive_s_tags(&mut self) {
@@ -92,7 +99,7 @@ impl Model {
 
 
     // would be much faster with per cell indexes
-    pub fn positive_normalize(&mut self, cell_index: i64, target: f64) -> f64 {
+    pub fn positive_normalize(&mut self, cell_index: usize, target: f64) -> f64 {
 	let total = self.cell_positive_input_strength(cell_index);
 	let scale: f64 = if total > 0.0 {
 	    target / total
@@ -118,7 +125,7 @@ impl Model {
 	return new_total;
     }
 
-    pub fn cell_positive_input_strength(&self, cell_index: i64) -> f64 {
+    pub fn cell_positive_input_strength(&self, cell_index: usize) -> f64 {
 	let mut total: f64 = 0.0;
 	for index in self.positive_synapse_indexes.iter() {
 	    let synapse: &Synapse = &self.synapses[*index];

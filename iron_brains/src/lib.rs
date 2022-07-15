@@ -1,6 +1,6 @@
 mod model;
-
 use crate::model::Model;
+use model::cell_membrane::CellType;
 
 use pyo3::prelude::*;
 
@@ -8,6 +8,15 @@ use pyo3::prelude::*;
 fn create(size: usize) -> PyResult<Model> {
     let model = Model::new(size);
     Ok(model)
+}
+
+#[pyfunction]
+fn add_cell(model: &mut Model, cell_type: usize) -> PyResult<usize>{
+    return if cell_type == 0 {
+	Ok(model.add_cell(CellType::EXCITE))
+    } else {
+	Ok(model.add_cell(CellType::INHIBIT))
+    };
 }
 
 #[pyfunction]
@@ -44,12 +53,13 @@ pub fn fired_indexes(model: &mut Model) -> PyResult<std::vec::Vec<usize>> {
 
 #[pyfunction]
 fn add_synapse(model: &mut Model, unsupervised_stdp: bool,
-	       strength: f64, inhibitory_strength: f64, post_cell_index: i64) -> PyResult<i64>{
+	       strength: f64, inhibitory_strength: f64,
+	       post_cell_index: usize) -> PyResult<usize>{
     return Ok(model.add_synapse(unsupervised_stdp, strength, inhibitory_strength, post_cell_index));
 }
 
 #[pyfunction]
-fn positive_normalize(model: &mut Model, cell_index: i64, target: f64) -> PyResult<f64> {
+fn positive_normalize(model: &mut Model, cell_index: usize, target: f64) -> PyResult<f64> {
     return Ok(model.positive_normalize(cell_index, target));
 }
 
@@ -59,7 +69,7 @@ fn clear_positive_s_tags(model: &mut Model){
 }
 
 #[pyfunction]
-fn cell_positive_input_strength(model: &Model, cell_index: i64) -> PyResult<f64> {
+fn cell_positive_input_strength(model: &Model, cell_index: usize) -> PyResult<f64> {
     Ok(model.cell_positive_input_strength(cell_index))
 }
 
@@ -109,6 +119,7 @@ fn cap(model: &mut Model, index: u32){
 #[pymodule]
 fn iron_brains(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(create, m)?)?;
+    m.add_function(wrap_pyfunction!(add_cell, m)?)?;
     m.add_function(wrap_pyfunction!(voltage, m)?)?;
     m.add_function(wrap_pyfunction!(calcium, m)?)?;
     m.add_function(wrap_pyfunction!(fired, m)?)?;
