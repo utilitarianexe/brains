@@ -1,3 +1,4 @@
+#[derive(Copy, Clone, PartialEq)] 
 pub enum CellType {
     EXCITE,
     INHIBIT,
@@ -53,22 +54,6 @@ impl CellMembrane {
 	}
     }
 
-    pub fn voltage(&self) -> f64 {
-	self.voltage
-    }
-
-    pub fn fired(&self) -> bool {
-	self.fired
-    }
-
-    pub fn calcium(&self) -> f64 {
-	self.calcium
-    }
-
-    pub fn receive_input(&mut self, strength: f64) {
-	self.input_current = self.input_current + strength
-    }
-
     pub fn update(&mut self, parameters: &CellMembraneParameters) {
         self.fired = false;
         if self.voltage > parameters.max_voltage {
@@ -87,6 +72,22 @@ impl CellMembrane {
 	let input_current_factor:f64 = (1.0 - parameters.current_decay).powf(step_size);
         self.input_current = self.input_current * input_current_factor;
         self.calcium = self.calcium * (1.0 - parameters.calcium_decay).powf(step_size);
+    }
+
+    pub fn voltage(&self) -> f64 {
+	self.voltage
+    }
+
+    pub fn fired(&self) -> bool {
+	self.fired
+    }
+
+    pub fn calcium(&self) -> f64 {
+	self.calcium
+    }
+
+    pub fn receive_input(&mut self, strength: f64) {
+	self.input_current = self.input_current + strength
     }
 }
 

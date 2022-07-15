@@ -8,10 +8,11 @@ import dataclasses
 
 class Synapse:
     def __init__(self, pre_cell, post_cell,
-                 synapse_definition, step_size,
-                 synapse_type_parameters,
+                 synapse_definition,
                  iron_model, pre_cell_index, post_cell_index):
 
+        self.pre_cell = pre_cell
+        self.post_cell = post_cell
         self._iron_model = iron_model
         self._index = iron_brains.add_synapse(self._iron_model,
                                               synapse_definition.unsupervised_stdp,
@@ -19,24 +20,7 @@ class Synapse:
                                               synapse_definition.starting_inhibitory_strength,
                                               pre_cell_index,
                                               post_cell_index)
-        self.pre_cell = pre_cell
-        self._pre_cell_type = pre_cell.cell_type
-        self.post_cell = post_cell
         self.label = synapse_definition.label
-        
-        self._noise_factor = synapse_type_parameters.noise_factor
-        self._stdp_scalar = synapse_type_parameters.stdp_scalar
-        
-        self._pre_cell_fired = False
-        self._post_cell_fired = False
-
-    @property
-    def s_tag(self):
-        return iron_brains.s_tag(self._iron_model, self._index)
-
-    @s_tag.setter
-    def s_tag(self, value):
-        iron_brains.update_s_tag(self._iron_model, self._index, value)
 
 
     @property
@@ -57,25 +41,6 @@ class Synapse:
 
     def cap(self):
         iron_brains.cap(self._iron_model, self._index)
-
-    def post_fire(self, step):
-        if self._pre_cell_type == CellType.INHIBITORY:
-            return
-
-        self.s_tag += self._stdp_scalar * self.pre_cell.calcium()
-
-    def pre_fire(self, step):
-        if self._pre_cell_type == CellType.INHIBITORY or self._pre_cell_type == CellType.MIXED:
-            self.post_cell.receive_fire(self.inhibitory_strength * -1.0)
-
-        if self._pre_cell_type == CellType.EXCITATORY or self._pre_cell_type == CellType.MIXED:
-            self.s_tag -= self._stdp_scalar * self.post_cell.calcium()
-
-            if self._noise_factor > 0:
-                noise = self._noise_factor * random.uniform(-1, 1) * self.strength
-                self.post_cell.receive_fire(self.strength + noise)
-            else:
-                self.post_cell.receive_fire(self.strength)
 
 class CellMembrane:
     def __init__(self, iron_model, index):
@@ -316,11 +281,8 @@ class Cell:
 
     def apply_fire(self, step):
         self._fire_history.append(step)
-        for synapse in self.output_synapses:
-            synapse.pre_fire(step)
-
-        for synapse in self.input_synapses:
-            synapse.post_fire(step)
+        iron_brains.apply_fire(self._iron_model,
+                               self.index)
   
     def membrane_voltage(self):
         return self._cell_membrane.voltage()
@@ -383,13 +345,6 @@ class SimpleModel:
 
         self.epoch_length = model_parameters.epoch_length
         self._epoch_delay = model_parameters.epoch_delay
-
-        # misleading name
-        self.rewarded_synapses = []
-        for synapse in self.synapses:
-            if synapse._pre_cell_type != CellType.INHIBITORY:
-                self.rewarded_synapses.append(synapse)
-
         self.cells_by_input_position = self._cells_by_input_position()
         
     def step(self, step, stimuli, has_reward, active_environment):
@@ -594,8 +549,7 @@ class SimpleModel:
             post_cell = cells_by_id[synapse_definition.post_cell_id]
             synapse = Synapse(pre_cell, post_cell,
                               synapse_definition,
-                              step_size,
-                              synapse_type_parameters, self._iron_model,
+                              self._iron_model,
                               pre_cell.index,
                               post_cell.index)
             synapses.append(synapse)

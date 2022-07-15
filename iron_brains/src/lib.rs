@@ -20,22 +20,27 @@ fn add_cell(model: &mut Model, cell_type: usize) -> PyResult<usize>{
 }
 
 #[pyfunction]
-fn voltage(model: &Model, index: u32) -> PyResult<f64> {
+fn apply_fire(model: &mut Model, index: usize) {
+    model.apply_fire(index);
+}
+
+#[pyfunction]
+fn voltage(model: &Model, index: usize) -> PyResult<f64> {
     Ok(model.voltage(index))
 }
 
 #[pyfunction]
-fn calcium(model: &Model, index: u32) -> PyResult<f64> {
+fn calcium(model: &Model, index: usize) -> PyResult<f64> {
     Ok(model.calcium(index))
 }
 
 #[pyfunction]
-fn fired(model: &Model, index: u32) -> PyResult<bool> {
+fn fired(model: &Model, index: usize) -> PyResult<bool> {
     Ok(model.fired(index))
 }
 
 #[pyfunction]
-fn receive_input(model: &mut Model, index: u32, strength: f64){
+fn receive_input(model: &mut Model, index: usize, strength: f64){
     model.receive_input(index, strength);
 }
 
@@ -76,32 +81,32 @@ fn cell_positive_input_strength(model: &Model, cell_index: usize) -> PyResult<f6
 }
 
 #[pyfunction]
-fn s_tag(model: &Model, index: u32) -> PyResult<f64> {
+fn s_tag(model: &Model, index: usize) -> PyResult<f64> {
     Ok(model.s_tag(index))
 }
 
 #[pyfunction]
-fn strength(model: &Model, index: u32) -> PyResult<f64> {
+fn strength(model: &Model, index: usize) -> PyResult<f64> {
     Ok(model.strength(index))
 }
 
 #[pyfunction]
-fn inhibitory_strength(model: &Model, index: u32) -> PyResult<f64> {
+fn inhibitory_strength(model: &Model, index: usize) -> PyResult<f64> {
     Ok(model.inhibitory_strength(index))
 }
 
 #[pyfunction]
-fn update_s_tag(model: &mut Model, index: u32, s_tag: f64){
+fn update_s_tag(model: &mut Model, index: usize, s_tag: f64){
     model.update_s_tag(index, s_tag);
 }
 
 #[pyfunction]
-fn update_strength(model: &mut Model, index: u32, strength: f64){
+fn update_strength(model: &mut Model, index: usize, strength: f64){
     model.update_strength(index, strength);
 }
 
 #[pyfunction]
-fn update_inhibitory_strength(model: &mut Model, index: u32, inhibitory_strength: f64){
+fn update_inhibitory_strength(model: &mut Model, index: usize, inhibitory_strength: f64){
     model.update_inhibitory_strength(index, inhibitory_strength);
 }
 
@@ -111,7 +116,7 @@ fn update_synapses(model: &mut Model, dopamine: f64){
 }
 
 #[pyfunction]
-fn cap(model: &mut Model, index: u32){
+fn cap(model: &mut Model, index: usize){
     model.cap(index);
 }
 
@@ -122,6 +127,7 @@ fn cap(model: &mut Model, index: u32){
 fn iron_brains(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(create, m)?)?;
     m.add_function(wrap_pyfunction!(add_cell, m)?)?;
+    m.add_function(wrap_pyfunction!(apply_fire, m)?)?;
     m.add_function(wrap_pyfunction!(voltage, m)?)?;
     m.add_function(wrap_pyfunction!(calcium, m)?)?;
     m.add_function(wrap_pyfunction!(fired, m)?)?;

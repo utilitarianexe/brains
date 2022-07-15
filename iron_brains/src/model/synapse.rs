@@ -1,8 +1,13 @@
+use crate::model::CellMembrane;
+use crate::model::CellType;
+
 pub struct SynapseParameters {
     reward_scalar: f64,
     s_tag_decay_rate: f64,
     max_strength: f64,
     min_strength: f64,
+    stdp_scalar: f64,
+    noise_factor: f64,
 }
 
 impl SynapseParameters {
@@ -12,6 +17,8 @@ impl SynapseParameters {
 	    s_tag_decay_rate: 0.002,
 	    max_strength: 0.4,
 	    min_strength: 0.0,
+	    stdp_scalar: 0.01,
+	    noise_factor: 0.5
 	}
     }
 }
@@ -50,6 +57,33 @@ impl Synapse {
 	    };
             self.cap(synapse_parameters);
 	};
+    }
+
+    pub fn pre_fire(&mut self, pre_cell_type: CellType, post_cell: &mut CellMembrane,
+		    synapse_parameters: &SynapseParameters) {
+	if pre_cell_type == CellType::INHIBIT {
+            post_cell.receive_input(self.inhibitory_strength * -1.0);
+	}
+	if pre_cell_type == CellType::EXCITE {
+	    self.s_tag -= synapse_parameters.stdp_scalar * post_cell.calcium();
+
+            if synapse_parameters.noise_factor > 0.0 {
+		let random: f64 = (rand::random::<f64>() * 2.0) - 1.0;
+                let noise = synapse_parameters.noise_factor * random * self.strength;
+                post_cell.receive_input(self.strength + noise);
+            } else {
+                post_cell.receive_input(self.strength);
+	    }
+	}
+    }
+
+    pub fn post_fire(&mut self, pre_cell: &CellMembrane, synapse_parameters: &SynapseParameters) {
+	if pre_cell.cell_type == CellType::INHIBIT{
+            return;
+	}
+
+        self.s_tag += synapse_parameters.stdp_scalar * pre_cell.calcium();
+
     }
 
     pub fn cap(&mut self, synapse_parameters: &SynapseParameters) {

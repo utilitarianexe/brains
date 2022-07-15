@@ -39,13 +39,28 @@ impl Model {
 	index
     }
 
-    pub fn voltage(&self, index: u32) -> f64 {
-	let cell_membrane : &CellMembrane = &self.cell_membranes[index as usize];
+    // obviously could be way faster than going over every synapse
+    pub fn apply_fire(&mut self, index: usize){
+	for synapse in &mut self.synapses {
+	    if synapse.pre_cell_index == index {
+		let pre_cell_type = self.cell_membranes[index].cell_type;
+		synapse.pre_fire(pre_cell_type, &mut self.cell_membranes[synapse.post_cell_index],
+				 &self.synapse_parameters);
+	    }
+	    if synapse.post_cell_index == index {
+		synapse.post_fire(&self.cell_membranes[synapse.pre_cell_index],
+				  &self.synapse_parameters);
+	    }
+	}
+    }
+
+    pub fn voltage(&self, index: usize) -> f64 {
+	let cell_membrane : &CellMembrane = &self.cell_membranes[index];
 	cell_membrane.voltage()
     }
 
-    pub fn fired(&self, index: u32) -> bool {
-	self.cell_membranes[index as usize].fired()
+    pub fn fired(&self, index: usize) -> bool {
+	self.cell_membranes[index].fired()
     }
 
     // could be made faster by creating the vector duing updates.
@@ -60,12 +75,12 @@ impl Model {
 	return indexes;
     }
 
-    pub fn calcium(&self, index: u32) -> f64 {
-	self.cell_membranes[index as usize].calcium()
+    pub fn calcium(&self, index: usize) -> f64 {
+	self.cell_membranes[index].calcium()
     }
 
-    pub fn receive_input(&mut self, index: u32, strength: f64) {
-	self.cell_membranes[index as usize].receive_input(strength);
+    pub fn receive_input(&mut self, index: usize, strength: f64) {
+	self.cell_membranes[index].receive_input(strength);
     }
 
     pub fn update_cells(&mut self) {
@@ -138,27 +153,27 @@ impl Model {
 	return total;
     }
 
-    pub fn s_tag(&self, index: u32,) -> f64 {
-	self.synapses[index as usize].s_tag
+    pub fn s_tag(&self, index: usize,) -> f64 {
+	self.synapses[index].s_tag
     }
     
-    pub fn strength(&self, index: u32,) -> f64 {
-	self.synapses[index as usize].strength
+    pub fn strength(&self, index: usize,) -> f64 {
+	self.synapses[index].strength
     }
     
-    pub fn inhibitory_strength(&self, index: u32,) -> f64 {
-	self.synapses[index as usize].inhibitory_strength
+    pub fn inhibitory_strength(&self, index: usize,) -> f64 {
+	self.synapses[index].inhibitory_strength
     }
 
-    pub fn update_s_tag(&mut self, index: u32, s_tag: f64) {
-	self.synapses[index as usize].s_tag = s_tag;
+    pub fn update_s_tag(&mut self, index: usize, s_tag: f64) {
+	self.synapses[index].s_tag = s_tag;
     }
     
-    pub fn update_strength(&mut self, index: u32, strength: f64) {
-	self.synapses[index as usize].strength = strength;
+    pub fn update_strength(&mut self, index: usize, strength: f64) {
+	self.synapses[index].strength = strength;
     }
-    pub fn update_inhibitory_strength(&mut self, index: u32, inhibitory_strength: f64) {
-	self.synapses[index as usize].inhibitory_strength = inhibitory_strength;
+    pub fn update_inhibitory_strength(&mut self, index: usize, inhibitory_strength: f64) {
+	self.synapses[index].inhibitory_strength = inhibitory_strength;
     }
 
     pub fn update_synapses(&mut self, dopamine: f64) {
@@ -168,8 +183,8 @@ impl Model {
 	};
     }
 
-    pub fn cap(&mut self, index: u32) {
-	self.synapses[index as usize].cap(&self.synapse_parameters);
+    pub fn cap(&mut self, index: usize) {
+	self.synapses[index].cap(&self.synapse_parameters);
     }
 
 }
