@@ -64,6 +64,12 @@ Display potential graphs for each cell using pyplot
 You can export models to preserve changes to the network during a run using the export_name option.
 You can then import the model using the import_name option. You will also need the environment option, as this is not stored as part of the model. world is a combination of environment and model.
 
+# Rust commands
+
+`cd iron_brains`
+`cargo build --release`
+`cp target/release/libiron_brains.so ../brains/iron_brains.so`
+
 
 ## Future
 
