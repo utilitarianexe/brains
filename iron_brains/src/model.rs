@@ -78,9 +78,11 @@ impl Model {
 
     pub fn add_synapse(&mut self, unsupervised_stdp: bool,
 		       strength: f64, inhibitory_strength: f64,
-		       post_cell_index: usize) -> usize{
+		       pre_cell_index: usize,
+		       post_cell_index: usize,) -> usize {
 	let synapse: Synapse = Synapse::new(unsupervised_stdp,
-					    strength, inhibitory_strength, post_cell_index);
+					    strength, inhibitory_strength,
+					    pre_cell_index, post_cell_index);
 
 	self.synapses.push(synapse);
 	let index: usize = self.synapses.len()  - 1;
@@ -114,12 +116,12 @@ impl Model {
 	let mut new_total: f64 = 0.0;
 	for index in self.positive_synapse_indexes.iter() {
 	    let synapse: &mut Synapse = &mut self.synapses[*index];
-	    if synapse.post_cell_index() == cell_index {
-		let keep_part = synapse.strength() * keep_factor;
-		let change_part = synapse.strength() * change_factor;
+	    if synapse.post_cell_index == cell_index {
+		let keep_part = synapse.strength * keep_factor;
+		let change_part = synapse.strength * change_factor;
 		synapse.strength =  keep_part +  change_part;
 		synapse.cap(&self.synapse_parameters);
-		new_total += synapse.strength();
+		new_total += synapse.strength;
 	    }
 	}
 	return new_total;
@@ -129,33 +131,34 @@ impl Model {
 	let mut total: f64 = 0.0;
 	for index in self.positive_synapse_indexes.iter() {
 	    let synapse: &Synapse = &self.synapses[*index];
-	    if synapse.post_cell_index() == cell_index {
-		total += synapse.strength()
+	    if synapse.post_cell_index == cell_index {
+		total += synapse.strength
 	    };
 	};
 	return total;
     }
 
     pub fn s_tag(&self, index: u32,) -> f64 {
-	self.synapses[index as usize].s_tag()
+	self.synapses[index as usize].s_tag
     }
     
     pub fn strength(&self, index: u32,) -> f64 {
-	self.synapses[index as usize].strength()
+	self.synapses[index as usize].strength
     }
     
     pub fn inhibitory_strength(&self, index: u32,) -> f64 {
-	self.synapses[index as usize].inhibitory_strength()
+	self.synapses[index as usize].inhibitory_strength
     }
 
     pub fn update_s_tag(&mut self, index: u32, s_tag: f64) {
-	self.synapses[index as usize].update_s_tag(s_tag);
+	self.synapses[index as usize].s_tag = s_tag;
     }
+    
     pub fn update_strength(&mut self, index: u32, strength: f64) {
-	self.synapses[index as usize].update_strength(strength);
+	self.synapses[index as usize].strength = strength;
     }
     pub fn update_inhibitory_strength(&mut self, index: u32, inhibitory_strength: f64) {
-	self.synapses[index as usize].update_inhibitory_strength(inhibitory_strength);
+	self.synapses[index as usize].inhibitory_strength = inhibitory_strength;
     }
 
     pub fn update_synapses(&mut self, dopamine: f64) {

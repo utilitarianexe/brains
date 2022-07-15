@@ -9,13 +9,15 @@ import dataclasses
 class Synapse:
     def __init__(self, pre_cell, post_cell,
                  synapse_definition, step_size,
-                 synapse_type_parameters, iron_model, post_cell_index):
+                 synapse_type_parameters,
+                 iron_model, pre_cell_index, post_cell_index):
 
         self._iron_model = iron_model
         self._index = iron_brains.add_synapse(self._iron_model,
                                               synapse_definition.unsupervised_stdp,
                                               synapse_definition.starting_strength,
                                               synapse_definition.starting_inhibitory_strength,
+                                              pre_cell_index,
                                               post_cell_index)
         self.pre_cell = pre_cell
         self._pre_cell_type = pre_cell.cell_type
@@ -594,6 +596,7 @@ class SimpleModel:
                               synapse_definition,
                               step_size,
                               synapse_type_parameters, self._iron_model,
+                              pre_cell.index,
                               post_cell.index)
             synapses.append(synapse)
             synapses_by_cell_id[synapse_definition.pre_cell_id].append(synapse)

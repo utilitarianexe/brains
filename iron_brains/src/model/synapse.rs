@@ -19,47 +19,25 @@ impl SynapseParameters {
 pub struct Synapse {
     unsupervised_stdp: bool,
     pub strength: f64,
-    inhibitory_strength: f64,
+    pub inhibitory_strength: f64,
     pub s_tag: f64,
+    pub pre_cell_index: usize,
     pub post_cell_index: usize,
 }
 
 impl Synapse {
     pub fn new(unsupervised_stdp: bool,
-	       strength: f64, inhibitory_strength: f64, post_cell_index: usize) -> Self {
+	       strength: f64, inhibitory_strength: f64,
+	       pre_cell_index: usize,
+	       post_cell_index: usize) -> Self {
 	Self {
 	    unsupervised_stdp,
 	    strength,
 	    inhibitory_strength,
 	    s_tag: 0.0,
+	    pre_cell_index,
 	    post_cell_index,
 	}
-    }
-
-    pub fn post_cell_index(&self) -> usize {
-	self.post_cell_index
-    }
-
-    pub fn s_tag(&self) -> f64 {
-	self.s_tag
-    }
-    
-    pub fn strength(&self) -> f64 {
-	self.strength
-    }
-    
-    pub fn inhibitory_strength(&self) -> f64 {
-	self.inhibitory_strength
-    }
-
-    pub fn update_s_tag(&mut self, s_tag: f64) {
-	self.s_tag = s_tag;
-    }
-    pub fn update_strength(&mut self, strength: f64) {
-	self.strength = strength;
-    }
-    pub fn update_inhibitory_strength(&mut self, inhibitory_strength: f64) {
-	self.inhibitory_strength = inhibitory_strength;
     }
 
     pub fn update(&mut self, synapse_parameters: &SynapseParameters, dopamine: f64) {

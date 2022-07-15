@@ -54,8 +54,10 @@ pub fn fired_indexes(model: &mut Model) -> PyResult<std::vec::Vec<usize>> {
 #[pyfunction]
 fn add_synapse(model: &mut Model, unsupervised_stdp: bool,
 	       strength: f64, inhibitory_strength: f64,
+	       pre_cell_index: usize,
 	       post_cell_index: usize) -> PyResult<usize>{
-    return Ok(model.add_synapse(unsupervised_stdp, strength, inhibitory_strength, post_cell_index));
+    return Ok(model.add_synapse(unsupervised_stdp, strength, inhibitory_strength,
+				pre_cell_index, post_cell_index));
 }
 
 #[pyfunction]
