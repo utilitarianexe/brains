@@ -1,4 +1,4 @@
-import brains.models.simple_model as simple_model
+import brains.models.integrate_model as simple_model
 import brains.models.simple_model_builder as simple_model_builder
 from brains.environment.base import FakeEnvironment
 from brains.environment.stdp import STDPTestEnvironment

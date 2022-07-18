@@ -1,5 +1,5 @@
 from brains.network import NetworkDefinition
-from brains.models.simple_model import SimpleModel
+from brains.models.integrate_model import SimpleModel
 
 from dataclasses import dataclass, asdict, field
 

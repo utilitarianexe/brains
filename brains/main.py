@@ -1,6 +1,6 @@
 import brains.models.spirit_model as spirit_model
 import brains.models.example_model as example_model
-import brains.models.simple_model as simple_model
+import brains.models.integrate_model as simple_model
 import brains.models.simple_model_builder as simple_model_builder
 import brains.network_definitions as network_definitions
 import brains.utils as utils
