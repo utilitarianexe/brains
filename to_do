@@ -10,7 +10,6 @@ unsorted issues
   apply_negative_input_balance names in these functions are terrible too
   
   move to rust
-     run as either python or rust
      it would be nice to be able to select rust or python manually
      pass parameters from python(look at max strength particularly)
      make a script to auto compile everything
@@ -19,6 +18,8 @@ unsorted issues
      simplify choosing between rust and python
      improve instructions
      better git ignore file
+     windows rust instructions
+     python getting higher accuracy on easy(probably related to max strength)
      
      per cell functions
      fix simple model tests
