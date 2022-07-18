@@ -1,6 +1,4 @@
 from brains.network import NetworkDefinition
-from brains.models.integrate_model import SimpleModel
-
 from dataclasses import dataclass, asdict, field
 
 @dataclass
@@ -8,7 +6,7 @@ class CellTypeParameters:
     voltage_decay: float = 0.01
     current_decay: float = 0.03
     calcium_decay: float = 0.1
-    starting_membrane_voltage: float =0.0
+    starting_membrane_voltage: float = 0.0
     max_voltage: float = 1.0
     voltage_reset: float = -1.0
     calcium_increment: float = 1.0
@@ -54,7 +52,7 @@ def handwriting_model_parameters(epoch_length=400,
                            epoch_length=epoch_length,
                            epoch_delay=epoch_delay)
 
-def import_model(blob):
+def import_model(blob, model_module):
     network_definition = NetworkDefinition(**blob["network_definition"])
     model_parameters = ModelParameters(**blob["model_parameters"])
-    return SimpleModel(network_definition, model_parameters)
+    return model_module.SimpleModel(network_definition, model_parameters)

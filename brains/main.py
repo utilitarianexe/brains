@@ -1,9 +1,31 @@
+simple_model_loaded = False
+try:
+    import brains.models.rust_model as simple_model
+    if hasattr(simple_model.iron_brains, "create"):
+        simple_model_loaded = True
+        print("loded rust integrate model")
+except ModuleNotFoundError as e:
+    pass
+
+if not simple_model_loaded:
+    try:
+        import brains.models.integrate_model as simple_model
+        simple_model_loaded = True
+        print("loded python integrate model")
+    except ModuleNotFoundError as e:
+        pass
+
+if not simple_model_loaded:
+    print("failed to load any version of integrate model")
+    sys.exit(1)
+    
+
 import brains.models.spirit_model as spirit_model
 import brains.models.example_model as example_model
-import brains.models.integrate_model as simple_model
 import brains.models.simple_model_builder as simple_model_builder
 import brains.network_definitions as network_definitions
 import brains.utils as utils
+
 from brains.environment.easy import EasyEnvironment
 from brains.environment.handwriting import HandwritingEnvironment
 from brains.environment.mnist import MnistEnvironment
@@ -73,7 +95,7 @@ def user_specified_world(parameters):
     file_path = utils.data_dir_file_path(parameters.import_name)
     model_file = open(file_path)
     blob = json.load(model_file)
-    model = simple_model_builder.import_model(blob)
+    model = simple_model_builder.import_model(blob, simple_model)
     if parameters.environment_type == 'handwriting':
         model_environment = HandwritingEnvironment(
             model.epoch_length, parameters.input_delay, {'o': 0, 'x': 1},
@@ -234,9 +256,11 @@ def main(parameters):
     for i in range(parameters.steps):
         environment.step(i, brain_output_ids)
         warp_allowed = parameters.attempt_warp and not display_active
-        brain_output_ids = brain.step(i, warp_allowed,
+        brain_output_ids = brain.step(i,
                                       environment.stimuli(i),
-                                      environment.has_reward(), environment.active(i))
+                                      environment.has_reward(),
+                                      environment.active(i),
+                                      warp_allowed=warp_allowed)
 
         if (i - parameters.input_delay) % parameters.epoch_length == 0:
             for text in brain.text_output():

@@ -1,19 +1,39 @@
 unsorted issues
-  validate s_tag decay bug fix
+  allow running without command line
   validate warp fix and reprofile
-
-  record results to filep
+  record results to file
   import full mnist set
   put nmist in readme with learned model
   is it ok to include mnist data in our repo
-  make things faster
+  cycling inhibitory synapses in input_balance is performance hit
+  cycling inhibitory synapses when clearing s_tag
+  apply_negative_input_balance names in these functions are terrible too
+  
+  move to rust
+     run as either python or rust
+     it would be nice to be able to select rust or python manually
+     pass parameters from python(look at max strength particularly)
+     make a script to auto compile everything
+     remove unused variables from rust
+     combine the display code from each
+     simplify choosing between rust and python
+     improve instructions
+     better git ignore file
+     
+     per cell functions
+     fix simple model tests
+     rust tests
+      
   decuple brain and env from display
-  still have some magic numbers in simple_model.py
   does inhibition mean we need higher max strengths
   too much  repeated code in main
   multiple simultanious runs
   memory leak in UI
   wtf step size
+  do the negative random images matter?
+  does output balancing matter( is it too high)?
+  too many negative synapses
+  easy only works 80% of the time
 
   network.py needs refactored
     too much ui

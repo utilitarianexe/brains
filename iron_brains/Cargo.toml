@@ -1,0 +1,15 @@
+[package]
+name = "iron_brains"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "iron_brains"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.16.2", features = ["extension-module"] }
+rand = "0.7.0"
+#pyo3 = ""
