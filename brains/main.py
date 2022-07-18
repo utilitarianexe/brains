@@ -1,6 +1,28 @@
+
+simple_model_loaded = False
+
+try:
+    import brains.models.rust_model as simple_model
+    simple_model_loaded = True
+    print("loded rust model")
+except ModuleNotFoundError as e:
+    pass
+
+if not simple_model_loaded:
+    try:
+        import brains.models.simple_model as simple_model
+        simple_model_loaded = True
+        print("loded python model")
+    except ModuleNotFoundError as e:
+        pass
+
+if not simple_model_loaded:
+    print("failed to load any version of simple model")
+    sys.exit(1)
+    
+
 import brains.models.spirit_model as spirit_model
 import brains.models.example_model as example_model
-import brains.models.simple_model as simple_model
 import brains.models.simple_model_builder as simple_model_builder
 import brains.network_definitions as network_definitions
 import brains.utils as utils
@@ -74,7 +96,7 @@ def user_specified_world(parameters):
     file_path = utils.data_dir_file_path(parameters.import_name)
     model_file = open(file_path)
     blob = json.load(model_file)
-    model = simple_model_builder.import_model(blob)
+    model = simple_model_builder.import_model(blob, simple_model)
     if parameters.environment_type == 'handwriting':
         model_environment = HandwritingEnvironment(
             model.epoch_length, parameters.input_delay, {'o': 0, 'x': 1},

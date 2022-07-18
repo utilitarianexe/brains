@@ -1,4 +1,5 @@
 unsorted issues
+  allow running without command line
   validate warp fix and reprofile
   record results to file
   import full mnist set
@@ -9,11 +10,11 @@ unsorted issues
   apply_negative_input_balance names in these functions are terrible too
   
   move to rust
-     per cell functions
-     python reference to iron_model in bad places
-     pass parameters from python(look at max strength particularly)
      run as either python or rust
+     pass parameters from python(look at max strength particularly)
      make a script to auto compile everything
+     
+     per cell functions
      fix simple model tests
      rust tests
       

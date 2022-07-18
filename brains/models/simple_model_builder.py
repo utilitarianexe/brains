@@ -1,5 +1,4 @@
 from brains.network import NetworkDefinition
-from brains.models.simple_model import SimpleModel
 
 from dataclasses import dataclass, asdict, field
 
@@ -54,7 +53,7 @@ def handwriting_model_parameters(epoch_length=400,
                            epoch_length=epoch_length,
                            epoch_delay=epoch_delay)
 
-def import_model(blob):
+def import_model(blob, model_module):
     network_definition = NetworkDefinition(**blob["network_definition"])
     model_parameters = ModelParameters(**blob["model_parameters"])
-    return SimpleModel(network_definition, model_parameters)
+    return model_module.SimpleModel(network_definition, model_parameters)
