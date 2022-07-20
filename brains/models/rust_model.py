@@ -335,6 +335,9 @@ class SimpleModel:
         self._dopamine_decay = model_parameters.dopamine_decay
         self._step_size = model_parameters.step_size
         self._iron_model = iron_brains.create(len(network_definition.cell_definitions))
+        bla = iron_brains.ParameterTest(3)
+        print(bla.foo, bla.bar)
+        
         self._firing_indexes = set()
         
         self._cells, self.synapses = self._build_network(

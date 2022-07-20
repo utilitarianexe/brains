@@ -8,6 +8,28 @@ use synapse::Synapse;
 use synapse::SynapseParameters;
 
 use pyo3::prelude::*;
+
+#[pyclass]
+pub struct ParameterTest {
+    #[pyo3(get, set)]
+    foo: usize,
+    #[pyo3(get, set)]
+    bar: usize,
+}
+
+#[pymethods]
+impl ParameterTest {
+    #[new]
+    fn new(foo: usize) -> Self {
+        ParameterTest{
+	    foo,
+	    bar: 1,
+	}
+    }
+}
+
+
+
 #[pyclass]
 pub struct Model {
     cell_membranes: std::vec::Vec<CellMembrane>,
@@ -16,6 +38,7 @@ pub struct Model {
     positive_synapse_indexes: std::vec::Vec<usize>,
     synapse_parameters: SynapseParameters,
 }
+
 
 impl Model {
 
