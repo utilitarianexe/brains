@@ -3,7 +3,7 @@ try:
     import brains.models.rust_model as simple_model
     if hasattr(simple_model.iron_brains, "create"):
         simple_model_loaded = True
-        print("loded rust integrate model")
+        print("loaded rust integrate model")
 except ModuleNotFoundError as e:
     pass
 
@@ -11,7 +11,7 @@ if not simple_model_loaded:
     try:
         import brains.models.integrate_model as simple_model
         simple_model_loaded = True
-        print("loded python integrate model")
+        print("loaded python integrate model")
     except ModuleNotFoundError as e:
         pass
 
