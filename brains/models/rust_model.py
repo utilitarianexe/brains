@@ -334,10 +334,21 @@ class SimpleModel:
         self._dopamine = model_parameters.starting_dopamine
         self._dopamine_decay = model_parameters.dopamine_decay
         self._step_size = model_parameters.step_size
-        self._iron_model = iron_brains.create(len(network_definition.cell_definitions))
-        bla = iron_brains.ParameterTest(3)
-        print(bla.foo, bla.bar)
-        
+        cell_parameters = model_parameters.cell_type_parameters
+        cell_membrane_parameters = iron_brains.CellMembraneParameters(
+            cell_parameters.voltage_decay,
+	    cell_parameters.current_decay,
+	    cell_parameters.calcium_decay,
+            cell_parameters.starting_membrane_voltage,
+	    cell_parameters.max_voltage,
+	    cell_parameters.voltage_reset,
+	    cell_parameters.calcium_increment,
+	    cell_parameters.input_current_reset,
+            cell_parameters.starting_calcium,
+            cell_parameters.starting_input_current,
+	    cell_parameters.reset_input_current)
+        self._iron_model = iron_brains.create(len(network_definition.cell_definitions),
+                                              cell_membrane_parameters)
         self._firing_indexes = set()
         
         self._cells, self.synapses = self._build_network(

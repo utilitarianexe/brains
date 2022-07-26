@@ -10,27 +10,6 @@ use synapse::SynapseParameters;
 use pyo3::prelude::*;
 
 #[pyclass]
-pub struct ParameterTest {
-    #[pyo3(get, set)]
-    foo: usize,
-    #[pyo3(get, set)]
-    bar: usize,
-}
-
-#[pymethods]
-impl ParameterTest {
-    #[new]
-    fn new(foo: usize) -> Self {
-        ParameterTest{
-	    foo,
-	    bar: 1,
-	}
-    }
-}
-
-
-
-#[pyclass]
 pub struct Model {
     cell_membranes: std::vec::Vec<CellMembrane>,
     cell_membrane_parameters: CellMembraneParameters,
@@ -43,11 +22,11 @@ pub struct Model {
 impl Model {
 
     // all kinds of naming issues with file
-    pub fn new(size: usize) -> Self {
+    pub fn new(size: usize, cell_membrane_parameters: CellMembraneParameters) -> Self {
 	let model = Self {
 	    // size really uneeded here need it more for sysnapes
 	    cell_membranes : std::vec::Vec::with_capacity(size),
-	    cell_membrane_parameters: CellMembraneParameters::new(),
+	    cell_membrane_parameters,
 	    synapses: std::vec::Vec::new(),
 	    positive_synapse_indexes: std::vec::Vec::new(),
 	    synapse_parameters: SynapseParameters::new(),
@@ -56,7 +35,10 @@ impl Model {
     }
 
     pub fn add_cell(&mut self, cell_type: CellType) -> usize{
-	let cell_membrane = CellMembrane::new(cell_type);
+	let cell_membrane = CellMembrane::new(cell_type,
+					      self.cell_membrane_parameters.starting_membrane_voltage,
+					      self.cell_membrane_parameters.starting_input_current,
+					      self.cell_membrane_parameters.starting_calcium);
 	self.cell_membranes.push(cell_membrane);
 	let index: usize = self.cell_membranes.len()  - 1;
 	index

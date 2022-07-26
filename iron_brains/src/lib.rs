@@ -1,12 +1,13 @@
 mod model;
 use crate::model::Model;
 use model::cell_membrane::CellType;
+use model::cell_membrane::CellMembraneParameters;
 
 use pyo3::prelude::*;
 
 #[pyfunction]
-fn create(size: usize) -> PyResult<Model> {
-    let model = Model::new(size);
+fn create(size: usize, cell_membrane_parameters: CellMembraneParameters) -> PyResult<Model> {
+    let model = Model::new(size, cell_membrane_parameters);
     Ok(model)
 }
 
@@ -149,7 +150,7 @@ fn iron_brains(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(update_synapses, m)?)?;
     m.add_function(wrap_pyfunction!(cap, m)?)?;
     
-    //m.add_class::<CellMembrane>()?;
+    m.add_class::<CellMembraneParameters>()?;
     Ok(())
 }
 
