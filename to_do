@@ -8,18 +8,17 @@ unsorted issues
   cycling inhibitory synapses in input_balance is performance hit
   cycling inhibitory synapses when clearing s_tag
   apply_negative_input_balance names in these functions are terrible too
+  should have default display and world values
   
   move to rust
-     pass parameters from python(look at max strength particularly)
      it would be nice to be able to select rust or python manually
      make a script to auto compile everything
      remove unused variables from rust
      combine the display code from each
-     simplify code choosing between rust and python
      improve instructions
      better git ignore file
      windows rust instructions
-     python getting higher accuracy on easy(probably related to max strength)
+     accuracy on diff on  easy/ running many side by side
      per cell functions
      fix simple model tests
      rust tests

@@ -1,25 +1,3 @@
-simple_model_loaded = False
-try:
-    import brains.models.rust_model as simple_model
-    if hasattr(simple_model.iron_brains, "create"):
-        simple_model_loaded = True
-        print("loaded rust integrate model")
-except ModuleNotFoundError as e:
-    pass
-
-if not simple_model_loaded:
-    try:
-        import brains.models.integrate_model as simple_model
-        simple_model_loaded = True
-        print("loaded python integrate model")
-    except ModuleNotFoundError as e:
-        pass
-
-if not simple_model_loaded:
-    print("failed to load any version of integrate model")
-    sys.exit(1)
-    
-
 import brains.models.spirit_model as spirit_model
 import brains.models.example_model as example_model
 import brains.models.simple_model_builder as simple_model_builder
@@ -38,20 +16,40 @@ import argparse
 import json
 import signal
 import sys
+from enum import Enum, auto
+
+class IntegrationModelType(Enum):
+    RUST = auto()
+    PYTHON = auto()
 
 World = namedtuple('World', 'model environment')
+
+def integrate_model(network_definition, model_parameters, model_type=None):
+    if model_type is None or model_type == IntegrationModelType.RUST:
+        import brains.models.rust_model as model
+        if hasattr(model.iron_brains, "create"):
+            print("loaded rust integrate model")
+            return model.SimpleModel(network_definition, model_parameters)
+
+    if model_type is None or model_type == IntegrationModelType.PYTHON:
+        import brains.models.integrate_model as model
+        print("loaded python integrate model")
+        return model.SimpleModel(network_definition, model_parameters)
+
+    print("failed to load any version of integrate model")
+    sys.exit(1)
 
 def parameter_test_world():
     model_parameters = simple_model_builder.ModelParameters(starting_dopamine=0.0)
     network_definition = network_definitions.parameter_test_network()
-    model = simple_model.SimpleModel(network_definition, model_parameters)
+    model = integrate_model(network_definition, model_parameters)
     return model, ParameterTestEnvironment()
 
 def stdp_world(parameters):
     model_parameters = simple_model_builder.ModelParameters(epoch_length=parameters.epoch_length)
     model_parameters.synapse_type_parameters.max_strength = 0.4
     network_definition = network_definitions.stdp_test_network()
-    model = simple_model.SimpleModel(network_definition, model_parameters)
+    model = integrate_model(network_definition, model_parameters)
     return model, STDPTestEnvironment()
 
 def handwriting_world(parameters):
@@ -64,7 +62,7 @@ def handwriting_world(parameters):
         image_lines=None, shuffle=True,
         file_name=parameters.handwritten_file_name)
 
-    model = simple_model.SimpleModel(network_definition, model_parameters)
+    model = integrate_model(network_definition, model_parameters)
     return model, environment
 
 def mnist_world(parameters):
@@ -75,7 +73,7 @@ def mnist_world(parameters):
         number_of_outputs=parameters.mnist_number_of_outputs)
     environment = MnistEnvironment(parameters.epoch_length, parameters.input_delay,
                                    number_of_possible_outputs=parameters.mnist_number_of_outputs)
-    model = simple_model.SimpleModel(network_definition, model_parameters)
+    model = integrate_model(network_definition, model_parameters)
     return model, environment
 
 
@@ -88,7 +86,7 @@ def easy_world(parameters):
     # need like some kind of average starting connection strength thing
     network_definition = network_definitions.easy_layer_network()
     easy_environment = EasyEnvironment(parameters.epoch_length, parameters.input_delay)
-    model = simple_model.SimpleModel(network_definition, model_parameters)
+    model = integrate_model(network_definition, model_parameters)
     return model, easy_environment
 
 def user_specified_world(parameters):
