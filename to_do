@@ -23,6 +23,10 @@ unsorted issues
      per cell functions
      fix simple model tests
      rust tests
+     rename simple_model_builder.py
+     pub is used wrong all over
+     use refrences instead of indexes in rust(especially searching though them)
+     lib.rs has too many funtions remove not used and use class
       
   decuple brain and env from display
   does inhibition mean we need higher max strengths
