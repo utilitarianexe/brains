@@ -4,31 +4,50 @@ pub enum CellType {
     INHIBIT,
 }
 
+use pyo3::prelude::*;
+
+#[derive(Copy, Clone, PartialEq)] 
+#[pyclass]
 pub struct CellMembraneParameters {
     voltage_decay: f64,
     current_decay: f64,
     calcium_decay: f64,
+    pub starting_membrane_voltage: f64,
     max_voltage: f64,
     voltage_reset: f64,
     calcium_increment: f64,
     input_current_reset: f64,
+    pub starting_calcium: f64,
+    pub starting_input_current: f64,
     reset_input_current: bool,
 }
 
+#[pymethods]
 impl CellMembraneParameters{
-    pub fn new() -> Self {
+    #[new]
+    pub fn new(voltage_decay: f64, current_decay: f64, calcium_decay: f64,
+	       starting_membrane_voltage: f64,
+	       max_voltage: f64, voltage_reset: f64,
+	       calcium_increment: f64, input_current_reset: f64,
+	       starting_calcium: f64,
+	       starting_input_current: f64,
+	       reset_input_current: bool) -> Self {
 	Self {
-	    voltage_decay: 0.01,
-	    current_decay: 0.03,
-	    calcium_decay: 0.1,
-	    max_voltage: 1.0,
-	    voltage_reset: -1.0,
-	    calcium_increment: 1.0,
-	    input_current_reset: 0.0,
-	    reset_input_current: true,
+	    voltage_decay,
+	    current_decay,
+	    calcium_decay,
+	    starting_membrane_voltage,
+	    max_voltage,
+	    voltage_reset,
+	    calcium_increment,
+	    input_current_reset,
+	    starting_calcium,
+	    starting_input_current,
+	    reset_input_current,
 	}
     }
 }
+
 
 pub struct CellMembrane {
     pub cell_type: CellType,
@@ -44,12 +63,12 @@ impl CellMembrane {
 
     // what is the naming convention
     // all kinds of naming issues with file
-    pub fn new(cell_type:CellType) -> Self {
+    pub fn new(cell_type:CellType, voltage: f64, input_current: f64, calcium: f64) -> Self {
 	Self {
 	    cell_type,
-	    voltage: 0.0,
-	    input_current: 0.0,
-	    calcium: 0.0,
+	    voltage,
+	    input_current,
+	    calcium,
 	    fired: false,
 	    input_synapse_indexes: std::vec::Vec::new(),
 	    output_synapse_indexes: std::vec::Vec::new(),

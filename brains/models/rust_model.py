@@ -14,8 +14,14 @@ class Synapse:
         self.pre_cell = pre_cell
         self.post_cell = post_cell
         self._iron_model = iron_model
+
+        layer_synapse_parameters = iron_brains.LayerSynapseParameters(
+            synapse_definition.unsupervised_stdp,
+            synapse_definition.reward_scalar,
+            synapse_definition.s_tag_decay_rate,
+        )
         self._index = iron_brains.add_synapse(self._iron_model,
-                                              synapse_definition.unsupervised_stdp,
+                                              layer_synapse_parameters,
                                               synapse_definition.starting_strength,
                                               synapse_definition.starting_inhibitory_strength,
                                               pre_cell_index,
@@ -334,7 +340,30 @@ class SimpleModel:
         self._dopamine = model_parameters.starting_dopamine
         self._dopamine_decay = model_parameters.dopamine_decay
         self._step_size = model_parameters.step_size
-        self._iron_model = iron_brains.create(len(network_definition.cell_definitions))
+        cell_parameters = model_parameters.cell_type_parameters
+        cell_membrane_parameters = iron_brains.CellMembraneParameters(
+            cell_parameters.voltage_decay,
+	    cell_parameters.current_decay,
+	    cell_parameters.calcium_decay,
+            cell_parameters.starting_membrane_voltage,
+	    cell_parameters.max_voltage,
+	    cell_parameters.voltage_reset,
+	    cell_parameters.calcium_increment,
+	    cell_parameters.input_current_reset,
+            cell_parameters.starting_calcium,
+            cell_parameters.starting_input_current,
+	    cell_parameters.reset_input_current)
+
+        synapse_type_parameters = model_parameters.synapse_type_parameters
+        synapse_parameters = iron_brains.SynapseParameters(
+            synapse_type_parameters.stdp_scalar,
+	    synapse_type_parameters.max_strength,
+	    synapse_type_parameters.min_strength,
+            synapse_type_parameters.starting_s_tag,
+	    synapse_type_parameters.noise_factor,
+        )
+        self._iron_model = iron_brains.create(len(network_definition.cell_definitions),
+                                              cell_membrane_parameters, synapse_parameters)
         self._firing_indexes = set()
         
         self._cells, self.synapses = self._build_network(

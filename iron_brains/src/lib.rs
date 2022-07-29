@@ -1,12 +1,17 @@
 mod model;
 use crate::model::Model;
 use model::cell_membrane::CellType;
+use model::cell_membrane::CellMembraneParameters;
+use model::synapse::SynapseParameters;
+use model::synapse::LayerSynapseParameters;
 
 use pyo3::prelude::*;
 
 #[pyfunction]
-fn create(size: usize) -> PyResult<Model> {
-    let model = Model::new(size);
+fn create(size: usize,
+	  cell_membrane_parameters: CellMembraneParameters,
+	  synapse_parameters: SynapseParameters) -> PyResult<Model> {
+    let model = Model::new(size, cell_membrane_parameters, synapse_parameters);
     Ok(model)
 }
 
@@ -57,11 +62,13 @@ pub fn fired_indexes(model: &mut Model) -> PyResult<std::vec::Vec<usize>> {
 //////////
 
 #[pyfunction]
-fn add_synapse(model: &mut Model, unsupervised_stdp: bool,
+fn add_synapse(model: &mut Model,
+	       layer_parameters: LayerSynapseParameters,
 	       strength: f64, inhibitory_strength: f64,
 	       pre_cell_index: usize,
 	       post_cell_index: usize) -> PyResult<usize>{
-    return Ok(model.add_synapse(unsupervised_stdp, strength, inhibitory_strength,
+    return Ok(model.add_synapse(layer_parameters,
+				strength, inhibitory_strength,
 				pre_cell_index, post_cell_index));
 }
 
@@ -149,7 +156,9 @@ fn iron_brains(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(update_synapses, m)?)?;
     m.add_function(wrap_pyfunction!(cap, m)?)?;
     
-    //m.add_class::<CellMembrane>()?;
+    m.add_class::<CellMembraneParameters>()?;
+    m.add_class::<SynapseParameters>()?;
+    m.add_class::<LayerSynapseParameters>()?;
     Ok(())
 }
 

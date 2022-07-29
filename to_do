@@ -10,20 +10,23 @@ unsorted issues
   apply_negative_input_balance names in these functions are terrible too
   
   move to rust
-     it would be nice to be able to select rust or python manually
      pass parameters from python(look at max strength particularly)
+     it would be nice to be able to select rust or python manually
      make a script to auto compile everything
      remove unused variables from rust
      combine the display code from each
-     simplify choosing between rust and python
+     simplify code choosing between rust and python
      improve instructions
      better git ignore file
      windows rust instructions
      python getting higher accuracy on easy(probably related to max strength)
-     
      per cell functions
      fix simple model tests
      rust tests
+     rename simple_model_builder.py
+     pub is used wrong all over
+     use refrences instead of indexes in rust(especially searching though them)
+     lib.rs has too many funtions remove not used and use class
       
   decuple brain and env from display
   does inhibition mean we need higher max strengths

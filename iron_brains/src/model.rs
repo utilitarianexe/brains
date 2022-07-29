@@ -6,8 +6,10 @@ use cell_membrane::CellMembraneParameters;
 pub mod synapse;
 use synapse::Synapse;
 use synapse::SynapseParameters;
+use synapse::LayerSynapseParameters;
 
 use pyo3::prelude::*;
+
 #[pyclass]
 pub struct Model {
     cell_membranes: std::vec::Vec<CellMembrane>,
@@ -17,23 +19,29 @@ pub struct Model {
     synapse_parameters: SynapseParameters,
 }
 
+
 impl Model {
 
     // all kinds of naming issues with file
-    pub fn new(size: usize) -> Self {
+    pub fn new(size: usize,
+	       cell_membrane_parameters: CellMembraneParameters,
+	       synapse_parameters: SynapseParameters) -> Self {
 	let model = Self {
 	    // size really uneeded here need it more for sysnapes
 	    cell_membranes : std::vec::Vec::with_capacity(size),
-	    cell_membrane_parameters: CellMembraneParameters::new(),
+	    cell_membrane_parameters,
 	    synapses: std::vec::Vec::new(),
 	    positive_synapse_indexes: std::vec::Vec::new(),
-	    synapse_parameters: SynapseParameters::new(),
+	    synapse_parameters,
 	};
 	model
     }
 
     pub fn add_cell(&mut self, cell_type: CellType) -> usize{
-	let cell_membrane = CellMembrane::new(cell_type);
+	let cell_membrane = CellMembrane::new(cell_type,
+					      self.cell_membrane_parameters.starting_membrane_voltage,
+					      self.cell_membrane_parameters.starting_input_current,
+					      self.cell_membrane_parameters.starting_calcium);
 	self.cell_membranes.push(cell_membrane);
 	let index: usize = self.cell_membranes.len()  - 1;
 	index
@@ -108,12 +116,13 @@ impl Model {
 
     ////////////////
 
-    pub fn add_synapse(&mut self, unsupervised_stdp: bool,
+    pub fn add_synapse(&mut self,
+		       layer_parameters : LayerSynapseParameters,
 		       strength: f64, inhibitory_strength: f64,
-		       pre_cell_index: usize,
-		       post_cell_index: usize,) -> usize {
-	let synapse: Synapse = Synapse::new(unsupervised_stdp,
+		       pre_cell_index: usize, post_cell_index: usize,) -> usize {
+	let synapse: Synapse = Synapse::new(layer_parameters,
 					    strength, inhibitory_strength,
+					    self.synapse_parameters.starting_s_tag,
 					    pre_cell_index, post_cell_index);
 
 	self.synapses.push(synapse);
