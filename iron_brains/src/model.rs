@@ -13,10 +13,10 @@ use pyo3::prelude::*;
 #[pyclass]
 pub struct Model {
     cell_membranes: std::vec::Vec<CellMembrane>,
-    cell_membrane_parameters: CellMembraneParameters,
     synapses: std::vec::Vec<Synapse>,
-    positive_synapse_indexes: std::vec::Vec<usize>,
+    cell_membrane_parameters: CellMembraneParameters,
     synapse_parameters: SynapseParameters,
+    positive_synapse_indexes: std::vec::Vec<usize>,
 }
 
 
@@ -29,10 +29,10 @@ impl Model {
 	let model = Self {
 	    // size really uneeded here need it more for sysnapes
 	    cell_membranes : std::vec::Vec::with_capacity(size),
-	    cell_membrane_parameters,
 	    synapses: std::vec::Vec::new(),
-	    positive_synapse_indexes: std::vec::Vec::new(),
+	    cell_membrane_parameters,
 	    synapse_parameters,
+	    positive_synapse_indexes: std::vec::Vec::new(),
 	};
 	model
     }
@@ -84,10 +84,6 @@ impl Model {
 	cell_membrane.voltage()
     }
 
-    pub fn fired(&self, index: usize) -> bool {
-	self.cell_membranes[index].fired()
-    }
-
     // could be made faster by creating the vector duing updates.
     // we chould do this in python too.
     pub fn fired_indexes(&self) -> std::vec::Vec<usize> {
@@ -98,10 +94,6 @@ impl Model {
 	    };
 	};
 	return indexes;
-    }
-
-    pub fn calcium(&self, index: usize) -> f64 {
-	self.cell_membranes[index].calcium()
     }
 
     pub fn receive_input(&mut self, index: usize, strength: f64) {
@@ -181,10 +173,6 @@ impl Model {
 	return total;
     }
 
-    pub fn s_tag(&self, index: usize,) -> f64 {
-	self.synapses[index].s_tag
-    }
-    
     pub fn strength(&self, index: usize,) -> f64 {
 	self.synapses[index].strength
     }
@@ -193,10 +181,6 @@ impl Model {
 	self.synapses[index].inhibitory_strength
     }
 
-    pub fn update_s_tag(&mut self, index: usize, s_tag: f64) {
-	self.synapses[index].s_tag = s_tag;
-    }
-    
     pub fn update_strength(&mut self, index: usize, strength: f64) {
 	self.synapses[index].strength = strength;
     }
@@ -214,5 +198,4 @@ impl Model {
     pub fn cap(&mut self, index: usize) {
 	self.synapses[index].cap(&self.synapse_parameters);
     }
-
 }

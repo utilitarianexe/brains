@@ -1,27 +1,27 @@
 unsorted issues
   make running easy
+     try things on windows
      single install script
      should have default display and world values
      allow running without command line(need .deb and windows packages)
      put nmist in readme with learned model
      is it ok to include mnist data in our repo
+     improve instructions
   
   move to rust
-     make a script to auto compile everything
      remove unused variables from rust
      combine the display code from each
-     improve instructions
-     better git ignore file
      windows rust instructions
      accuracy on diff on  easy/running many side by side
      per cell functions
      fix simple model tests
      rust tests
-     rename simple_model_builder.py
      pub is used wrong all over
      use refrences instead of indexes in rust(especially searching though them)
      lib.rs has too many funtions remove not used and use class
 
+  better git ignore file
+  rename simple_model_builder.py and SimpleModel
   validate warp fix and reprofile
   record results to file
   import full mnist set

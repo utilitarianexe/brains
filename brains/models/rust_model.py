@@ -56,16 +56,9 @@ class CellMembrane:
     def voltage(self):
         return iron_brains.voltage(self._iron_model, self._index)
 
-    def calcium(self):
-        return iron_brains.calcium(self._iron_model, self._index)
-
-    def fired(self):
-        return iron_brains.fired(self._iron_model, self._index)
-        
     def receive_input(self, strength):
         iron_brains.receive_input(self._iron_model, self._index, strength)
 
-    
 
 class Cell:
     def __init__(self, cell_definition, cell_membrane, iron_model, index):
@@ -292,12 +285,6 @@ class Cell:
   
     def membrane_voltage(self):
         return self._cell_membrane.voltage()
-
-    def calcium(self):
-        return self._cell_membrane.calcium()
-    
-    def fired(self):
-        return self._cell_membrane.fired()
 
     def drawable_synapses(self):
         drawables = []

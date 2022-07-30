@@ -35,16 +35,6 @@ fn voltage(model: &Model, index: usize) -> PyResult<f64> {
 }
 
 #[pyfunction]
-fn calcium(model: &Model, index: usize) -> PyResult<f64> {
-    Ok(model.calcium(index))
-}
-
-#[pyfunction]
-fn fired(model: &Model, index: usize) -> PyResult<bool> {
-    Ok(model.fired(index))
-}
-
-#[pyfunction]
 fn receive_input(model: &mut Model, index: usize, strength: f64){
     model.receive_input(index, strength);
 }
@@ -88,11 +78,6 @@ fn cell_positive_input_strength(model: &Model, cell_index: usize) -> PyResult<f6
 }
 
 #[pyfunction]
-fn s_tag(model: &Model, index: usize) -> PyResult<f64> {
-    Ok(model.s_tag(index))
-}
-
-#[pyfunction]
 fn strength(model: &Model, index: usize) -> PyResult<f64> {
     Ok(model.strength(index))
 }
@@ -100,11 +85,6 @@ fn strength(model: &Model, index: usize) -> PyResult<f64> {
 #[pyfunction]
 fn inhibitory_strength(model: &Model, index: usize) -> PyResult<f64> {
     Ok(model.inhibitory_strength(index))
-}
-
-#[pyfunction]
-fn update_s_tag(model: &mut Model, index: usize, s_tag: f64){
-    model.update_s_tag(index, s_tag);
 }
 
 #[pyfunction]
@@ -136,21 +116,18 @@ fn iron_brains(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(add_cell, m)?)?;
     m.add_function(wrap_pyfunction!(apply_fire, m)?)?;
     m.add_function(wrap_pyfunction!(voltage, m)?)?;
-    m.add_function(wrap_pyfunction!(calcium, m)?)?;
-    m.add_function(wrap_pyfunction!(fired, m)?)?;
+
     m.add_function(wrap_pyfunction!(receive_input, m)?)?;
     m.add_function(wrap_pyfunction!(update_cells, m)?)?;
     m.add_function(wrap_pyfunction!(fired_indexes, m)?)?;
     
-
     m.add_function(wrap_pyfunction!(add_synapse, m)?)?;
     m.add_function(wrap_pyfunction!(clear_positive_s_tags, m)?)?;
     m.add_function(wrap_pyfunction!(positive_normalize, m)?)?;
     m.add_function(wrap_pyfunction!(cell_positive_input_strength, m)?)?;
-    m.add_function(wrap_pyfunction!(s_tag, m)?)?;
+    
     m.add_function(wrap_pyfunction!(strength, m)?)?;
     m.add_function(wrap_pyfunction!(inhibitory_strength, m)?)?;
-    m.add_function(wrap_pyfunction!(update_s_tag, m)?)?;
     m.add_function(wrap_pyfunction!(update_strength, m)?)?;
     m.add_function(wrap_pyfunction!(update_inhibitory_strength, m)?)?;
     m.add_function(wrap_pyfunction!(update_synapses, m)?)?;
