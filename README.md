@@ -14,12 +14,17 @@ An environment provides inputs to the brain and receives outputs.
 
 # Install
 
-After cloning navigate into the repository and run.
+After cloning navigate into the the top level directory of the repository and run
+
+`chmod a+x build_and_run.sh`
+
+`./build_and_run.sh`
+
+Note this is a python 3 app with rust acceleration. You will need at least python 3.
+You can run the program without rust but it will be slower. To just run with python use.
+
 
 `pip install -r requirements.txt`
-
-Note this is a python 3 app.
-If installing matplotlib or pygame is an issue it can be run without these depending on mode.
 
 # Run
 
