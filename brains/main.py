@@ -16,22 +16,17 @@ import argparse
 import json
 import signal
 import sys
-from enum import Enum, auto
-
-class IntegrationModelType(Enum):
-    RUST = auto()
-    PYTHON = auto()
 
 World = namedtuple('World', 'model environment')
 
-def integrate_model(network_definition, model_parameters, model_type=None):
-    if model_type is None or model_type == IntegrationModelType.RUST:
+def integrate_model(network_definition, model_parameters, execution_type):
+    if execution_type == "auto" or execution_type == "rust":
         import brains.models.rust_model as model
         if hasattr(model.iron_brains, "create"):
             print("loaded rust integrate model")
             return model.SimpleModel(network_definition, model_parameters)
 
-    if model_type is None or model_type == IntegrationModelType.PYTHON:
+    if execution_type == "auto" or execution_type == "python":
         import brains.models.integrate_model as model
         print("loaded python integrate model")
         return model.SimpleModel(network_definition, model_parameters)
@@ -39,17 +34,17 @@ def integrate_model(network_definition, model_parameters, model_type=None):
     print("failed to load any version of integrate model")
     sys.exit(1)
 
-def parameter_test_world():
+def parameter_test_world(parameters):
     model_parameters = simple_model_builder.ModelParameters(starting_dopamine=0.0)
     network_definition = network_definitions.parameter_test_network()
-    model = integrate_model(network_definition, model_parameters)
+    model = integrate_model(network_definition, model_parameters, parameters.execution_type)
     return model, ParameterTestEnvironment()
 
 def stdp_world(parameters):
     model_parameters = simple_model_builder.ModelParameters(epoch_length=parameters.epoch_length)
     model_parameters.synapse_type_parameters.max_strength = 0.4
     network_definition = network_definitions.stdp_test_network()
-    model = integrate_model(network_definition, model_parameters)
+    model = integrate_model(network_definition, model_parameters, parameters.execution_type)
     return model, STDPTestEnvironment()
 
 def handwriting_world(parameters):
@@ -62,7 +57,7 @@ def handwriting_world(parameters):
         image_lines=None, shuffle=True,
         file_name=parameters.handwritten_file_name)
 
-    model = integrate_model(network_definition, model_parameters)
+    model = integrate_model(network_definition, model_parameters, parameters.execution_type)
     return model, environment
 
 def mnist_world(parameters):
@@ -73,7 +68,7 @@ def mnist_world(parameters):
         number_of_outputs=parameters.mnist_number_of_outputs)
     environment = MnistEnvironment(parameters.epoch_length, parameters.input_delay,
                                    number_of_possible_outputs=parameters.mnist_number_of_outputs)
-    model = integrate_model(network_definition, model_parameters)
+    model = integrate_model(network_definition, model_parameters, parameters.execution_type)
     return model, environment
 
 
@@ -86,7 +81,7 @@ def easy_world(parameters):
     # need like some kind of average starting connection strength thing
     network_definition = network_definitions.easy_layer_network()
     easy_environment = EasyEnvironment(parameters.epoch_length, parameters.input_delay)
-    model = integrate_model(network_definition, model_parameters)
+    model = integrate_model(network_definition, model_parameters, parameters.execution_type)
     return model, easy_environment
 
 def user_specified_world(parameters):
@@ -108,7 +103,7 @@ def user_specified_world(parameters):
     elif parameters.environment_type == 'stdp':
         model_environment = STDPTestEnvironment(model.epoch_length)
     elif parameters.environment_type == 'parameter':
-        model_environment = STDPTestEnvironment(model.epoch_length)
+        model_environment = ParameterTestEnvironment(model.epoch_length)
     return model, model_environment
 
 def create_world(parameters):
@@ -125,7 +120,7 @@ def create_world(parameters):
     
     if parameters.world_type:
         if parameters.world_type == "parameter":
-            return parameter_test_world()
+            return parameter_test_world(parameters)
         elif parameters.world_type == "stdp":
             return stdp_world(parameters)
         elif parameters.world_type == "easy":
@@ -234,6 +229,14 @@ def create_args():
                            required=False,
                            help="Warp to speed up code when possible may contain errors " \
                            "with unsupervised learning")
+    my_parser.add_argument('--execution_type',
+                           default="auto",
+                           choices=["auto", "python", "rust"],
+                           type=str,
+                           required=False,
+                           help="Run integration model using python or rust. If auto will attempt " \
+                           " to use rust if it finds it. If rust selected and not binary can be " \
+                           "found gives an error.")
     return my_parser.parse_args()
 
 

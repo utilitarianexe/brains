@@ -11,14 +11,13 @@ unsorted issues
   should have default display and world values
   
   move to rust
-     it would be nice to be able to select rust or python manually
      make a script to auto compile everything
      remove unused variables from rust
      combine the display code from each
      improve instructions
      better git ignore file
      windows rust instructions
-     accuracy on diff on  easy/ running many side by side
+     accuracy on diff on  easy/running many side by side
      per cell functions
      fix simple model tests
      rust tests
@@ -30,13 +29,11 @@ unsorted issues
   decuple brain and env from display
   does inhibition mean we need higher max strengths
   too much  repeated code in main
-  multiple simultanious runs
   memory leak in UI
   wtf step size
   do the negative random images matter?
   does output balancing matter( is it too high)?
   too many negative synapses
-  easy only works 80% of the time
 
   network.py needs refactored
     too much ui
