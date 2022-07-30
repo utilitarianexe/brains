@@ -1,14 +1,10 @@
 unsorted issues
-  allow running without command line
-  validate warp fix and reprofile
-  record results to file
-  import full mnist set
-  put nmist in readme with learned model
-  is it ok to include mnist data in our repo
-  cycling inhibitory synapses in input_balance is performance hit
-  cycling inhibitory synapses when clearing s_tag
-  apply_negative_input_balance names in these functions are terrible too
-  should have default display and world values
+  make running easy
+     single install script
+     should have default display and world values
+     allow running without command line(need .deb and windows packages)
+     put nmist in readme with learned model
+     is it ok to include mnist data in our repo
   
   move to rust
      make a script to auto compile everything
@@ -25,7 +21,14 @@ unsorted issues
      pub is used wrong all over
      use refrences instead of indexes in rust(especially searching though them)
      lib.rs has too many funtions remove not used and use class
-      
+
+  validate warp fix and reprofile
+  record results to file
+  import full mnist set
+  cycling inhibitory synapses in input_balance is performance hit
+  cycling inhibitory synapses when clearing s_tag
+  apply_negative_input_balance names in these functions are terrible too
+
   decuple brain and env from display
   does inhibition mean we need higher max strengths
   too much  repeated code in main
@@ -86,14 +89,8 @@ refactoring
   use dacite package instead of __post__init__ bs
   test parameters confusion
   simple_model is a bad name
-  move parameters out of model file and networks out of network file
   clean up environment to allow for better tests without putting the test env in its own class
-  also better tests for environment
-  remove to do type comments
-  document
-  get rid of magic numbers(most at least moved to class definitions)
   follow python style guide
-  reorder parameters
   simple_model output is a mess
   get example and spirit working with video, export, import, and pyplot
   arguably export should be a type of display
