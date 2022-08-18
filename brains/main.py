@@ -19,20 +19,24 @@ import sys
 
 World = namedtuple('World', 'model environment')
 
-def integrate_model(network_definition, model_parameters, execution_type):
+def integrate_module(execution_type):
     if execution_type == "auto" or execution_type == "rust":
         import brains.models.rust_model as model
         if hasattr(model.iron_brains, "create"):
-            print("loaded rust integrate model")
-            return model.SimpleModel(network_definition, model_parameters)
+            print("loaded rust integrate modulel")
+            return model
 
     if execution_type == "auto" or execution_type == "python":
         import brains.models.integrate_model as model
         print("loaded python integrate model")
-        return model.SimpleModel(network_definition, model_parameters)
+        return model
 
     print("failed to load any version of integrate model")
     sys.exit(1)
+
+def integrate_model(network_definition, model_parameters, execution_type):
+    module = integrate_module(execution_type)
+    return model.SimpleModel(network_definition, model_parameters)
 
 def parameter_test_world(parameters):
     model_parameters = simple_model_builder.ModelParameters(starting_dopamine=0.0)
@@ -88,7 +92,7 @@ def user_specified_world(parameters):
     file_path = utils.data_dir_file_path(parameters.import_name)
     model_file = open(file_path)
     blob = json.load(model_file)
-    model = simple_model_builder.import_model(blob, simple_model)
+    model = simple_model_builder.import_model(blob, integrate_module(parameters.execution_type))
     if parameters.environment_type == 'handwriting':
         model_environment = HandwritingEnvironment(
             model.epoch_length, parameters.input_delay, {'o': 0, 'x': 1},
