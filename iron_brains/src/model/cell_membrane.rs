@@ -55,8 +55,6 @@ pub struct CellMembrane {
     input_current: f64,
     calcium: f64,
     fired: bool,
-    pub input_synapse_indexes: std::vec::Vec<usize>,
-    pub output_synapse_indexes: std::vec::Vec<usize>,
 }
 
 impl CellMembrane {
@@ -70,8 +68,6 @@ impl CellMembrane {
 	    input_current,
 	    calcium,
 	    fired: false,
-	    input_synapse_indexes: std::vec::Vec::new(),
-	    output_synapse_indexes: std::vec::Vec::new(),
 	}
     }
 

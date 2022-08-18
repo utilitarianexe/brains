@@ -1,4 +1,13 @@
 unsorted issues
+  we would need to create a rust version of network definition
+  pass that from python
+  don't have python call add_synapse and add_cell
+  instead use the netwrok defintion to build it all
+  to prevent Model from being annotated as a python class by not passing it back to python(pass a ref)
+  then maybe we could get away with lifetimes
+  
+
+
   make running easy
      try things on windows
      single install script
@@ -9,6 +18,9 @@ unsorted issues
      improve instructions
   
   move to rust
+     remove indexes from cell_membrane and add positive only indexes to network along with all
+     too much parameter passing for the parameter classes
+     mixed cell types don't work
      remove unused variables from rust
      combine the display code from each
      windows rust instructions
@@ -19,6 +31,7 @@ unsorted issues
      pub is used wrong all over
      use refrences instead of indexes in rust(especially searching though them)
      lib.rs has too many funtions remove not used and use class
+
 
   better git ignore file
   rename simple_model_builder.py and SimpleModel

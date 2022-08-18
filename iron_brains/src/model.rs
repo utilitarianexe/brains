@@ -8,6 +8,9 @@ use synapse::Synapse;
 use synapse::SynapseParameters;
 use synapse::LayerSynapseParameters;
 
+pub mod network;
+use network::Network;
+
 use pyo3::prelude::*;
 
 #[pyclass]
@@ -17,6 +20,7 @@ pub struct Model {
     cell_membrane_parameters: CellMembraneParameters,
     synapse_parameters: SynapseParameters,
     positive_synapse_indexes: std::vec::Vec<usize>,
+    network: Network,
 }
 
 
@@ -33,6 +37,7 @@ impl Model {
 	    cell_membrane_parameters,
 	    synapse_parameters,
 	    positive_synapse_indexes: std::vec::Vec::new(),
+	    network: Network::new(size),
 	};
 	model
     }
@@ -49,32 +54,17 @@ impl Model {
 
     // obviously could be way faster than going over every synapse
     pub fn apply_fire(&mut self, index: usize){
-	let cell = &self.cell_membranes[index];
-	let output_indexes: &std::vec::Vec<usize> = &cell.output_synapse_indexes;
-	let cell_type: CellType = cell.cell_type;
-
-	let mut post_cell_indexes: std::vec::Vec<usize> = std::vec::Vec::new();
-	let mut synapse_indexes: std::vec::Vec<usize> = std::vec::Vec::new();
-	for synapse_index in output_indexes.iter() {
-	    let synapse = &mut self.synapses[*synapse_index];
-	    post_cell_indexes.push(synapse.post_cell_index);
-	    synapse_indexes.push(*synapse_index)
-	}
-
-	
-	for n in 0..post_cell_indexes.len() {
-	    let synapse_index = synapse_indexes[n];
-	    let post_cell_index = post_cell_indexes[n];
-	    let synapse = &mut self.synapses[synapse_index];
-	    let post_cell = &mut self.cell_membranes[post_cell_index];
-	    synapse.pre_fire(cell_type, post_cell,
-			     &self.synapse_parameters);
+	for connection in self.network.outgoing_connections(index) {
+	    let synapse = &mut self.synapses[connection.synapse_index];
+	    let post_cell = &mut self.cell_membranes[connection.post_cell_index];
+	    let strength = synapse.pre_fire(post_cell.calcium(), &self.synapse_parameters);
+	    post_cell.receive_input(strength);
 	}
 	
-	for synapse_index in self.cell_membranes[index].input_synapse_indexes.iter() {
-	    let synapse = &mut self.synapses[*synapse_index];
-	    let pre_cell = &self.cell_membranes[synapse.pre_cell_index];
-	    synapse.post_fire(pre_cell,
+	for connection in self.network.incoming_connections(index) {
+	    let synapse = &mut self.synapses[connection.synapse_index];
+	    let pre_cell = &self.cell_membranes[connection.pre_cell_index];
+	    synapse.post_fire(pre_cell.calcium(),
 			      &self.synapse_parameters);
 	}
     }
@@ -112,15 +102,14 @@ impl Model {
 		       layer_parameters : LayerSynapseParameters,
 		       strength: f64, inhibitory_strength: f64,
 		       pre_cell_index: usize, post_cell_index: usize,) -> usize {
+
 	let synapse: Synapse = Synapse::new(layer_parameters,
 					    strength, inhibitory_strength,
 					    self.synapse_parameters.starting_s_tag,
-					    pre_cell_index, post_cell_index);
-
+					    self.cell_membranes[pre_cell_index].cell_type);
 	self.synapses.push(synapse);
+	self.network.connect(pre_cell_index, post_cell_index, self.synapses.len() - 1);
 	let index: usize = self.synapses.len()  - 1;
-	self.cell_membranes[pre_cell_index].output_synapse_indexes.push(index);
-	self.cell_membranes[post_cell_index].input_synapse_indexes.push(index);
     	if inhibitory_strength == 0.0 {
 	    self.positive_synapse_indexes.push(index);
 	}
@@ -135,7 +124,7 @@ impl Model {
     }
 
 
-    // would be much faster with per cell indexes
+    // would be much faster with positive only synapse indexes
     pub fn positive_normalize(&mut self, cell_index: usize, target: f64) -> f64 {
 	let total = self.cell_positive_input_strength(cell_index);
 	let scale: f64 = if total > 0.0 {
@@ -149,9 +138,9 @@ impl Model {
 	let change_factor: f64 = scale * input_balance_scalar;
         let keep_factor: f64 = 1.0 - input_balance_scalar;
 	let mut new_total: f64 = 0.0;
-	for index in self.positive_synapse_indexes.iter() {
-	    let synapse: &mut Synapse = &mut self.synapses[*index];
-	    if synapse.post_cell_index == cell_index {
+	for connection in self.network.incoming_connections(cell_index) {
+	    let synapse: &mut Synapse = &mut self.synapses[connection.synapse_index];
+	    if synapse.pre_cell_type == CellType::EXCITE {
 		let keep_part = synapse.strength * keep_factor;
 		let change_part = synapse.strength * change_factor;
 		synapse.strength =  keep_part +  change_part;
@@ -164,12 +153,10 @@ impl Model {
 
     pub fn cell_positive_input_strength(&self, cell_index: usize) -> f64 {
 	let mut total: f64 = 0.0;
-	for index in self.positive_synapse_indexes.iter() {
-	    let synapse: &Synapse = &self.synapses[*index];
-	    if synapse.post_cell_index == cell_index {
-		total += synapse.strength
-	    };
-	};
+	for connection in self.network.incoming_connections(cell_index) {
+	    let synapse: &Synapse = &self.synapses[connection.synapse_index];
+	    total += synapse.strength
+	}
 	return total;
     }
 
