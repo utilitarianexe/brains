@@ -166,7 +166,8 @@ def create_args():
     my_parser.add_argument('--display_type', '--display',
                            type=str,
                            choices=["pygame", "pyplot", ""],
-                           required=True,
+                           required=False,
+                           default='pygame',
                            help='How to display the model.')
     my_parser.add_argument(
         '--world_type', '--world',
