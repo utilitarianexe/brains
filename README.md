@@ -20,6 +20,12 @@ Install python 3 and on a unix terminal
 
 `cd brains/`
 
+`pip install virtualenv`
+
+`virtualenv venv`
+
+`source venv/bin/activate`
+
 `pip install -r requirements.txt`
 
 
@@ -31,7 +37,6 @@ Optionally use rust acceleration if you have cargo installed
 
 Note this is a python 3 app with rust acceleration. You will need at least python 3.
 You can run the program without rust but it will be slower.
-
 
 # Run
 
