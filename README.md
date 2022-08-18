@@ -14,17 +14,24 @@ An environment provides inputs to the brain and receives outputs.
 
 # Install
 
-After cloning navigate into the the top level directory of the repository and run
+Install python 3 and on a unix terminal
+
+`git clone https://github.com/utilitarianexe/brains.git`
+
+`cd brains/`
+
+`pip install -r requirements.txt`
+
+
+Optionally use rust acceleration if you have cargo installed
 
 `chmod a+x build_and_run.sh`
 
 `./build_and_run.sh`
 
 Note this is a python 3 app with rust acceleration. You will need at least python 3.
-You can run the program without rust but it will be slower. To just run with python use.
+You can run the program without rust but it will be slower.
 
-
-`pip install -r requirements.txt`
 
 # Run
 
