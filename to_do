@@ -15,7 +15,6 @@ unsorted issues
      improve instructions
   
   move to rust
-     remove indexes from cell_membrane and add positive only indexes to network along with all
      too much parameter passing for the parameter classes
      mixed cell types don't work
      remove unused variables from rust

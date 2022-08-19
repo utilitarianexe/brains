@@ -64,7 +64,7 @@ def negate(image):
             new_image.append(0.0)
     return new_image
 
-def read(image_file_nam, label_file_name,
+def read(image_file_name, label_file_name,
          number_of_images_to_read, possible_outputs):
     label_file = open(utils.data_dir_file_path(label_file_name), "rb")
     image_file = open(utils.data_dir_file_path(image_file_name), "rb")
