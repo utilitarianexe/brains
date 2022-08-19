@@ -14,7 +14,7 @@ An environment provides inputs to the brain and receives outputs.
 
 # Install
 
-Install python 3 and on a unix terminal
+Install python 3 and on a unix terminal or anaconda terminal on windows
 
 `git clone https://github.com/utilitarianexe/brains.git`
 
@@ -24,10 +24,9 @@ Install python 3 and on a unix terminal
 
 `virtualenv venv`
 
-`source venv/bin/activate`
+on unix `source venv/bin/activate` on windows `C:\Users\'Username'\'path to repository'\venv\Scripts\activate`
 
 `pip install -r requirements.txt`
-
 
 Optionally use rust acceleration if you have cargo installed
 
