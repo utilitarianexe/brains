@@ -19,7 +19,6 @@ pub struct Model {
     synapses: std::vec::Vec<Synapse>,
     cell_membrane_parameters: CellMembraneParameters,
     synapse_parameters: SynapseParameters,
-    positive_synapse_indexes: std::vec::Vec<usize>,
     network: Network,
 }
 
@@ -36,7 +35,6 @@ impl Model {
 	    synapses: std::vec::Vec::new(),
 	    cell_membrane_parameters,
 	    synapse_parameters,
-	    positive_synapse_indexes: std::vec::Vec::new(),
 	    network: Network::new(size),
 	};
 	model
@@ -107,18 +105,16 @@ impl Model {
 					    strength, inhibitory_strength,
 					    self.synapse_parameters.starting_s_tag,
 					    self.cell_membranes[pre_cell_index].cell_type);
+	let positive: bool = synapse.pre_cell_type == CellType::EXCITE;
 	self.synapses.push(synapse);
-	self.network.connect(pre_cell_index, post_cell_index, self.synapses.len() - 1);
+	self.network.connect(pre_cell_index, post_cell_index, self.synapses.len() - 1, positive);
 	let index: usize = self.synapses.len()  - 1;
-    	if inhibitory_strength == 0.0 {
-	    self.positive_synapse_indexes.push(index);
-	}
 	index
     }
 
     pub fn clear_positive_s_tags(&mut self) {
-	for index in self.positive_synapse_indexes.iter() {
-	    let synapse: &mut Synapse = &mut self.synapses[*index];
+	for connection in self.network.positive_connections.iter() {
+	    let synapse: &mut Synapse = &mut self.synapses[connection.synapse_index];
 	    synapse.s_tag = 0.0
 	}
     }
@@ -176,8 +172,8 @@ impl Model {
     }
 
     pub fn update_synapses(&mut self, dopamine: f64) {
-	for index in self.positive_synapse_indexes.iter() {
-	    let synapse: &mut Synapse = &mut self.synapses[*index];
+	for connection in self.network.positive_connections.iter() {
+	    let synapse: &mut Synapse = &mut self.synapses[connection.synapse_index];
 	    synapse.update(&self.synapse_parameters, dopamine);
 	};
     }

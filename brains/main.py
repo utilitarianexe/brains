@@ -23,15 +23,15 @@ def integrate_module(execution_type):
     if execution_type == "auto" or execution_type == "rust":
         import brains.models.rust_model as model
         if hasattr(model.iron_brains, "create"):
-            print("loaded rust integrate modulel")
+            print("loaded rust integrate module")
             return model
 
     if execution_type == "auto" or execution_type == "python":
         import brains.models.integrate_model as model
-        print("loaded python integrate model")
+        print("loaded python integrate modulel")
         return model
 
-    print("failed to load any version of integrate model")
+    print("failed to load any version of integrate module")
     sys.exit(1)
 
 def integrate_model(network_definition, model_parameters, execution_type):

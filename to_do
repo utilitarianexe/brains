@@ -6,12 +6,9 @@ unsorted issues
   to prevent Model from being annotated as a python class by not passing it back to python(pass a ref)
   then maybe we could get away with lifetimes
   
-
-
   make running easy
-     try things on windows
      single install script
-     should have default display and world values
+     should have default world
      allow running without command line(need .deb and windows packages)
      put nmist in readme with learned model
      is it ok to include mnist data in our repo
@@ -29,7 +26,6 @@ unsorted issues
      fix simple model tests
      rust tests
      pub is used wrong all over
-     use refrences instead of indexes in rust(especially searching though them)
      lib.rs has too many funtions remove not used and use class
 
 

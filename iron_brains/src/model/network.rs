@@ -8,10 +8,11 @@ pub struct Connection {
     pub synapse_index: usize,
 }
 
+// I really hate that I can't use references in these but would require lifetimes.
+// Which then make this incompatible with pyo3
 pub struct Network {
     connections: Vec<Connection>,
-    // I really hate that I can't use references in these but would require lifetimes.
-    // Which then make this incompatible with pyo3
+    pub positive_connections: Vec<Connection>,
     outgoing_connections_by_index: Vec<Vec<Connection>>,
     incoming_connections_by_index: Vec<Vec<Connection>>,
 }
@@ -21,6 +22,7 @@ impl Network {
     pub fn new(size: usize) -> Self {
 	let mut network = Self {
 	    connections: Vec::new(),
+	    positive_connections: Vec::new(),
 	    outgoing_connections_by_index: Vec::with_capacity(size),
 	    incoming_connections_by_index: Vec::with_capacity(size)
 	};
@@ -31,13 +33,18 @@ impl Network {
 	return network;
     }
 
-    pub fn connect(&mut self, pre_cell_index: usize, post_cell_index: usize, synapse_index: usize) {
+    pub fn connect(&mut self, pre_cell_index: usize, post_cell_index: usize,
+		   synapse_index: usize, positive: bool) {
 	let connection = Connection {
 	    pre_cell_index: pre_cell_index,
 	    post_cell_index: post_cell_index,
 	    synapse_index: synapse_index,
 	};
+
 	self.connections.push(connection);
+    	if positive {
+	    self.positive_connections.push(connection);
+	};
 	self.outgoing_connections_by_index[pre_cell_index].push(connection);
 	self.incoming_connections_by_index[post_cell_index].push(connection);
     }
