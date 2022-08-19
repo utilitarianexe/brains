@@ -36,7 +36,7 @@ def integrate_module(execution_type):
 
 def integrate_model(network_definition, model_parameters, execution_type):
     module = integrate_module(execution_type)
-    return model.SimpleModel(network_definition, model_parameters)
+    return module.SimpleModel(network_definition, model_parameters)
 
 def parameter_test_world(parameters):
     model_parameters = simple_model_builder.ModelParameters(starting_dopamine=0.0)
