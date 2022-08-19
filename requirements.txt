@@ -1,4 +1,5 @@
 -e ./.
-pygame
+pygame==2.1.2
 matplotlib
 pytest
+

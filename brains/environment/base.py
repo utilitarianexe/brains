@@ -1,9 +1,8 @@
 from dataclasses import dataclass
 from collections import defaultdict
-from abc import ABC, abstractmethod
 
 
-def result_convert(found_output_ids: list, desired_output_id:int) -> tuple[bool, bool]:
+def result_convert(found_output_ids, desired_output_id):
     correct_cell_fired = False
     incorrect_cell_fired = False
     if desired_output_id in found_output_ids:
@@ -31,7 +30,7 @@ class ResultTracker:
     fail: int = 0
     accuracy: float = 0.0
 
-    def update(self, found_output_ids: list, desired_output_id:int, possible_outputs:list, step:int):
+    def update(self, found_output_ids, desired_output_id, possible_outputs, step):
         print(f"found: {sorted(found_output_ids)} desired: {desired_output_id}")
         self.epochs += 1
 
@@ -71,7 +70,7 @@ class ResultTracker:
             self.accuracy = float(self.win) / float(self.win + self.fail)
 
 
-class BaseEpochChallengeEnvironment(ABC):
+class BaseEpochChallengeEnvironment():
     '''
     User is expected to implement:
     desired_output_id expected output from brain to determine if the brain has fired the right cell
@@ -83,30 +82,28 @@ class BaseEpochChallengeEnvironment(ABC):
     current output cell must fire by half way through the epoch and that after that a reward should
     be given to the brain exactly one time.
     '''
-    def __init__(self, epoch_length: int, input_delay: int):
+    def __init__(self, epoch_length, input_delay):
         self._epoch_length = epoch_length
         self._input_delay = input_delay
 
         self._success = False
         self._reward_provided = False
 
-        self._found_output_ids: list[int] = []
+        self._found_output_ids = []
         self._result_tracker = ResultTracker()
-        self._possible_outputs: list[int] = []
+        self._possible_outputs = []
         
-    def active(self, step: int) -> bool:
+    def active(self, step):
         real_step = step - self._input_delay
         return real_step % self._epoch_length == 0 and step > real_step
 
-    @abstractmethod
-    def desired_output_id(self, step: int) -> int:
+    def desired_output_id(self, step):
         raise NotImplementedError
 
-    @abstractmethod
-    def stimuli(self, step: int) -> list:
+    def stimuli(self, step):
         raise NotImplementedError
 
-    def step(self, step: int, brain_output_ids: list[int]):
+    def step(self, step, brain_output_ids):
         self._found_output_ids += brain_output_ids
         real_step = step - self._input_delay
         if real_step % self._epoch_length == 0:
@@ -123,18 +120,18 @@ class BaseEpochChallengeEnvironment(ABC):
             else:
                 self._success = False
                 
-    def has_success(self, desired_output_id: int) -> bool:
+    def has_success(self, desired_output_id):
         if desired_output_id is None:
             return False
         return desired_output_id in self._found_output_ids
 
-    def video_output(self, step: int) -> list:
+    def video_output(self, step):
         output_id = self.desired_output_id(step)
         if output_id is None:
             return ["expected output: none"]
         return [f"expected output: {output_id}"]
 
-    def has_reward(self) -> bool:
+    def has_reward(self):
         if self._success and not self._reward_provided:
             self._reward_provided = True
             return True
@@ -152,13 +149,13 @@ class FakeEnvironment(BaseEpochChallengeEnvironment):
         self._reward_ids = reward_ids
         self._reward_id = self._reward_ids[0]
 
-    def active(self, step: int) -> bool:
+    def active(self, step):
         return step in self._stimuli
 
-    def stimuli(self, step: int) -> list:
+    def stimuli(self, step):
         return self._stimuli[step]
 
-    def step(self, step: int, output_ids: list[int]):
+    def step(self, step, output_ids):
         super().step(step, output_ids)
         real_step = step - self._input_delay
         if real_step % self._epoch_length == 0:
